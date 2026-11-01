@@ -1,0 +1,34 @@
+# Sidecar services for cannoli-unfilled: databases, caches, queues the project needs
+# next to its build container. Each one runs on this project's own network,
+# with the service name as its hostname, reachable from `boxen run` (not from
+# the VM itself). Apply with `boxen env apply` from the project folder.
+#
+# boxen checks this file before anything starts. Allowed per service:
+#   image (required)                 command, entrypoint, environment
+#   working_dir, user                volumes: named only, <name>:<abs path>[:ro]
+#   tmpfs (absolute paths)           healthcheck
+#   depends_on (other sidecars)      restart (default: unless-stopped)
+#   mem_limit, cpus                  stop_grace_period, labels, init
+#   read_only, cap_drop
+# Everything else is rejected: no ports, no host paths (volumes are named,
+# "pgdata" below, and stored as boxen.cannoli-unfilled.pgdata), no privileges, caps,
+# devices, network modes, build, env_file, the Docker socket. Values are
+# taken literally: $ is never expanded from the VM, and $ and $$ both mean
+# one literal $ (so "pg_isready -U $$POSTGRES_USER" works in a healthcheck,
+# as in compose's docs). At most 8 services; names are lowercase, not
+# "env", not starting with "boxen"; no volume called "cache".
+# To reach a sidecar from the VM or the LAN, the user adds ports in
+# ~/.config/boxen/projects/cannoli-unfilled/compose.override.yaml.
+#
+# Example: a PostgreSQL server, at postgres:5432 from `boxen run`.
+#
+# services:
+#   postgres:
+#     image: postgres:16
+#     environment:
+#       POSTGRES_PASSWORD: dev
+#     volumes:
+#       - pgdata:/var/lib/postgresql/data
+#     healthcheck:
+#       test: ["CMD-SHELL", "pg_isready -U postgres"]
+#       interval: 5s
