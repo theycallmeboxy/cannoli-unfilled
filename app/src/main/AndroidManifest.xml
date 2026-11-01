@@ -60,15 +60,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".libretro.LibretroActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|smallestScreenSize|screenLayout|uiMode|density|navigation|touchscreen"
-            android:theme="@style/Theme.Cannoli"
-            android:immersive="true"
-            android:resizeableActivity="false"
-            android:preferMinimalPostProcessing="true"
-            android:windowLayoutInDisplayCutoutMode="shortEdges" />
-
         <provider
             android:name=".launcher.CannoliFileProvider"
             android:authorities="${applicationId}.fileprovider"

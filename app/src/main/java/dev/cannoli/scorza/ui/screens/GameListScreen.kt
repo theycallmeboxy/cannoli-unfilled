@@ -85,7 +85,6 @@ private val ListItem.artPath: String? get() = when (this) {
     else -> null
 }
 
-private val ListItem.resumeKey: String? get() = (this as? ListItem.RomItem)?.rom?.path?.absolutePath
 
 @Composable
 fun GameListScreen(
@@ -96,8 +95,6 @@ fun GameListScreen(
     listLineHeight: TextUnit = 32.sp,
     listVerticalPadding: Dp = 8.dp,
     onListStateChanged: ((androidx.compose.foundation.lazy.LazyListState?) -> Unit)? = null,
-    resumableGames: Set<String> = emptySet(),
-    swapPlayResume: Boolean = false,
     artWidth: Int = 40,
     artScale: ArtScale = ArtScale.FIT,
     buttonStyle: ButtonStyle = ButtonStyle(),
@@ -115,8 +112,6 @@ fun GameListScreen(
     }
 
     val selected = state.items.getOrNull(state.selectedIndex)
-    val resumeKey = selected?.resumeKey
-    val hasResumeState = resumeKey != null && resumableGames.contains(resumeKey)
 
     val artPath = selected?.artPath
     val selectedArt by produceState<ImageBitmap?>(null, artPath) {
@@ -287,7 +282,6 @@ fun GameListScreen(
             } else {
                 stringResource(R.string.label_play)
             }
-            val resumeLabel = stringResource(R.string.label_resume)
             val showNewButton = state.isCollectionsList || (state.isCollection && !state.isFavorites)
             val leftItems = buildList {
                 add(buttonStyle.back to stringResource(R.string.label_back))
@@ -297,13 +291,8 @@ fun GameListScreen(
                 emptyList()
             } else if (state.multiSelectMode) {
                 listOf(buttonStyle.confirm to actionLabel, START_GLYPH to stringResource(R.string.label_confirm))
-            } else if (hasResumeState && swapPlayResume) {
-                listOf(buttonStyle.north to actionLabel, buttonStyle.confirm to resumeLabel)
             } else {
-                buildList {
-                    if (hasResumeState) add(buttonStyle.north to resumeLabel)
-                    add(buttonStyle.confirm to actionLabel)
-                }
+                listOf(buttonStyle.confirm to actionLabel)
             }
             BottomBar(
                 modifier = Modifier.align(Alignment.BottomCenter),

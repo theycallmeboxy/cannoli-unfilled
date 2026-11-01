@@ -14,10 +14,8 @@ import dev.cannoli.scorza.db.importer.ImportResult
 import dev.cannoli.scorza.db.importer.Importer
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.di.IoScope
-import dev.cannoli.scorza.input.BindingController
 import dev.cannoli.scorza.input.LauncherActions
 import dev.cannoli.scorza.launcher.InstalledCoreService
-import dev.cannoli.scorza.launcher.LaunchManager
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
 import dev.cannoli.scorza.settings.ContentMode
@@ -57,9 +55,7 @@ class BootInitializer @Inject constructor(
     private val settingsViewModel: SettingsViewModel,
     private val collectionsRepository: CollectionsRepository,
     private val updateManager: UpdateManager,
-    private val bindingController: BindingController,
     private val nav: NavigationController,
-    private val launchManager: LaunchManager,
     private val launcherActions: LauncherActions,
     private val setupCoordinator: SetupCoordinator,
 ) {
@@ -81,10 +77,6 @@ class BootInitializer @Inject constructor(
         // Backfill only. Fills platforms that have no stored choice and never touches one the
         // user made, so it is safe to run on every boot rather than only on first run.
         platformConfig.seedUnsetPlatforms(context.packageManager)
-        ioScope.launch {
-            launchManager.syncRetroArchAssets(root)
-            launchManager.syncRetroArchConfig(root)
-        }
         ioScope.launch { dev.cannoli.scorza.util.DirectoryLayout.ensure(root, romDir, context.assets, platformConfig) }
 
         val importer = Importer(
@@ -122,32 +114,6 @@ class BootInitializer @Inject constructor(
             }
             // updateAvailable -> settingsViewModel.updateInfo is now pushed lifecycle-bound
             // from MainActivity.ReadyNavGraph so it cancels on Activity destroy.
-
-            bindingController.onProgress = { keys, elapsedMs ->
-                val cs = nav.currentScreen
-                if (cs is LauncherScreen.ShortcutBinding) {
-                    nav.replaceTop(cs.copy(heldKeys = keys, countdownMs = elapsedMs))
-                }
-            }
-            bindingController.onCommit = { chord ->
-                val cs = nav.currentScreen
-                if (cs is LauncherScreen.ShortcutBinding) {
-                    val action = dev.cannoli.igm.ShortcutAction.entries.getOrNull(cs.selectedIndex)
-                    if (action != null) {
-                        val cleared = cs.shortcuts.filterValues { it != chord }
-                        nav.replaceTop(cs.copy(
-                            shortcuts = cleared + (action to chord),
-                            listening = false, heldKeys = emptySet(), countdownMs = 0,
-                        ))
-                    }
-                }
-            }
-            bindingController.onCancel = {
-                val cs = nav.currentScreen
-                if (cs is LauncherScreen.ShortcutBinding && cs.listening) {
-                    nav.replaceTop(cs.copy(listening = false, heldKeys = emptySet(), countdownMs = 0))
-                }
-            }
 
             nav.screenStack.clear()
             nav.screenStack.add(LauncherScreen.SystemList)

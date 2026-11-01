@@ -28,8 +28,8 @@ class PlatformSettingLabelTest {
 
     @Test fun `a different standalone pick on the same platform is distinguished`() {
         val pc = config()
-        pc.setPlatformChoice("GC", EmulatorChoice(EmulatorSource.Standalone, appPackage = "dev.cannoli.delfino"))
-        assertEquals("Delfino", label(pc, "GC"))
+        pc.setPlatformChoice("GC", EmulatorChoice(EmulatorSource.Standalone, appPackage = "org.dolphinemu.dolphinemu"))
+        assertEquals("Dolphin", label(pc, "GC"))
     }
 
     @Test fun `standalone pick on a platform with a default core names the app not the core`() {

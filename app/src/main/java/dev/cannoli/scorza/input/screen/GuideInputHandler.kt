@@ -1,11 +1,11 @@
 package dev.cannoli.scorza.input.screen
 
 import dagger.hilt.android.scopes.ActivityScoped
-import dev.cannoli.igm.GuideController
-import dev.cannoli.igm.GuideFile
-import dev.cannoli.igm.GuideManager
-import dev.cannoli.igm.GuideType
-import dev.cannoli.igm.GuideZoom
+import dev.cannoli.scorza.guides.GuideController
+import dev.cannoli.scorza.guides.GuideFile
+import dev.cannoli.scorza.guides.GuideManager
+import dev.cannoli.scorza.guides.GuideType
+import dev.cannoli.scorza.guides.GuideZoom
 import dev.cannoli.scorza.input.ScreenInputHandler
 import dev.cannoli.scorza.model.Rom
 import dev.cannoli.scorza.navigation.LauncherScreen

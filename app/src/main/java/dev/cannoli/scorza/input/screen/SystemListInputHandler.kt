@@ -110,21 +110,7 @@ class SystemListInputHandler @Inject constructor(
 
     override fun onNorth() {
         val fgh = launcherActions.validateFghCollection() != null
-        val item = systemListViewModel.getSelectedItem()
-        if (fgh && item is SystemListViewModel.ListItem.GameItem) {
-            val recentKey = item.recentKey
-            val isResumable = nav.resumableGames.contains(recentKey)
-            if (isResumable) {
-                val errorDialog = launcherActions.launchSelected(item.item, !settings.swapPlayResume)
-                if (errorDialog != null) {
-                    nav.dialogState.value = errorDialog
-                } else if (nav.dialogState.value is DialogState.SaveSyncChecking) {
-                    launcherActions.recordPendingRecent(recentKey, false)
-                } else {
-                    launcherActions.recordRecentlyPlayedByPath(recentKey)
-                }
-            }
-        } else if (!fgh) {
+        if (!fgh) {
             systemListViewModel.savePosition()
             settingsViewModel.load()
             nav.screenStack.add(LauncherScreen.Settings)
@@ -162,7 +148,6 @@ class SystemListInputHandler @Inject constructor(
             is SystemListViewModel.ListItem.RecentlyPlayedItem -> {
                 nav.navigating = true
                 gameListViewModel.loadRecentlyPlayed {
-                    launcherActions.scanResumableGames()
                     nav.screenStack.add(LauncherScreen.GameList)
                     nav.navigating = false
                 }
@@ -170,7 +155,6 @@ class SystemListInputHandler @Inject constructor(
             is SystemListViewModel.ListItem.FavoritesItem -> {
                 nav.navigating = true
                 gameListViewModel.loadFavorites {
-                    launcherActions.scanResumableGames()
                     nav.screenStack.add(LauncherScreen.GameList)
                     nav.navigating = false
                 }
@@ -185,7 +169,6 @@ class SystemListInputHandler @Inject constructor(
             is SystemListViewModel.ListItem.PlatformItem -> {
                 nav.navigating = true
                 gameListViewModel.loadPlatform(item.platform.tag, item.platform.allTags) {
-                    launcherActions.scanResumableGames()
                     nav.screenStack.add(LauncherScreen.GameList)
                     nav.navigating = false
                 }
@@ -193,16 +176,13 @@ class SystemListInputHandler @Inject constructor(
             is SystemListViewModel.ListItem.CollectionItem -> {
                 nav.navigating = true
                 gameListViewModel.loadCollectionById(item.id) {
-                    launcherActions.scanResumableGames()
                     nav.screenStack.add(LauncherScreen.GameList)
                     nav.navigating = false
                 }
             }
             is SystemListViewModel.ListItem.GameItem -> {
                 val recentKey = item.recentKey
-                val isResumable = nav.resumableGames.contains(recentKey)
-                val resume = isResumable && settings.swapPlayResume
-                val errorDialog = launcherActions.launchSelected(item.item, resume)
+                val errorDialog = launcherActions.launchSelected(item.item)
                 if (errorDialog != null) {
                     nav.dialogState.value = errorDialog
                 } else if (nav.dialogState.value is DialogState.SaveSyncChecking) {

@@ -12,40 +12,6 @@ val CREDITS_INSPIRATION: List<CreditEntry> = listOf(
     CreditEntry("Abraham McCampbell", "Cannoli Logo"),
 )
 
-val CREDITS_CORES: List<CreditEntry> = listOf(
-    CreditEntry("FBNeo", "Non-commercial"),
-    CreditEntry("Gambatte", "GPLv2"),
-    CreditEntry("Genesis Plus GX", "Non-commercial"),
-    CreditEntry("Handy", "Zlib"),
-    CreditEntry("MAME 2003-Plus", "MAME"),
-    CreditEntry("Mednafen NGP", "GPLv2"),
-    CreditEntry("Mednafen PCE FAST", "GPLv2"),
-    CreditEntry("Mednafen VB", "GPLv2"),
-    CreditEntry("Mednafen WonderSwan", "GPLv2"),
-    CreditEntry("mGBA", "MPLv2.0"),
-    CreditEntry("Nestopia", "GPLv2"),
-    CreditEntry("PCSX ReARMed", "GPLv2"),
-    CreditEntry("PokeMini", "GPLv3"),
-    CreditEntry("ProSystem", "GPLv2"),
-    CreditEntry("Snes9x", "Non-commercial"),
-    CreditEntry("Stella", "GPLv2"),
-    CreditEntry("SwanStation", "GPLv3"),
-)
-
-val CREDITS_SHADERS: List<CreditEntry> = listOf(
-    CreditEntry("crt-aperture by EasyMode", "GPL"),
-    CreditEntry("crt-cannoli by Cannoli (based on EasyMode)", "GPL"),
-    CreditEntry("crt-easymode by EasyMode", "GPL"),
-    CreditEntry("crt-geom by cgwg / Themaister / DOLLS", "GPLv2"),
-    CreditEntry("crt-lottes-fast by Timothy Lottes / hunterk", "Public domain"),
-    CreditEntry("dot by Themaister", "Public domain"),
-    CreditEntry("lcd3x by Gigaherz", "Public domain"),
-    CreditEntry("scanline by hunterk", "Public domain"),
-    CreditEntry("sharp-bilinear-simple by rsn8887", "Public domain"),
-    CreditEntry("zfast-crt by SoltanGris42", "GPLv2"),
-    CreditEntry("zfast-lcd by SoltanGris42", "GPLv2"),
-)
-
 val CREDITS_FONTS: List<CreditEntry> = listOf(
     CreditEntry("M+ Fonts Project", "OFL"),
     CreditEntry("BPreplay", "OFL"),

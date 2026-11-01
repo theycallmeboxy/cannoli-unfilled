@@ -3,7 +3,6 @@ package dev.cannoli.scorza.input
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
-import dev.cannoli.igm.ShortcutAction
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.input.screen.ControllerDetailInputHandler
 import dev.cannoli.scorza.input.screen.ControllersInputHandler
@@ -16,13 +15,11 @@ import dev.cannoli.scorza.input.screen.ScrollListInputHandler
 import dev.cannoli.scorza.input.screen.SettingsInputHandler
 import dev.cannoli.scorza.input.screen.OnboardingInputHandler
 import dev.cannoli.scorza.input.screen.SaveSlotsInputHandler
-import dev.cannoli.scorza.input.screen.SaveStatePickerInputHandler
 import dev.cannoli.scorza.input.screen.SystemListInputHandler
 import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.LaunchManager
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
-import dev.cannoli.scorza.settings.GlobalOverridesManager
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.components.CREDITS_ROOT_ROWS
 import dev.cannoli.scorza.ui.components.CreditsRootRow
@@ -46,7 +43,6 @@ class InputRouter @Inject constructor(
     val settingsHandler: SettingsInputHandler,
     val onboardingHandler: OnboardingInputHandler,
     val inputTesterHandler: InputTesterInputHandler,
-    val saveStatePickerHandler: SaveStatePickerInputHandler,
     val saveSlotsHandler: SaveSlotsInputHandler,
     val guideHandler: GuideInputHandler,
     val controllerDetailHandler: ControllerDetailInputHandler,
@@ -58,17 +54,13 @@ class InputRouter @Inject constructor(
     private val gameOverrideStore: dev.cannoli.scorza.db.GameOverrideStore,
     private val installedCoreService: InstalledCoreService,
     private val emulatorMappingBuilder: EmulatorMappingBuilder,
-    private val globalOverrides: GlobalOverridesManager,
     private val launcherActions: LauncherActions,
-    private val bindingController: BindingController,
     private val screenInputRegistry: dev.cannoli.scorza.input.runtime.ScreenInputRegistry,
     @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
-    private val coreInstaller: CoreInstaller,
     private val rommBrowseViewModel: dev.cannoli.scorza.ui.viewmodel.RommBrowseViewModel,
     private val rommDownloader: dev.cannoli.scorza.romm.download.RommDownloader,
     private val osdController: dev.cannoli.ui.components.OsdController,
-    private val raPreloadController: dev.cannoli.scorza.ra.RaPreloadController,
     @IoScope private val ioScope: CoroutineScope,
 ) {
     var unregisterCoreQueryReceiver: () -> Unit = {}
@@ -99,7 +91,6 @@ class InputRouter @Inject constructor(
         is LauncherScreen.GameList -> gameListHandler
         is LauncherScreen.Settings -> settingsHandler
         is LauncherScreen.InputTester -> inputTesterHandler
-        is LauncherScreen.SaveStatePicker -> saveStatePickerHandler
         is LauncherScreen.SaveSlots -> saveSlotsHandler
         is LauncherScreen.GuidePicker -> guideHandler
         is LauncherScreen.Guide -> guideHandler
@@ -203,7 +194,6 @@ class InputRouter @Inject constructor(
         is LauncherScreen.CollectionPicker  -> collectionPickerHandler()
         is LauncherScreen.ChildPicker       -> childPickerHandler()
         is LauncherScreen.AppPicker         -> appPickerHandler()
-        is LauncherScreen.ShortcutBinding   -> shortcutBindingHandler()
         is LauncherScreen.Credits           -> creditsHandler()
         is LauncherScreen.CreditsSection    -> creditsSectionHandler()
         is LauncherScreen.InstalledCores    -> installedCoresHandler()
@@ -216,66 +206,8 @@ class InputRouter @Inject constructor(
         is LauncherScreen.RommVirtualTypes      -> rommVirtualTypesHandler()
         is LauncherScreen.RommCollectionList    -> rommCollectionListHandler()
         is LauncherScreen.RommCollectionGameList -> rommCollectionGameListHandler()
-        is LauncherScreen.RetroAchievementsOfflinePlatforms -> raOfflinePlatformsHandler()
-        is LauncherScreen.RetroAchievementsOfflineSets -> raOfflineSetsHandler()
         else -> object : ScreenInputHandler {}
     }
-
-    private fun raOfflineStore() = dev.cannoli.scorza.ra.RaOfflineStore(
-        dev.cannoli.scorza.config.CannoliPaths(settings.sdCardRoot).configRaOffline
-    )
-
-    private fun reloadOfflineSets() {
-        val s = nav.currentScreen as? LauncherScreen.RetroAchievementsOfflineSets ?: return
-        val entries = raOfflineStore().entries().filter { it.platformTag == s.platformTag }
-        nav.replaceTop(s.copy(entries = entries, selectedIndex = s.selectedIndex.coerceIn(0, (entries.size - 1).coerceAtLeast(0))))
-    }
-
-    private fun refreshOfflinePlatforms() {
-        val s = nav.currentScreen as? LauncherScreen.RetroAchievementsOfflinePlatforms ?: return
-        val platforms = raOfflineStore().entries()
-            .groupBy { it.platformTag }
-            .map { (tag, list) -> LauncherScreen.RaOfflinePlatform(tag, platformConfig.getDisplayName(tag), list.size) }
-            .sortedBy { it.name.lowercase() }
-        nav.replaceTop(s.copy(platforms = platforms, selectedIndex = s.selectedIndex.coerceIn(0, (platforms.size - 1).coerceAtLeast(0))))
-    }
-
-    private fun raOfflinePlatformsHandler() = scrollable<LauncherScreen.RetroAchievementsOfflinePlatforms>(
-        onBack = { nav.pop() },
-        onConfirm = {
-            val p = platforms.getOrNull(selectedIndex) ?: return@scrollable
-            val entries = raOfflineStore().entries().filter { it.platformTag == p.tag }
-            nav.push(
-                LauncherScreen.RetroAchievementsOfflineSets(
-                    platformTag = p.tag,
-                    platformName = p.name,
-                    entries = entries,
-                )
-            )
-        },
-    )
-
-    private fun raOfflineSetsHandler() = scrollable<LauncherScreen.RetroAchievementsOfflineSets>(
-        onBack = {
-            nav.pop()
-            refreshOfflinePlatforms()
-        },
-        onNorth = {
-            val entry = entries.getOrNull(selectedIndex) ?: return@scrollable
-            raPreloadController.start(
-                romPath = entry.romPath,
-                platformTag = entry.platformTag,
-                displayName = entry.gameName,
-                gameId = entry.gameId,
-                onComplete = { reloadOfflineSets() },
-            )
-        },
-        onWest = {
-            val entry = entries.getOrNull(selectedIndex) ?: return@scrollable
-            raOfflineStore().deleteGame(entry.gameId)
-            reloadOfflineSets()
-        },
-    )
 
     private inline fun <reified T> scrollable(
         crossinline onConfirm: T.() -> Unit = {},
@@ -332,7 +264,6 @@ class InputRouter @Inject constructor(
                 is dev.cannoli.scorza.ui.screens.MappingItem.PlatformDefault -> {
                     val id = romId ?: return@scrollable
                     gameOverrideStore.clear(id)
-                    mappingChanged()
                     nav.pop()
                     dialogHandler.restoreContextMenu()
                 }
@@ -344,16 +275,12 @@ class InputRouter @Inject constructor(
                         appPackage = opt.appPackage,
                     )
                     val id = romId
-                    if (item.downloadable) {
-                        downloadCoreThenAssign(this, opt.coreId)
-                    } else if (id != null) {
+                    if (id != null) {
                         gameOverrideStore.put(id, choice)
-                        mappingChanged()
                         nav.pop()
                         dialogHandler.restoreContextMenu()
                     } else {
                         platformConfig.setPlatformChoice(tag, choice)
-                        mappingChanged()
                         nav.replaceTop(emulatorMappingBuilder.rebuild(this))
                         refreshEmulatorMappingOnStack()
                     }
@@ -398,7 +325,6 @@ class InputRouter @Inject constructor(
             val entry = overrides.getOrNull(selectedIndex)
             if (entry != null) {
                 gameOverrideStore.clear(entry.romId)
-                mappingChanged()
                 val refreshed = emulatorMappingBuilder.overrideRows(tag)
                 // The parent screen shows an override count, so it is rebuilt whether or not the
                 // list emptied. Only rebuilding on empty left a stale "N games" behind.
@@ -451,28 +377,6 @@ class InputRouter @Inject constructor(
             nav.replaceTop(copy(checkedIndices = newChecked))
         },
         onBack = { settingsHandler.confirmAppPicker(this) },
-    )
-
-    private fun shortcutBindingHandler() = scrollable<LauncherScreen.ShortcutBinding>(
-        onMove = { idx -> if (listening) this else copy(selectedIndex = idx) },
-        onConfirm = {
-            if (!listening) {
-                nav.replaceTop(copy(listening = true, heldKeys = emptySet(), countdownMs = 0))
-                bindingController.startListening()
-            }
-        },
-        onBack = {
-            bindingController.stopListening()
-            globalOverrides.saveShortcuts(shortcuts)
-            nav.pop()
-        },
-        onNorth = {
-            if (!listening) {
-                ShortcutAction.entries.getOrNull(selectedIndex)?.let { action ->
-                    nav.replaceTop(copy(shortcuts = shortcuts + (action to emptySet())))
-                }
-            }
-        },
     )
 
     private fun creditsHandler() = scrollable<LauncherScreen.Credits>(
@@ -699,39 +603,6 @@ class InputRouter @Inject constructor(
             nav.pop()
         },
     )
-
-    private fun downloadCoreThenAssign(screen: LauncherScreen.PlatformMapping, coreId: String) {
-        val pkg = settings.retroArchPackage
-        val coreName = platformConfig.getCoreDisplayName(coreId)
-        val romId = screen.romId
-        val before = if (romId != null) gameOverrideStore.get(romId) else platformConfig.getPlatformChoice(screen.tag)
-        val choice = dev.cannoli.scorza.config.EmulatorChoice(
-            source = dev.cannoli.scorza.config.EmulatorSource.RetroArch, coreId = coreId,
-        )
-        coreInstaller.downloadCore(pkg, coreId, coreName) {
-            // A download can land a couple of minutes later. Writing unconditionally would
-            // overwrite a newer explicit pick, which is exactly what the never-auto-change
-            // rule forbids, so bail if the selection moved while it ran.
-            val now = if (romId != null) gameOverrideStore.get(romId) else platformConfig.getPlatformChoice(screen.tag)
-            if (now != before) {
-                dev.cannoli.scorza.util.ErrorLog.write("core download finished after the selection changed, not assigning")
-                return@downloadCore
-            }
-            if (romId != null) gameOverrideStore.put(romId, choice)
-            else platformConfig.setPlatformChoice(screen.tag, choice)
-            mappingChanged()
-            val top = nav.currentScreen as? LauncherScreen.PlatformMapping
-            if (top != null && top.tag == screen.tag && top.romId == screen.romId) {
-                nav.replaceTop(emulatorMappingBuilder.rebuild(screen))
-            }
-            refreshEmulatorMappingOnStack()
-        }
-    }
-
-    // Which emulator a game uses decides whether Resume is offered at all, so the resumable
-    // set has to be recomputed on every mapping write. Without this the RESUME legend kept
-    // whatever it was when the list loaded until the user left and re-entered.
-    private fun mappingChanged() = launcherActions.scanResumableGames()
 
     private fun refreshEmulatorMappingOnStack() {
         val idx = nav.screenStack.indexOfLast { it is LauncherScreen.EmulatorMapping }

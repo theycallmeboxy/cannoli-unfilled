@@ -15,38 +15,6 @@
     { "name": "XZ for Java", "what": "7z Decompression", "license": "Public domain" },
     { "name": "ZXing", "what": "QR Code Library", "license": "Apache 2.0" }
   ],
-  "cores": [
-    { "name": "FBNeo", "id": "fbneo", "what": "Neo Geo / Arcade", "license": "Non-commercial" },
-    { "name": "Gambatte", "id": "gambatte", "what": "Game Boy / Color", "license": "GPLv2" },
-    { "name": "Genesis Plus GX", "id": "genesis_plus_gx", "what": "Genesis / SMS / GG", "license": "Non-commercial" },
-    { "name": "Handy", "id": "handy", "what": "Atari Lynx", "license": "Zlib" },
-    { "name": "MAME 2003-Plus", "id": "mame2003_plus", "what": "Arcade", "license": "MAME" },
-    { "name": "Mednafen NGP", "id": "mednafen_ngp", "what": "NGP / NGPC", "license": "GPLv2" },
-    { "name": "Mednafen PCE FAST", "id": "mednafen_pce_fast", "what": "PC Engine", "license": "GPLv2" },
-    { "name": "Mednafen VB", "id": "mednafen_vb", "what": "Virtual Boy", "license": "GPLv2" },
-    { "name": "Mednafen WonderSwan", "id": "mednafen_wswan", "what": "WonderSwan / Color", "license": "GPLv2" },
-    { "name": "mGBA", "id": "mgba", "what": "GBA", "license": "MPLv2.0" },
-    { "name": "Nestopia", "id": "nestopia", "what": "NES / FDS", "license": "GPLv2" },
-    { "name": "PCSX ReARMed", "id": "pcsx_rearmed", "what": "PlayStation", "license": "GPLv2" },
-    { "name": "PokeMini", "id": "pokemini", "what": "Pokémon Mini", "license": "GPLv3" },
-    { "name": "ProSystem", "id": "prosystem", "what": "Atari 7800", "license": "GPLv2" },
-    { "name": "Snes9x", "id": "snes9x", "what": "SNES", "license": "Non-commercial" },
-    { "name": "Stella", "id": "stella", "what": "Atari 2600", "license": "GPLv2" },
-    { "name": "SwanStation", "id": "swanstation", "what": "PlayStation", "license": "GPLv3" }
-  ],
-  "shaders": [
-    { "name": "EasyMode", "shader": "crt-aperture", "license": "GPL" },
-    { "name": "Cannoli (based on EasyMode)", "shader": "crt-cannoli", "license": "GPL" },
-    { "name": "EasyMode", "shader": "crt-easymode", "license": "GPL" },
-    { "name": "cgwg / Themaister / DOLLS", "shader": "crt-geom", "license": "GPLv2" },
-    { "name": "Timothy Lottes / hunterk", "shader": "crt-lottes-fast", "license": "Public domain" },
-    { "name": "Themaister", "shader": "dot", "license": "Public domain" },
-    { "name": "Gigaherz", "shader": "lcd3x", "license": "Public domain" },
-    { "name": "hunterk", "shader": "scanline", "license": "Public domain" },
-    { "name": "rsn8887", "shader": "sharp-bilinear-simple", "license": "Public domain" },
-    { "name": "SoltanGris42", "shader": "zfast-crt", "license": "GPLv2" },
-    { "name": "SoltanGris42", "shader": "zfast-lcd", "license": "GPLv2" }
-  ],
   "localization": [
     { "language": "zh-CN", "contributors": ["Bobby Chiang"] },
     { "language": "fr-FR", "contributors": ["Christophe Coquelet", "Dominic Drolet"] },

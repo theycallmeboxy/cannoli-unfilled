@@ -41,4 +41,4 @@ enum class ExtraValueKind {
     BOOL,
 }
 
-enum class LaunchMethod { INTENT, SHELL, DELFINO }
+enum class LaunchMethod { INTENT, SHELL }

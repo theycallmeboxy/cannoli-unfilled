@@ -6,8 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import dev.cannoli.igm.GuideScreen
-import dev.cannoli.igm.GuideType
+import dev.cannoli.scorza.guides.GuideScreen
+import dev.cannoli.scorza.guides.GuideType
 import dev.cannoli.ui.ButtonStyle
 import dev.cannoli.ui.components.BottomBar
 

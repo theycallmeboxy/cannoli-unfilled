@@ -8,14 +8,11 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.launcher.ApkLauncher
-import dev.cannoli.scorza.launcher.DelfinoLauncher
-import dev.cannoli.scorza.launcher.EmuLauncher
 import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.LaunchManager
 import dev.cannoli.scorza.launcher.LaunchState
 import dev.cannoli.scorza.launcher.RetroArchLauncher
 import dev.cannoli.scorza.settings.SettingsRepository
-import dev.cannoli.scorza.util.AtomicRename
 import javax.inject.Singleton
 
 @Module
@@ -29,27 +26,17 @@ object LaunchModule {
     ): RetroArchLauncher = RetroArchLauncher(context) { settings.retroArchPackage }
 
     @Provides @Singleton
-    fun provideDelfinoLauncher(
-        @ApplicationContext context: Context,
-    ): DelfinoLauncher = DelfinoLauncher(context)
-
-    @Provides @Singleton
     fun provideLaunchManager(
         @ApplicationContext context: Context,
         settings: SettingsRepository,
         platformConfig: PlatformConfig,
         retroArchLauncher: RetroArchLauncher,
-        emuLauncher: EmuLauncher,
         apkLauncher: ApkLauncher,
-        delfinoLauncher: DelfinoLauncher,
         launchState: LaunchState,
-        activeMappingHolder: dev.cannoli.scorza.input.runtime.ActiveMappingHolder,
-        atomicRename: AtomicRename,
         installedCoreService: InstalledCoreService,
         gameOverrides: dev.cannoli.scorza.db.GameOverrideStore,
     ): LaunchManager = LaunchManager(
         context, settings, platformConfig,
-        retroArchLauncher, emuLauncher, apkLauncher, delfinoLauncher, launchState, activeMappingHolder,
-        atomicRename, installedCoreService, gameOverrides
+        retroArchLauncher, apkLauncher, launchState, installedCoreService, gameOverrides
     )
 }

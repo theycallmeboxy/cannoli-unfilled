@@ -16,8 +16,6 @@ import dev.cannoli.ui.components.SectionedList
 import dev.cannoli.ui.components.pillItemHeight
 
 enum class CreditsCategory(@StringRes val titleRes: Int) {
-    Cores(R.string.credits_cores),
-    Shaders(R.string.credits_shaders),
     Fonts(R.string.credits_fonts),
     Libraries(R.string.credits_libraries),
     Localization(R.string.credits_localization),
@@ -33,8 +31,6 @@ val CREDITS_ROOT_ROWS: List<CreditsRootRow> =
         CreditsCategory.entries.map { CreditsRootRow.Category(it) }
 
 fun creditEntriesFor(category: CreditsCategory): List<CreditEntry> = when (category) {
-    CreditsCategory.Cores -> CREDITS_CORES
-    CreditsCategory.Shaders -> CREDITS_SHADERS
     CreditsCategory.Fonts -> CREDITS_FONTS
     CreditsCategory.Libraries -> CREDITS_LIBRARIES
     CreditsCategory.Localization -> emptyList()

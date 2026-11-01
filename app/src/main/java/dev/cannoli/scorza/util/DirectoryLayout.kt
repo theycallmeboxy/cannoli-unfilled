@@ -15,20 +15,13 @@ object DirectoryLayout {
             paths.artDir,
             paths.biosDir,
             paths.savesDir,
-            paths.saveStatesDir,
             paths.mediaScreenshotsDir,
             paths.mediaRecordingsDir,
             paths.configDir,
             paths.configState,
-            paths.configRetroArch,
-            paths.configOverrides,
-            paths.configOverridesCores,
-            paths.configOverridesSystems,
-            paths.configOverridesGames,
             paths.configInputMappings,
             paths.backupDir,
             paths.guidesDir,
-            paths.cheatsDir,
             paths.wallpapersDir,
         ).forEach { it.mkdirs() }
 
@@ -50,9 +43,7 @@ object DirectoryLayout {
             paths.artFor(tag).mkdirs()
             paths.biosFor(tag).mkdirs()
             paths.savesFor(tag).mkdirs()
-            paths.saveStatesFor(tag).mkdirs()
             paths.guidesFor(tag).mkdirs()
-            paths.cheatsFor(tag).mkdirs()
         }
         for (type in AppType.entries) {
             paths.artFor(type.artTag).mkdirs()

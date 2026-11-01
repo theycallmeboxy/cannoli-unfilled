@@ -9,7 +9,6 @@ import dev.cannoli.scorza.input.MENU_ADD_FAVORITE
 import dev.cannoli.scorza.input.MENU_DELETE_ART
 import dev.cannoli.scorza.input.MENU_DELETE_GAME
 import dev.cannoli.scorza.input.MENU_MANAGE_COLLECTIONS
-import dev.cannoli.scorza.input.MENU_PRELOAD_ACHIEVEMENTS
 import dev.cannoli.scorza.input.MENU_REMOVE
 import dev.cannoli.scorza.input.MENU_REMOVE_FAVORITE
 import dev.cannoli.scorza.input.MENU_REMOVE_FROM_COLLECTION
@@ -61,58 +60,21 @@ class GameListInputHandler @Inject constructor(
         selectHoldHandler.removeCallbacks(collectionSelectHoldRunnable)
     }
 
-    private enum class ResumeButton { CONFIRM, NORTH }
-    private var armedResumeButton: ResumeButton? = null
-    private var resumeHoldFired = false
-    private val resumeHoldHandler = Handler(Looper.getMainLooper())
-    val resumeHoldRunnable = Runnable {
-        val button = armedResumeButton ?: return@Runnable
-        armedResumeButton = null
-        resumeHoldFired = true
-        val item = gameListViewModel.getSelectedItem() as? ListItem.RomItem ?: return@Runnable
-        nav.push(launcherActions.buildSaveStatePicker(item.rom, awaitConfirmRelease = button == ResumeButton.CONFIRM))
-    }
-
-    private fun armResumeHold(button: ResumeButton) {
-        if (armedResumeButton == button) return
-        resumeHoldHandler.removeCallbacks(resumeHoldRunnable)
-        armedResumeButton = button
-        resumeHoldFired = false
-        resumeHoldHandler.postDelayed(resumeHoldRunnable, 400)
-    }
-
-    private fun cancelResumeHoldTimer() {
-        resumeHoldHandler.removeCallbacks(resumeHoldRunnable)
-        armedResumeButton = null
-        resumeHoldFired = false
-    }
-
-    private fun isResumableRomSelected(): Boolean {
-        val item = gameListViewModel.getSelectedItem() ?: return false
-        if (item !is ListItem.RomItem) return false
-        val key = selectedRecentKey(item) ?: return false
-        return nav.resumableGames.contains(key)
-    }
-
     override fun onUp() {
-        cancelResumeHoldTimer()
         if (gameListViewModel.isReorderMode()) gameListViewModel.reorderMoveUp()
         else gameListViewModel.moveSelection(-1)
     }
 
     override fun onDown() {
-        cancelResumeHoldTimer()
         if (gameListViewModel.isReorderMode()) gameListViewModel.reorderMoveDown()
         else gameListViewModel.moveSelection(1)
     }
 
     override fun onLeft() {
-        cancelResumeHoldTimer()
         if (!gameListViewModel.isReorderMode()) pageJump(-1)
     }
 
     override fun onRight() {
-        cancelResumeHoldTimer()
         if (!gameListViewModel.isReorderMode()) pageJump(1)
     }
 
@@ -120,16 +82,8 @@ class GameListInputHandler @Inject constructor(
         when {
             gameListViewModel.isMultiSelectMode() -> gameListViewModel.toggleChecked()
             gameListViewModel.isReorderMode() -> gameListViewModel.confirmReorder()
-            settings.swapPlayResume && isResumableRomSelected() -> armResumeHold(ResumeButton.CONFIRM)
             else -> onGameListConfirm()
         }
-    }
-
-    override fun onConfirmUp() {
-        if (armedResumeButton != ResumeButton.CONFIRM) return
-        val fired = resumeHoldFired
-        cancelResumeHoldTimer()
-        if (!fired) onGameListConfirm()
     }
 
     override fun onR1() {
@@ -146,7 +100,6 @@ class GameListInputHandler @Inject constructor(
     }
 
     override fun onBack() {
-        cancelResumeHoldTimer()
         when {
             gameListViewModel.isMultiSelectMode() -> gameListViewModel.cancelMultiSelect()
             gameListViewModel.isReorderMode() -> gameListViewModel.cancelReorder()
@@ -154,7 +107,7 @@ class GameListInputHandler @Inject constructor(
             !nav.navigating -> {
                 val glState = gameListViewModel.state.value
                 if (!gameListViewModel.exitSubfolder()) {
-                    if (gameListViewModel.exitChildCollection { launcherActions.scanResumableGames() }) {
+                    if (gameListViewModel.exitChildCollection()) {
                         // navigated back to parent collection
                     } else if (settings.contentMode == ContentMode.PLATFORMS
                         && glState.isCollection && glState.collectionId != null
@@ -170,7 +123,6 @@ class GameListInputHandler @Inject constructor(
     }
 
     override fun onStart() {
-        cancelResumeHoldTimer()
         val glState = gameListViewModel.state.value
         if (gameListViewModel.isMultiSelectMode()) {
             val checkedItems: List<ListItem> = glState.checkedIndices
@@ -196,11 +148,6 @@ class GameListInputHandler @Inject constructor(
                     options.addAll(listOf(MENU_MANAGE_COLLECTIONS, MENU_REMOVE))
                 } else {
                     options.add(MENU_MANAGE_COLLECTIONS)
-                    if (settings.raToken.isNotEmpty() &&
-                        dev.cannoli.scorza.ra.RaConsoles.MAP.containsKey(glState.platformTag.uppercase())
-                    ) {
-                        options.add(MENU_PRELOAD_ACHIEVEMENTS)
-                    }
                     options.addAll(listOf(MENU_DELETE_ART, MENU_DELETE_GAME))
                 }
                 gameListViewModel.confirmMultiSelect()
@@ -232,7 +179,6 @@ class GameListInputHandler @Inject constructor(
     }
 
     override fun onSelect() {
-        cancelResumeHoldTimer()
         if (gameSelectDown) return
         gameSelectDown = true
         val glState = gameListViewModel.state.value
@@ -289,40 +235,6 @@ class GameListInputHandler @Inject constructor(
         gameSelectDown = false
     }
 
-    override fun onNorth() {
-        if (!settings.swapPlayResume && isResumableRomSelected()) {
-            armResumeHold(ResumeButton.NORTH)
-        } else {
-            northAction()
-        }
-    }
-
-    override fun onNorthUp() {
-        if (armedResumeButton != ResumeButton.NORTH) return
-        val fired = resumeHoldFired
-        cancelResumeHoldTimer()
-        if (!fired) northAction()
-    }
-
-    private fun northAction() {
-        val glState = gameListViewModel.state.value
-        if (glState.isCollectionsList) return
-        val item = gameListViewModel.getSelectedItem() ?: return
-        val recentKey = selectedRecentKey(item) ?: return
-        val isResumable = nav.resumableGames.contains(recentKey)
-        if (isResumable) {
-            val trackRecent = glState.platformTag != "tools"
-            val errorDialog = launcherActions.launchSelected(item, !settings.swapPlayResume)
-            if (errorDialog != null) {
-                nav.dialogState.value = errorDialog
-            } else if (nav.dialogState.value is DialogState.SaveSyncChecking) {
-                if (trackRecent) launcherActions.recordPendingRecent(recentKey, false)
-            } else if (trackRecent) {
-                launcherActions.recordRecentlyPlayedByPath(recentKey)
-            }
-        }
-    }
-
     override fun onWest() {
         val glState = gameListViewModel.state.value
         if (glState.isCollectionsList) {
@@ -340,7 +252,6 @@ class GameListInputHandler @Inject constructor(
             is ListItem.CollectionItem -> {
                 nav.navigating = true
                 gameListViewModel.loadCollectionById(item.collection.id) {
-                    launcherActions.scanResumableGames()
                     nav.navigating = false
                 }
                 return
@@ -348,7 +259,6 @@ class GameListInputHandler @Inject constructor(
             is ListItem.ChildCollectionItem -> {
                 nav.navigating = true
                 gameListViewModel.enterChildCollectionById(item.collection.id) {
-                    launcherActions.scanResumableGames()
                     nav.navigating = false
                 }
                 return
@@ -361,10 +271,9 @@ class GameListInputHandler @Inject constructor(
         }
 
         val recentKey = selectedRecentKey(item) ?: return
-        val isResumable = nav.resumableGames.contains(recentKey)
         val tag = gameListViewModel.state.value.platformTag
         val trackRecent = tag != "tools"
-        val errorDialog = launcherActions.launchSelected(item, isResumable && settings.swapPlayResume)
+        val errorDialog = launcherActions.launchSelected(item)
         if (errorDialog != null) {
             nav.dialogState.value = errorDialog
         } else if (nav.dialogState.value is DialogState.SaveSyncChecking) {

@@ -17,15 +17,16 @@ class CoresJsonMigrationTest {
 
     @get:Rule val tmp = TemporaryFolder()
 
-    private fun load(name: String, json: String, bundledDir: String? = null): PlatformConfig {
+    private fun load(name: String, json: String): PlatformConfig {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         val root = File(tmp.root, name).apply { mkdirs() }
         File(root, "Config").apply { mkdirs() }.also { File(it, "cores.json").writeText(json) }
-        return PlatformConfig(root, ctx.assets, nativeLibDir = bundledDir).also { it.load() }
+        return PlatformConfig(root, ctx.assets).also { it.load() }
     }
 
-    @Test fun `explicit Internal migrates to Internal`() = assertEquals(
-        EmulatorChoice(EmulatorSource.Internal, "nestopia_libretro"),
+    // The built-in runner is gone, so an Internal pick keeps its core and moves to RetroArch.
+    @Test fun `explicit Internal migrates to RetroArch with the same core`() = assertEquals(
+        EmulatorChoice(EmulatorSource.RetroArch, "nestopia_libretro"),
         load("m-int", """{"cores":{"NES":"nestopia_libretro"},"runners":{"NES":"Internal"}}""")
             .getPlatformChoice("NES"),
     )
@@ -65,19 +66,15 @@ class CoresJsonMigrationTest {
         load("m-nolib", """{"cores":{"NES":"nestopia_libretro"}}""").getPlatformChoice("NES")?.source,
     )
 
-    @Test fun `a runnerless core with a bundled so migrates to Internal`() {
-        val libs = File(tmp.root, "m-libs").apply { mkdirs() }
-        File(libs, "nestopia_libretro_android.so").writeText("stub")
-        assertEquals(
-            EmulatorSource.Internal,
-            load("m-lib", """{"cores":{"NES":"nestopia_libretro"}}""", libs.absolutePath)
-                .getPlatformChoice("NES")?.source,
-        )
-    }
-
     @Test fun `a v2 file round trips`() = assertEquals(
-        EmulatorChoice(EmulatorSource.Internal, "nestopia_libretro"),
-        load("m-v2", """{"v":2,"platforms":{"NES":{"source":"Internal","core":"nestopia_libretro"}}}""")
+        EmulatorChoice(EmulatorSource.RetroArch, "nestopia_libretro"),
+        load("m-v2", """{"v":2,"platforms":{"NES":{"source":"RetroArch","core":"nestopia_libretro"}}}""")
+            .getPlatformChoice("NES"),
+    )
+
+    @Test fun `a v2 Internal entry loads as RetroArch with the same core`() = assertEquals(
+        EmulatorChoice(EmulatorSource.RetroArch, "nestopia_libretro"),
+        load("m-v2int", """{"v":2,"platforms":{"NES":{"source":"Internal","core":"nestopia_libretro"}}}""")
             .getPlatformChoice("NES"),
     )
 
@@ -91,7 +88,7 @@ class CoresJsonMigrationTest {
     // the runner, so this shape is what an explicit "use the default core" pick looked like.
     // Migrating it to an empty core produced a blank, permanently not-installed row.
     @Test fun `a runner with no core resolves to the platform default core`() = assertEquals(
-        EmulatorChoice(EmulatorSource.Internal, "mgba_libretro"),
+        EmulatorChoice(EmulatorSource.RetroArch, "mgba_libretro"),
         load("m-nocore", """{"cores":{},"runners":{"GBA":"Internal"}}""").getPlatformChoice("GBA"),
     )
 
@@ -117,7 +114,7 @@ class CoresJsonMigrationTest {
         val written = File(tmp.root, "m-save/Config/cores.json").readText()
         val json = org.json.JSONObject(written)
         assertEquals(2, json.getInt("v"))
-        assertEquals("Internal", json.getJSONObject("platforms").getJSONObject("NES").getString("source"))
+        assertEquals("RetroArch", json.getJSONObject("platforms").getJSONObject("NES").getString("source"))
         assertNull(json.optJSONObject("games"))
         assertNull(json.optJSONObject("cores"))
     }

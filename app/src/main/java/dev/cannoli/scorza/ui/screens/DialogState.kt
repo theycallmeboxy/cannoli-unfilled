@@ -1,6 +1,5 @@
 package dev.cannoli.scorza.ui.screens
 
-import dev.cannoli.ui.ELLIPSIS
 import dev.cannoli.ui.components.KeyboardLayout
 import dev.cannoli.ui.components.KeyboardState
 
@@ -27,7 +26,7 @@ sealed interface MappingItem {
     data class SectionHeader(val label: String) : MappingItem { override val isSelectable = false }
     data class Notice(val text: String) : MappingItem { override val isSelectable = false }
     data class Divider(val id: Int = 0) : MappingItem { override val isSelectable = false }
-    data class EmulatorOption(val option: EmulatorPickerOption, val isCurrent: Boolean, val downloadable: Boolean = false) : MappingItem {
+    data class EmulatorOption(val option: EmulatorPickerOption, val isCurrent: Boolean) : MappingItem {
         override val isSelectable = true
     }
     /** Game scope only: selecting this clears the per-game override and follows the platform. */
@@ -94,10 +93,6 @@ sealed interface DialogState {
     data class HexColorInput(val settingKey: String, val title: String, val currentHex: String = "", val selectedIndex: Int = 0) : DialogState
     data class About(val statusMessage: String? = null) : DialogState
     data class Kitchen(val urls: List<String>, val selectedIndex: Int = 0, val pin: String, val requirePin: Boolean = true, val fromQuickMenu: Boolean = false) : DialogState
-    data class RAAccount(val username: String, val score: Int = 0) : DialogState
-    data class RALoggingIn(val message: String = "Logging in$ELLIPSIS") : DialogState
-    data class RAPreloadProgress(val gameName: String) : DialogState
-    data class RAPreloadResult(val success: Boolean, val message: String) : DialogState
     data class RommPairing(
         val host: String = "",
         val message: String = "",

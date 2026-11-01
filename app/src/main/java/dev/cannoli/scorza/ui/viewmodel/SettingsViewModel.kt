@@ -22,7 +22,6 @@ import dev.cannoli.scorza.settings.TimeFormat
 import dev.cannoli.scorza.util.FontNameParser
 import dev.cannoli.scorza.util.sortedNatural
 import dev.cannoli.scorza.di.AppFonts
-import dev.cannoli.ui.BULLET
 import dev.cannoli.ui.theme.hexToColor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -100,7 +99,6 @@ class SettingsViewModel @Inject constructor(
         @param:StringRes val labelRes: Int
     )
 
-    var raPassword: String = ""
 
     var updateInfo: dev.cannoli.scorza.updater.UpdateInfo? = null
         set(value) {
@@ -145,7 +143,6 @@ class SettingsViewModel @Inject constructor(
         val showUpdate: Boolean = true,
         val showKitchen: Boolean = true,
         val showDownloads: Boolean = true,
-        val swapPlayResume: Boolean = false,
         val mainMenuQuit: Boolean = false,
         val artWidth: Int = 40,
         val artScale: ArtScale = ArtScale.DEFAULT,
@@ -188,7 +185,6 @@ class SettingsViewModel @Inject constructor(
         showUpdate = settings.showUpdate,
         showKitchen = settings.showKitchen,
         showDownloads = settings.showDownloads,
-        swapPlayResume = settings.swapPlayResume,
         mainMenuQuit = settings.mainMenuQuit,
         artWidth = settings.artWidth,
         artScale = settings.artScale,
@@ -236,7 +232,6 @@ class SettingsViewModel @Inject constructor(
         val colorTitle: String,
         val colorBackground: String,
         val colorStatusBar: String,
-        val swapPlayResume: Boolean,
         val showWifi: Boolean,
         val showBluetooth: Boolean,
         val showVpn: Boolean,
@@ -489,7 +484,6 @@ class SettingsViewModel @Inject constructor(
                     else -> next
                 }
             }
-            "swap_play_resume" -> settings.swapPlayResume = !settings.swapPlayResume
             "content_mode" -> {
                 val entries = ContentMode.entries
                 val cur = entries.indexOf(settings.contentMode).coerceAtLeast(0)
@@ -518,7 +512,6 @@ class SettingsViewModel @Inject constructor(
             }
             "show_update" -> settings.showUpdate = !settings.showUpdate
             "main_menu_quit" -> settings.mainMenuQuit = !settings.mainMenuQuit
-            "always_save_on_quit" -> settings.alwaysSaveOnQuit = !settings.alwaysSaveOnQuit
             "portrait_margin" -> {
                 val step = when {
                     repeatCount == 0 -> 1
@@ -692,7 +685,6 @@ class SettingsViewModel @Inject constructor(
         colorTitle = settings.colorTitle,
         colorBackground = settings.colorBackground,
         colorStatusBar = settings.colorStatusBar,
-        swapPlayResume = settings.swapPlayResume,
         showWifi = settings.showWifi,
         showBluetooth = settings.showBluetooth,
         showVpn = settings.showVpn,
@@ -731,7 +723,6 @@ class SettingsViewModel @Inject constructor(
         settings.colorTitle = snap.colorTitle
         settings.colorBackground = snap.colorBackground
         settings.colorStatusBar = snap.colorStatusBar
-        settings.swapPlayResume = snap.swapPlayResume
         settings.showWifi = snap.showWifi
         settings.showBluetooth = snap.showBluetooth
         settings.showVpn = snap.showVpn
@@ -769,7 +760,6 @@ class SettingsViewModel @Inject constructor(
                 ?: dev.cannoli.scorza.i18n.LanguageCatalog.ALL.first()).nativeName
             add(SettingsItem("language", R.string.setting_language, valueText = langLabel))
             add(SettingsItem("title", R.string.setting_title, valueText = settings.title.ifEmpty { null }, valueRes = if (settings.title.isEmpty()) R.string.value_none else null, isEditable = true))
-            add(SettingsItem("swap_play_resume", R.string.setting_swap_play_resume, valueRes = onOff(settings.swapPlayResume)))
             add(SettingsItem("main_menu_quit", R.string.setting_main_menu_quit, valueRes = onOff(settings.mainMenuQuit)))
             if (!isTelevision) {
                 val launcherLabel = if (isDefaultLauncher()) {
@@ -890,7 +880,6 @@ class SettingsViewModel @Inject constructor(
         }
         "input" -> listOf(
             SettingsItem("controllers", R.string.setting_controllers, isEditable = true),
-            SettingsItem("shortcuts", R.string.setting_shortcuts, isEditable = true),
             SettingsItem("input_tester", R.string.setting_input_tester, isEditable = true)
         )
         "emulation" -> buildList {
@@ -904,18 +893,9 @@ class SettingsViewModel @Inject constructor(
                 val pkgLabel = InstalledCoreService.getPackageLabel(settings.retroArchPackage)
                 add(SettingsItem("installed_cores", R.string.setting_installed_cores, labelText = context.getString(R.string.setting_installed_cores, pkgLabel), isEditable = true))
             }
-            add(SettingsItem("always_save_on_quit", R.string.setting_always_save_on_quit, valueRes = onOff(settings.alwaysSaveOnQuit)))
         }
         "integrations" -> buildList {
-            add(SettingsItem("integrations_ra", R.string.settings_retroachievements, isEditable = true))
             add(SettingsItem("integrations_romm", R.string.settings_romm, isEditable = true))
-        }
-        "retroachievements" -> buildList {
-            add(SettingsItem("ra_username", R.string.setting_ra_username, valueText = settings.raUsername.ifEmpty { null }, valueRes = if (settings.raUsername.isEmpty()) R.string.value_not_set else null, isEditable = true))
-            add(SettingsItem("ra_password", R.string.setting_ra_password, valueText = if (raPassword.isEmpty()) null else BULLET.repeat(raPassword.length), valueRes = if (raPassword.isEmpty()) R.string.value_not_set else null, isEditable = true))
-            if (settings.raUsername.isNotEmpty() && raPassword.isNotEmpty()) {
-                add(SettingsItem("ra_login", R.string.setting_ra_login, isEditable = true))
-            }
         }
         "romm" -> buildList {
             if (rommStore.token.isNullOrEmpty()) {

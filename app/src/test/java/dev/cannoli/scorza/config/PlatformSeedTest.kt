@@ -1,5 +1,6 @@
 package dev.cannoli.scorza.config
 
+import android.content.pm.PackageInfo
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -9,6 +10,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.File
 
@@ -18,67 +20,71 @@ class PlatformSeedTest {
 
     @get:Rule val tmp = TemporaryFolder()
 
-    private fun config(name: String, bundled: List<String> = emptyList()): PlatformConfig {
+    // SNES lists exactly one standalone app, so installing it is what makes seeding decide.
+    private val snesApp = "com.explusalpha.Snes9xPlus"
+
+    private fun config(name: String): PlatformConfig {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
         val root = File(tmp.root, name).apply { mkdirs() }
-        val libs = File(tmp.root, "$name-libs").apply { mkdirs() }
-        bundled.forEach { File(libs, "${it}_android.so").writeText("stub") }
-        return PlatformConfig(root, ctx.assets, nativeLibDir = libs.absolutePath).also { it.load() }
+        return PlatformConfig(root, ctx.assets).also { it.load() }
     }
 
     private fun pm() = ApplicationProvider.getApplicationContext<android.content.Context>().packageManager
 
-    @Test fun `a bundled core seeds Internal`() {
-        val pc = config("seed-int", bundled = listOf("mgba_libretro"))
-        pc.seedUnsetPlatforms(pm())
-        assertEquals(EmulatorChoice(EmulatorSource.Internal, "mgba_libretro"), pc.getPlatformChoice("GBA"))
+    private fun install(pkg: String) {
+        shadowOf(pm()).installPackage(PackageInfo().apply { packageName = pkg })
     }
 
-    @Test fun `no bundled core and no installed app leaves the platform unset`() {
+    @Test fun `a sole installed standalone app seeds Standalone`() {
+        install(snesApp)
+        val pc = config("seed-app")
+        pc.seedUnsetPlatforms(pm())
+        assertEquals(EmulatorChoice(EmulatorSource.Standalone, appPackage = snesApp), pc.getPlatformChoice("SNES"))
+    }
+
+    @Test fun `no installed app leaves the platform unset`() {
         val pc = config("seed-none")
         pc.seedUnsetPlatforms(pm())
-        assertNull(pc.getPlatformChoice("PS2"))
+        assertNull(pc.getPlatformChoice("SNES"))
     }
 
     // The invariant. Seeding must never touch an existing choice, including one whose target
     // is not installed, which is the case a "repair on boot" implementation would get wrong.
     @Test fun `seeding never overwrites an explicit choice`() {
-        val pc = config("seed-keep", bundled = listOf("mgba_libretro"))
-        pc.setPlatformChoice("GBA", EmulatorChoice(EmulatorSource.Standalone, appPackage = "com.not.installed"))
-        val before = pc.getPlatformChoice("GBA")
+        install(snesApp)
+        val pc = config("seed-keep")
+        pc.setPlatformChoice("SNES", EmulatorChoice(EmulatorSource.Standalone, appPackage = "com.not.installed"))
         pc.seedUnsetPlatforms(pm())
-        assertEquals(before, pc.getPlatformChoice("GBA"))
         assertEquals(
             EmulatorChoice(EmulatorSource.Standalone, appPackage = "com.not.installed"),
-            pc.getPlatformChoice("GBA"),
+            pc.getPlatformChoice("SNES"),
         )
     }
 
     @Test fun `an uninstalled core choice also survives seeding`() {
-        val pc = config("seed-keep-core", bundled = listOf("mgba_libretro"))
-        pc.setPlatformChoice("GBA", EmulatorChoice(EmulatorSource.RetroArch, "gpsp_libretro"))
+        install(snesApp)
+        val pc = config("seed-keep-core")
+        pc.setPlatformChoice("SNES", EmulatorChoice(EmulatorSource.RetroArch, "snes9x_libretro"))
         pc.seedUnsetPlatforms(pm())
-        assertEquals(
-            EmulatorChoice(EmulatorSource.RetroArch, "gpsp_libretro"),
-            pc.getPlatformChoice("GBA"),
-        )
+        assertEquals(EmulatorChoice(EmulatorSource.RetroArch, "snes9x_libretro"), pc.getPlatformChoice("SNES"))
     }
 
     @Test fun `seeding is idempotent`() {
-        val pc = config("seed-idem", bundled = listOf("mgba_libretro"))
-        val first = pc.seedUnsetPlatforms(pm())
-        assertTrue("the first pass must seed something", first > 0)
+        install(snesApp)
+        val pc = config("seed-idem")
+        assertTrue("the first pass must seed something", pc.seedUnsetPlatforms(pm()) > 0)
         assertEquals(0, pc.seedUnsetPlatforms(pm()))
     }
 
     // Reset resolves the default immediately, so what the user sees after confirming is final
     // rather than something a later boot fills in.
-    @Test fun `reset restores the bundled core straight away`() {
-        val pc = config("seed-reset", bundled = listOf("mgba_libretro"))
-        pc.setPlatformChoice("GBA", EmulatorChoice(EmulatorSource.Standalone, appPackage = "com.picked.emu"))
-        val restored = pc.resetPlatformToDefault("GBA", pm())
-        assertEquals(EmulatorChoice(EmulatorSource.Internal, "mgba_libretro"), restored)
-        assertEquals(EmulatorChoice(EmulatorSource.Internal, "mgba_libretro"), pc.getPlatformChoice("GBA"))
+    @Test fun `reset restores the sole installed app straight away`() {
+        install(snesApp)
+        val pc = config("seed-reset")
+        pc.setPlatformChoice("SNES", EmulatorChoice(EmulatorSource.RetroArch, "snes9x_libretro"))
+        val expected = EmulatorChoice(EmulatorSource.Standalone, appPackage = snesApp)
+        assertEquals(expected, pc.resetPlatformToDefault("SNES", pm()))
+        assertEquals(expected, pc.getPlatformChoice("SNES"))
     }
 
     @Test fun `reset on a platform with no default leaves it unmapped`() {
@@ -89,22 +95,12 @@ class PlatformSeedTest {
     }
 
     @Test fun `reset persists so a reload keeps the restored default`() {
-        val pc = config("seed-reset-persist", bundled = listOf("mgba_libretro"))
-        pc.setPlatformChoice("GBA", EmulatorChoice(EmulatorSource.RetroArch, "gpsp_libretro"))
-        pc.resetPlatformToDefault("GBA", pm())
+        install(snesApp)
+        val pc = config("seed-reset-persist")
+        pc.setPlatformChoice("SNES", EmulatorChoice(EmulatorSource.RetroArch, "snes9x_libretro"))
+        pc.resetPlatformToDefault("SNES", pm())
         pc.reloadCoreMappings()
-        assertEquals(EmulatorChoice(EmulatorSource.Internal, "mgba_libretro"), pc.getPlatformChoice("GBA"))
-    }
-
-    @Test fun `a later release adding a bundled core backfills an untouched platform`() {
-        val pc = config("seed-later")
-        pc.seedUnsetPlatforms(pm())
-        assertNull(pc.getPlatformChoice("GBA"))
-
-        val libs = File(tmp.root, "seed-later-libs")
-        File(libs, "mgba_libretro_android.so").writeText("stub")
-        assertTrue(pc.seedUnsetPlatforms(pm()) > 0)
-        assertEquals(EmulatorSource.Internal, pc.getPlatformChoice("GBA")?.source)
+        assertEquals(EmulatorChoice(EmulatorSource.Standalone, appPackage = snesApp), pc.getPlatformChoice("SNES"))
     }
 
     @Test fun `a failed load suppresses seeding entirely`() {
@@ -116,9 +112,10 @@ class PlatformSeedTest {
     }
 
     @Test fun `a seeded choice persists across a reload`() {
-        val pc = config("seed-persist", bundled = listOf("mgba_libretro"))
+        install(snesApp)
+        val pc = config("seed-persist")
         pc.seedUnsetPlatforms(pm())
         pc.reloadCoreMappings()
-        assertEquals(EmulatorChoice(EmulatorSource.Internal, "mgba_libretro"), pc.getPlatformChoice("GBA"))
+        assertEquals(EmulatorChoice(EmulatorSource.Standalone, appPackage = snesApp), pc.getPlatformChoice("SNES"))
     }
 }

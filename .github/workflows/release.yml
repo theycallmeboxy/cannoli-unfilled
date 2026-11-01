@@ -18,13 +18,6 @@ on:
         type: boolean
         default: true
 
-env:
-  BUILDBOT: https://buildbot.libretro.com/nightly/android/latest
-  CORES: >-
-    fbneo gambatte genesis_plus_gx handy mame2003_plus mednafen_ngp
-    mednafen_pce_fast mednafen_vb mednafen_wswan mgba nestopia pcsx_rearmed
-    pokemini prosystem snes9x stella swanstation
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,20 +30,6 @@ jobs:
           ref: ${{ inputs.branch }}
           submodules: recursive
 
-      - name: Download libretro cores
-        run: |
-          for arch in arm64-v8a armeabi-v7a; do
-            dir="app/src/main/jniLibs/${arch}"
-            mkdir -p "$dir"
-            for core in $CORES; do
-              name="${core}_libretro_android.so"
-              echo "Downloading ${arch}/${name}"
-              curl -sL "${BUILDBOT}/${arch}/${name}.zip" -o /tmp/core.zip
-              unzip -o -q /tmp/core.zip -d "$dir"
-              rm /tmp/core.zip
-            done
-          done
-
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -58,11 +37,6 @@ jobs:
           cache: gradle
 
       - uses: android-actions/setup-android@v4
-
-      - uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r27c
 
       - uses: oven-sh/setup-bun@v2
 

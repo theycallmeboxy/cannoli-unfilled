@@ -40,7 +40,7 @@ class GameOverrideStore(private val db: CannoliDatabase) {
     ) { it.getInt(0) } ?: 0
 
     private fun androidx.sqlite.SQLiteStatement.toChoice(offset: Int = 0): EmulatorChoice? {
-        val source = runCatching { EmulatorSource.valueOf(getText(offset)) }.getOrNull() ?: return null
+        val source = EmulatorSource.fromStoredName(getText(offset)) ?: return null
         return EmulatorChoice(
             source = source,
             coreId = if (isNull(offset + 1)) "" else getText(offset + 1),

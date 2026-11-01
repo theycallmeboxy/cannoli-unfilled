@@ -44,25 +44,22 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     init {
         loadFromDisk()
         migrateFromPrefs()
-        migrateCredentialsFromJson()
+        purgeRetroAchievementsCredentials()
     }
 
-    private fun migrateCredentialsFromJson() {
+    // RetroAchievements lived in the built-in runner, which this build does not have. Its
+    // username and token are dropped rather than left behind in storage nothing reads.
+    private fun purgeRetroAchievementsCredentials() {
         var changed = false
         synchronized(jsonLock) {
-            if (json.has(KEY_RA_TOKEN)) {
-                val v = json.optString(KEY_RA_TOKEN, "")
-                if (v.isNotEmpty()) credPrefs.edit().putString(KEY_RA_TOKEN, v).apply()
-                json.remove(KEY_RA_TOKEN)
-                changed = true
-            }
-            if (json.has(KEY_RA_PASSWORD)) {
-                val v = json.optString(KEY_RA_PASSWORD, "")
-                if (v.isNotEmpty()) credPrefs.edit().putString(KEY_RA_PASSWORD, v).apply()
-                json.remove(KEY_RA_PASSWORD)
-                changed = true
+            for (key in listOf(KEY_RA_USERNAME, KEY_RA_TOKEN, KEY_RA_PASSWORD)) {
+                if (json.has(key)) {
+                    json.remove(key)
+                    changed = true
+                }
             }
         }
+        credPrefs.edit().remove(KEY_RA_TOKEN).remove(KEY_RA_PASSWORD).apply()
         if (changed) saveToDisk()
     }
 
@@ -193,10 +190,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     var backgroundImagePath: String?
         get() = jsonRead { optString(KEY_BG_IMAGE, "").ifEmpty { null } }
         set(value) = jsonWrite { if (value != null) put(KEY_BG_IMAGE, value) else remove(KEY_BG_IMAGE) }
-
-    var swapPlayResume: Boolean
-        get() = jsonRead { optBoolean(KEY_SWAP_PLAY_RESUME, false) }
-        set(value) = jsonWrite { put(KEY_SWAP_PLAY_RESUME, value) }
 
     var mainMenuQuit: Boolean
         get() = jsonRead { optBoolean(KEY_MAIN_MENU_QUIT, false) }
@@ -336,26 +329,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = jsonRead { optString(KEY_COLOR_STATUS_BAR, "#FFFFFF") }
         set(value) = jsonWrite { put(KEY_COLOR_STATUS_BAR, value) }
 
-    var raUsername: String
-        get() = jsonRead { optString(KEY_RA_USERNAME, "") }
-        set(value) = jsonWrite { if (value.isEmpty()) remove(KEY_RA_USERNAME) else put(KEY_RA_USERNAME, value) }
-
-    var raToken: String
-        get() = credPrefs.getString(KEY_RA_TOKEN, "") ?: ""
-        set(value) {
-            val editor = credPrefs.edit()
-            if (value.isEmpty()) editor.remove(KEY_RA_TOKEN) else editor.putString(KEY_RA_TOKEN, value)
-            editor.apply()
-        }
-
-    var raPassword: String
-        get() = credPrefs.getString(KEY_RA_PASSWORD, "") ?: ""
-        set(value) {
-            val editor = credPrefs.edit()
-            if (value.isEmpty()) editor.remove(KEY_RA_PASSWORD) else editor.putString(KEY_RA_PASSWORD, value)
-            editor.apply()
-        }
-
     var releaseChannel: String
         get() = jsonRead { optString(KEY_RELEASE_CHANNEL, "STABLE") }
         set(value) = jsonWrite { put(KEY_RELEASE_CHANNEL, value) }
@@ -407,10 +380,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     var loggingRomm: Boolean
         get() = jsonRead { optBoolean(KEY_LOGGING_ROMM, false) }
         set(value) = jsonWrite { put(KEY_LOGGING_ROMM, value) }
-
-    var alwaysSaveOnQuit: Boolean
-        get() = jsonRead { optBoolean(KEY_ALWAYS_SAVE_ON_QUIT, false) }
-        set(value) = jsonWrite { put(KEY_ALWAYS_SAVE_ON_QUIT, value) }
 
     var portraitMarginPx: Int
         get() = jsonRead { optInt(KEY_PORTRAIT_MARGIN_PX, 0) }
@@ -475,7 +444,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_COLOR_TITLE = "color_title"
         private const val KEY_COLOR_BACKGROUND = "color_background"
         private const val KEY_COLOR_STATUS_BAR = "color_status_bar"
-        private const val KEY_SWAP_PLAY_RESUME = "swap_play_resume"
         private const val KEY_MAIN_MENU_QUIT = "main_menu_quit"
         private const val KEY_KITCHEN_CODE_BYPASS = "kitchen_code_bypass"
         private const val KEY_EXPERIMENTAL_FEATURES = "experimental_features"
@@ -513,7 +481,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_LOGGING_KITCHEN = "logging_kitchen"
         private const val KEY_LOGGING_STORAGE = "logging_storage"
         private const val KEY_LOGGING_ROMM = "logging_romm"
-        private const val KEY_ALWAYS_SAVE_ON_QUIT = "always_save_on_quit"
         private const val KEY_PORTRAIT_MARGIN_PX = "portrait_margin_px"
         private const val KEY_SCREEN_GEOMETRY_WIDTH = "screen_geometry_width"
         private const val KEY_SCREEN_GEOMETRY_HEIGHT = "screen_geometry_height"

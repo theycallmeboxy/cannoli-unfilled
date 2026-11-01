@@ -1,2 +1,0 @@
-Licensed under the zlib License.
-See ZLIB.txt for the full license text.

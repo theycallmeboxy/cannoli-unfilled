@@ -113,7 +113,6 @@ class LauncherActions @Inject constructor(
             onProgress = onProgress,
             onReady = {
                 onComplete?.invoke()
-                if (fghId != null) scanResumableGames()
             }
         )
     }
@@ -144,7 +143,7 @@ class LauncherActions @Inject constructor(
         if (systemListViewModel.state.value.isLoading) return
         rescanSystemList()
         if (nav.currentScreen is LauncherScreen.GameList) {
-            gameListViewModel.reload { scanResumableGames() }
+            gameListViewModel.reload()
         }
     }
 
@@ -156,20 +155,6 @@ class LauncherActions @Inject constructor(
         val fallback = all.firstOrNull()?.id
         settings.fghCollectionId = fallback
         return fallback
-    }
-
-    fun scanResumableGames() {
-        val gameListRoms = gameListViewModel.state.value.items
-            .filterIsInstance<ListItem.RomItem>()
-            .map { it.rom }
-        val systemListRoms = systemListViewModel.state.value.items
-            .filterIsInstance<SystemListViewModel.ListItem.GameItem>()
-            .mapNotNull { (it.item as? ListItem.RomItem)?.rom }
-        val roms = (gameListRoms + systemListRoms).distinctBy { it.path.absolutePath }
-        ioScope.launch {
-            val result = launchManager.findResumableRoms(roms)
-            withContext(Dispatchers.Main) { nav.resumableGames = result }
-        }
     }
 
     fun invalidateAllLibraryCaches() {
@@ -214,24 +199,24 @@ class LauncherActions @Inject constructor(
     }
 
 
-    fun launchSelected(item: ListItem, resume: Boolean): DialogState? {
+    fun launchSelected(item: ListItem): DialogState? {
         return when (item) {
-            is ListItem.RomItem -> launchSelectedRom(item.rom, resume)
+            is ListItem.RomItem -> launchSelectedRom(item.rom)
             is ListItem.AppItem -> launchManager.launchApp(item.app)
             else -> null
         }
     }
 
-    private fun launchSelectedRom(rom: Rom, resume: Boolean): DialogState? {
+    private fun launchSelectedRom(rom: Rom): DialogState? {
         val gameKey = RomKeys.relativeKey(rom.path, pathsProvider.romDir)
         val romId = saveSyncService.isSyncableGame(gameKey)
         if (romId == null) {
-            return if (resume) launchManager.resumeRom(rom) else launchManager.launchRom(rom)
+            return launchManager.launchRom(rom)
         }
         val tag = rom.platformTag
         val base = java.text.Normalizer.normalize(rom.path.nameWithoutExtension, java.text.Normalizer.Form.NFC)
         val emulator = RomKeys.coreDisplayNameFor(rom, platformConfig, gameOverrideStore.get(rom.id))
-        pendingLaunch = { if (resume) launchManager.resumeRom(rom) else launchManager.launchRom(rom) }
+        pendingLaunch = { launchManager.launchRom(rom) }
         nav.dialogState.value = DialogState.SaveSyncChecking
         ioScope.launch {
             val outcome = saveSyncService.syncBeforeLaunch(tag, base, gameKey, emulator)
@@ -248,18 +233,6 @@ class LauncherActions @Inject constructor(
         }
         return null
     }
-
-    fun launchRomFromSlot(rom: Rom, slot: Int): DialogState? =
-        launchManager.resumeRom(rom, slot)
-
-    fun buildSaveStatePicker(rom: Rom, awaitConfirmRelease: Boolean): LauncherScreen.SaveStatePicker =
-        LauncherScreen.SaveStatePicker(
-            rom = rom,
-            stateBasePath = launchManager.saveStateBasePath(rom),
-            slotOccupied = launchManager.slotOccupancy(rom),
-            selectedSlotIndex = launchManager.findMostRecentSlot(rom) ?: 0,
-            awaitConfirmRelease = awaitConfirmRelease,
-        )
 
     fun recordRecentlyPlayedByPath(path: String) {
         ioScope.launch {

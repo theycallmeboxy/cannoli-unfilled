@@ -1,7 +1,7 @@
 package dev.cannoli.scorza.input.screen
 
-import dev.cannoli.igm.GuideFile
-import dev.cannoli.igm.GuideType
+import dev.cannoli.scorza.guides.GuideFile
+import dev.cannoli.scorza.guides.GuideType
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
 import dev.cannoli.scorza.settings.SettingsRepository

@@ -8,9 +8,6 @@ import dev.cannoli.scorza.config.EmulatorSource
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.launcher.CoreReporting
 import dev.cannoli.scorza.launcher.InstalledCoreService
-import dev.cannoli.scorza.launcher.LaunchManager
-import dev.cannoli.scorza.launcher.RetroArchLauncher
-import dev.cannoli.scorza.launcher.isPackageInstalled
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.CoreAvailability
@@ -29,13 +26,9 @@ class EmulatorMappingBuilder @Inject constructor(
     private val gameOverrideStore: dev.cannoli.scorza.db.GameOverrideStore,
     @ActivityContext private val context: Context,
 ) {
-    // Derived from the configured package on every read, so switching RicottaArch to stock
-    // RetroArch relabels everything instead of leaving stale captions behind.
+    // Derived from the configured package on every read, so switching RetroArch packages
+    // relabels everything instead of leaving stale captions behind.
     private val raLabel: String get() = InstalledCoreService.getPackageLabel(settings.retroArchPackage)
-
-    // Read live rather than from the scan, so it stays right during the window before the first
-    // scan publishes and after the user installs or removes RetroArch behind the launcher's back.
-    private val raInstalled: Boolean get() = context.isPackageInstalled(settings.retroArchPackage)
 
     /** Per-game override rows for a platform, resolved through the rom_id join. */
     fun overrideRows(tag: String): List<dev.cannoli.scorza.ui.screens.GameOverrideRow> =
@@ -51,7 +44,6 @@ class EmulatorMappingBuilder @Inject constructor(
         val entries = platformConfig.getDetailedMappings(
             context.packageManager,
             installedCoreService.configuredCores(),
-            LaunchManager.extractBundledCores(context),
             installedCoreService.configuredUnreportable(),
         )
         // MAME and FBN are both named Arcade; tag the name so the two rows are tellable apart.
@@ -90,11 +82,10 @@ class EmulatorMappingBuilder @Inject constructor(
         gameName: String? = null,
         selectCurrent: Boolean = false,
     ): LauncherScreen.PlatformMapping {
-        val bundled = LaunchManager.extractBundledCores(context)
         val installedRaCores = installedCoreService.configuredCores()
         val raReporting = installedCoreService.configuredReporting()
         val raCannotReport = raReporting != CoreReporting.REPORTS
-        val sources = platformConfig.availableSources(tag = tag, embeddedCoresDir = bundled)
+        val sources = platformConfig.availableSources(tag = tag)
         // Game scope reads the per-game override; platform scope reads the platform choice.
         val current =
             if (romId != null) gameOverrideStore.get(romId) else platformConfig.getPlatformChoice(tag)
@@ -130,13 +121,10 @@ class EmulatorMappingBuilder @Inject constructor(
         fun emulatorSection(useShowAll: Boolean): List<MappingItem> {
             val section = mutableListOf<MappingItem>()
             for (source in sources) {
-                // Internal cores are bundled-or-nothing; Show All never expands them since
-                // there is no install path for a core Cannoli does not ship.
-                val includeAll = useShowAll && source != EmulatorSource.Internal
                 var options = platformConfig.emulatorOptionsForSource(
-                    tag = tag, source = source, includeAll = includeAll,
+                    tag = tag, source = source, includeAll = useShowAll,
                     installedRaCores = installedRaCores,
-                    embeddedCoresDir = bundled, pm = context.packageManager, raLabel = raLabel,
+                    pm = context.packageManager, raLabel = raLabel,
                     coreReportingUnavailable = raCannotReport,
                 )
                 // Always surface the current mapping even when its core/app is not installed
@@ -145,13 +133,12 @@ class EmulatorMappingBuilder @Inject constructor(
                     platformConfig.emulatorOptionsForSource(
                         tag = tag, source = source, includeAll = true,
                         installedRaCores = installedRaCores,
-                        embeddedCoresDir = bundled, pm = context.packageManager, raLabel = raLabel,
+                        pm = context.packageManager, raLabel = raLabel,
                         coreReportingUnavailable = raCannotReport,
                     ).firstOrNull { isCurrent(it) }?.let { options = options + it }
                 }
                 if (options.isEmpty()) continue
                 val header = when (source) {
-                    EmulatorSource.Internal -> EmulatorSource.Internal.displayName
                     EmulatorSource.RetroArch -> raLabel
                     EmulatorSource.Standalone -> EmulatorSource.Standalone.displayName
                 }
@@ -159,12 +146,7 @@ class EmulatorMappingBuilder @Inject constructor(
                 if (source == EmulatorSource.RetroArch) {
                     retroArchNotice()?.let { section.add(it) }
                 }
-                options.forEach {
-                    section.add(MappingItem.EmulatorOption(
-                        it, isCurrent(it),
-                        downloadable = isDownloadable(source, it.availability, settings.retroArchPackage, raInstalled),
-                    ))
-                }
+                options.forEach { section.add(MappingItem.EmulatorOption(it, isCurrent(it))) }
             }
             return section
         }
@@ -185,7 +167,6 @@ class EmulatorMappingBuilder @Inject constructor(
         if (current != null && section.none { it is MappingItem.EmulatorOption && it.isCurrent }) {
             synthesizeCurrentRow(current, raCannotReport)?.let { row ->
                 val header = when (current.source) {
-                    EmulatorSource.Internal -> EmulatorSource.Internal.displayName
                     EmulatorSource.RetroArch -> raLabel
                     EmulatorSource.Standalone -> EmulatorSource.Standalone.displayName
                 }
@@ -213,7 +194,7 @@ class EmulatorMappingBuilder @Inject constructor(
         val items = mutableListOf<MappingItem>()
         if (romId != null) {
             val platformLabel = platformConfig.detailedMappingFor(
-                tag, context.packageManager, installedRaCores, bundled,
+                tag, context.packageManager, installedRaCores,
                 installedCoreService.configuredUnreportable(), raLabel,
             ).coreDisplayName
             val label = if (platformLabel.isNotEmpty()) {
@@ -234,9 +215,8 @@ class EmulatorMappingBuilder @Inject constructor(
         if (romId == null) {
             items.add(MappingItem.Divider())
 
-            // Firmware belongs to the selected core, so gate on the actual choice. Gating on
-            // isRicotta made every platform show BIOS, including standalone ones, and reading
-            // the core from the platform default reported firmware for a core nobody picked.
+            // Firmware belongs to the selected core, so gate on the actual choice. Reading the
+            // core from the platform default reported firmware for a core nobody picked.
             val biosCore = current?.takeIf { it.source != EmulatorSource.Standalone }?.coreId.orEmpty()
             if (biosCore.isNotBlank()) {
                 val biosDir = CannoliPaths(File(settings.sdCardRoot)).biosFor(tag)
@@ -311,7 +291,6 @@ class EmulatorMappingBuilder @Inject constructor(
             else -> platformConfig.getCoreDisplayName(current.coreId)
         }
         val label = when (current.source) {
-            EmulatorSource.Internal -> EmulatorSource.Internal.displayName
             EmulatorSource.RetroArch -> raLabel
             EmulatorSource.Standalone -> EmulatorSource.Standalone.displayName
         }
@@ -323,7 +302,6 @@ class EmulatorMappingBuilder @Inject constructor(
                 appPackage = current.appPackage, availability = availability,
             ),
             isCurrent = true,
-            downloadable = isDownloadable(current.source, availability, settings.retroArchPackage, raInstalled),
         )
     }
 
@@ -348,20 +326,6 @@ class EmulatorMappingBuilder @Inject constructor(
     }
 
     companion object {
-        // raInstalled is required because the package name alone only says which RetroArch is
-        // configured, not that it is there. Offering to download a core into a package that is
-        // not installed sends the user into a flow with nothing at the end of it.
-        fun isDownloadable(
-            source: EmulatorSource,
-            availability: CoreAvailability,
-            raPackage: String,
-            raInstalled: Boolean,
-        ): Boolean =
-            source == EmulatorSource.RetroArch &&
-                availability != CoreAvailability.AVAILABLE &&
-                raInstalled &&
-                RetroArchLauncher.isRicotta(raPackage)
-
         // A synthesized current row can only claim UNAVAILABLE when the availability check
         // actually ran. When RetroArch cannot report, "not in the candidate list" is unknowable,
         // not confirmed absent.

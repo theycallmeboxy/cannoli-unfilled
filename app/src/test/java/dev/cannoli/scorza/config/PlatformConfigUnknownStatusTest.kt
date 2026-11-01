@@ -19,7 +19,7 @@ class PlatformConfigUnknownStatusTest {
 
     @Test fun `a core nobody can report is unknown, not not-installed`() {
         val entry = config().detailedMappingFor(
-            "NES", pm = null, installedRaCores = emptyMap(), embeddedCoresDir = null,
+            "NES", pm = null, installedRaCores = emptyMap(),
             unreportablePackages = setOf("com.retroarch"),
         )
         assertEquals(EmulatorMappingStatus.UNKNOWN, entry.status)
@@ -27,7 +27,7 @@ class PlatformConfigUnknownStatusTest {
 
     @Test fun `a core confirmed absent stays not-installed`() {
         val entry = config().detailedMappingFor(
-            "NES", pm = null, installedRaCores = emptyMap(), embeddedCoresDir = null,
+            "NES", pm = null, installedRaCores = emptyMap(),
             unreportablePackages = emptySet(),
         )
         assertEquals(EmulatorMappingStatus.NOT_INSTALLED, entry.status)

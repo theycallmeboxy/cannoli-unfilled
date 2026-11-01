@@ -16,7 +16,6 @@ class NavigationController @Inject constructor() {
     val currentScreen: LauncherScreen get() = screenStack.last()
     val dialogState = MutableStateFlow<DialogState>(DialogState.None)
 
-    var resumableGames by mutableStateOf(emptySet<String>())
     var navigating = false
     var activeListState: LazyListState? = null
     var pendingRecentlyPlayedReorder = false

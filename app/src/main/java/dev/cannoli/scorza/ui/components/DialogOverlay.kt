@@ -59,8 +59,6 @@ import dev.cannoli.ui.components.MissingAppDialog
 import dev.cannoli.ui.components.MissingCoreDialog
 import dev.cannoli.ui.components.OverlayScrim
 import dev.cannoli.ui.components.SectionedList
-import dev.cannoli.ui.components.RAAccountOverlay
-import dev.cannoli.ui.components.RALoggingInOverlay
 import dev.cannoli.ui.components.RommConnectedOverlay
 import dev.cannoli.ui.components.RommPairingOverlay
 import dev.cannoli.ui.components.RestartOverlay
@@ -220,28 +218,6 @@ fun DialogOverlay(
                 pin = dialogState.pin,
                 requirePin = dialogState.requirePin,
                 buttonStyle = buttonStyle
-            )
-        }
-
-        is DialogState.RAAccount -> {
-            RAAccountOverlay(username = dialogState.username, buttonStyle = buttonStyle)
-        }
-
-        is DialogState.RALoggingIn -> {
-            RALoggingInOverlay(message = dialogState.message, buttonStyle = buttonStyle)
-        }
-
-        is DialogState.RAPreloadProgress -> {
-            RALoggingInOverlay(
-                message = stringResource(R.string.ra_preload_progress, dialogState.gameName),
-                buttonStyle = buttonStyle,
-            )
-        }
-        is DialogState.RAPreloadResult -> {
-            MessageOverlay(
-                message = dialogState.message,
-                buttonStyle = buttonStyle,
-                buttonLabel = stringResource(R.string.label_back),
             )
         }
 

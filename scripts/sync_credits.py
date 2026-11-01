@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
-"""Sync credits.json to CreditsData.kt, taskfile.yml, and release.yml."""
+"""Sync credits.json to CreditsData.kt."""
 
 import json
-import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -11,9 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 def main():
     credits = json.loads((ROOT / "credits.json").read_text(encoding="utf-8"))
     sync_credits_data(credits)
-    sync_taskfile(credits)
-    sync_workflow(credits)
-    print("Synced credits.json \u2192 CreditsData.kt, taskfile.yml, release.yml")
+    print("Synced credits.json \u2192 CreditsData.kt")
 
 
 def kt_string(value):
@@ -56,16 +53,6 @@ def sync_credits_data(credits):
         )
         + "\n"
         + entry_list(
-            "CREDITS_CORES",
-            [(i["name"], i["license"]) for i in credits["cores"]],
-        )
-        + "\n"
-        + entry_list(
-            "CREDITS_SHADERS",
-            [(f'{i["shader"]} by {i["name"]}', i["license"]) for i in credits["shaders"]],
-        )
-        + "\n"
-        + entry_list(
             "CREDITS_FONTS",
             [(i["name"], i["license"]) for i in credits["fonts"]],
         )
@@ -76,49 +63,6 @@ def sync_credits_data(credits):
         )
         + "\n"
         f"val CREDITS_LOCALIZATION: List<LocalizationCredit> = listOf(\n{localization}\n)\n"
-    )
-    path.write_text(text, encoding="utf-8")
-
-def sync_taskfile(credits):
-    path = ROOT / "taskfile.yml"
-    text = path.read_text(encoding="utf-8")
-
-    ids = "\n".join(f"        - {c['id']}" for c in credits["cores"])
-
-    def replace_cores(m):
-        return m.group(1) + ids + "\n"
-
-    text = re.sub(
-        r'(      CORES:\n)(?:        - .*\n)+',
-        replace_cores,
-        text,
-    )
-    path.write_text(text, encoding="utf-8")
-
-
-def sync_workflow(credits):
-    path = ROOT / ".github/workflows/release.yml"
-    text = path.read_text(encoding="utf-8")
-
-    ids = [c["id"] for c in credits["cores"]]
-    lines = []
-    line = "   "
-    for id_ in ids:
-        if len(line) + 1 + len(id_) > 80:
-            lines.append(line)
-            line = "    " + id_
-        else:
-            line += " " + id_
-    lines.append(line)
-    block = "\n".join(lines)
-
-    def replace_cores(m):
-        return m.group(1) + block + "\n"
-
-    text = re.sub(
-        r'(  CORES: >-\n)(?:    .*\n)+',
-        replace_cores,
-        text,
     )
     path.write_text(text, encoding="utf-8")
 

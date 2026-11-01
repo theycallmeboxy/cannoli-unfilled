@@ -14,11 +14,8 @@ class CannoliPaths(val root: File) {
     val collectionsDir: File get() = File(root, "Collections")
     val backupDir: File get() = File(root, "Backup")
     val guidesDir: File get() = File(root, "Guides")
-    val cheatsDir: File get() = File(root, "Cheats")
     val wallpapersDir: File get() = File(root, "Wallpapers")
     val romsDir: File get() = File(root, "Roms")
-    val shadersDir: File get() = File(root, "Shaders")
-    val overlaysDir: File get() = File(root, "Overlays")
     val logsDir: File get() = File(root, "Logs")
     val mediaDir: File get() = File(root, "Media")
     val mediaScreenshotsDir: File get() = File(mediaDir, "Screenshots")
@@ -28,12 +25,7 @@ class CannoliPaths(val root: File) {
     val configDir: File get() = File(root, "Config")
     val configState: File get() = File(configDir, "State")
     val configRetroArch: File get() = File(configDir, "RetroArch")
-    val configOverrides: File get() = File(configDir, "Overrides")
-    val configOverridesCores: File get() = File(configOverrides, "Cores")
-    val configOverridesSystems: File get() = File(configOverrides, "systems")
-    val configOverridesGames: File get() = File(configOverrides, "Games")
     val configCache: File get() = File(configDir, "Cache")
-    val configProfiles: File get() = File(configDir, "Profiles")
     val configFonts: File get() = File(configDir, "Fonts")
     val configOrdering: File get() = File(configDir, "Ordering")
     val configLaunchScripts: File get() = File(configDir, "Launch Scripts")
@@ -55,12 +47,8 @@ class CannoliPaths(val root: File) {
     val ignoreFilesRoms: File get() = File(configDir, "ignore_files_roms.txt")
     val recentlyPlayedFile: File get() = File(configState, "recently_played.txt")
     val guidePositionsFile: File get() = File(configState, "guide_positions.ini")
-    val cheatStateFile: File get() = File(configState, "cheat_state.ini")
     val raGameIdsFile: File get() = File(configRetroAchievements, "ra_game_ids.txt")
-    val configRaOffline: File get() = File(configRetroAchievements, "Offline")
     val raGameIdsLegacyFile: File get() = File(configRetroArch, "ra_game_ids.txt")
-    val raLaunchCfg: File get() = File(configRetroArch, "retroarch_launch.cfg")
-    val cannoliFont: File get() = File(configAssets, "cannoli/font.ttf")
     val toolsDir: File get() = File(configLaunchScripts, "Tools")
     val portsDir: File get() = File(configLaunchScripts, "Ports")
     val platformCacheFile: File get() = File(configCache, ".platform_cache.json")
@@ -73,32 +61,12 @@ class CannoliPaths(val root: File) {
     fun saveStatesFor(tag: String): File = File(saveStatesDir, tag)
     fun guidesFor(tag: String): File = File(guidesDir, tag)
 
-    fun cheatsFor(tag: String): File = File(cheatsDir, tag)
-    fun overlaysFor(tag: String): File = File(overlaysDir, tag)
     fun romsFor(tag: String): File = File(romsDir, tag)
 
     // Per-game helpers
     fun saveStateDir(tag: String, romBaseName: String): File =
         File(saveStatesFor(tag), romBaseName)
 
-    fun saveStateBase(tag: String, romBaseName: String): File =
-        File(saveStateDir(tag, romBaseName), "$romBaseName.state")
-
-    fun sramFile(tag: String, romBaseName: String): File =
-        File(savesFor(tag), "$romBaseName.srm")
-
     fun guideDir(tag: String, gameTitle: String): File =
         File(guidesFor(tag), gameTitle)
-
-    fun cheatDir(tag: String, gameTitle: String): File =
-        File(cheatsFor(tag), gameTitle)
-
-    // Profiles & overrides
-    fun profileFile(name: String): File = File(configProfiles, "$name.ini")
-    fun systemOverrideFile(tag: String): File = File(configOverridesSystems, "$tag.ini")
-    fun gameOverrideFile(tag: String, gameBaseName: String): File =
-        File(File(configOverridesGames, tag), "$gameBaseName.ini")
-
-    // Logs
-    fun coreLogDir(coreName: String): File = File(logsDir, coreName)
 }

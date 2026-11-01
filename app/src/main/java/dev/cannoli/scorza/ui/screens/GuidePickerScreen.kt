@@ -7,7 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
-import dev.cannoli.igm.GuideFile
+import dev.cannoli.scorza.guides.GuideFile
 import dev.cannoli.scorza.ui.components.ListDialogScreen
 import dev.cannoli.ui.ButtonStyle
 import dev.cannoli.ui.R

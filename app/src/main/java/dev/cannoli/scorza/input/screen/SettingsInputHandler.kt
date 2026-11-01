@@ -21,7 +21,6 @@ import dev.cannoli.scorza.model.AppType
 import dev.cannoli.scorza.navigation.BrowsePurpose
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
-import dev.cannoli.scorza.settings.GlobalOverridesManager
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.setup.SetupCoordinator
 import dev.cannoli.scorza.ui.screens.DialogState
@@ -41,7 +40,6 @@ class SettingsInputHandler @Inject constructor(
     private val settings: SettingsRepository,
     private val platformConfig: PlatformConfig,
     private val installedCoreService: InstalledCoreService,
-    private val globalOverrides: GlobalOverridesManager,
     private val appsRepository: AppsRepository,
     private val setupCoordinator: SetupCoordinator,
     private val inputTesterController: InputTesterController,
@@ -97,10 +95,6 @@ class SettingsInputHandler @Inject constructor(
         }
 
         when (val key = settingsViewModel.enterSelected()) {
-            "integrations_ra" -> {
-                if (settings.raToken.isNotEmpty()) nav.dialogState.value = DialogState.RAAccount(username = settings.raUsername)
-                else settingsViewModel.enterSubCategory("retroachievements", dev.cannoli.scorza.R.string.settings_retroachievements)
-            }
             "integrations_romm" -> {
                 if (rommStore.token.isNullOrEmpty()) settingsViewModel.enterSubCategory("romm", dev.cannoli.scorza.R.string.settings_romm)
                 else nav.dialogState.value = DialogState.RommConnected(
@@ -123,7 +117,6 @@ class SettingsInputHandler @Inject constructor(
             "logging" -> nav.push(LauncherScreen.LoggingSettings())
             "audit_emulator_intents" -> runIntentAudit()
             "icon_gallery" -> nav.push(LauncherScreen.IconGallery())
-            "shortcuts" -> nav.push(LauncherScreen.ShortcutBinding(shortcuts = globalOverrides.readShortcuts()))
             "input_tester" -> {
                 inputTesterController.enter()
                 nav.push(LauncherScreen.InputTester)
@@ -152,20 +145,6 @@ class SettingsInputHandler @Inject constructor(
                     }
                 }
             }
-            "ra_username" -> {
-                val current = settings.raUsername
-                nav.dialogState.value = DialogState.RenameInput(
-                    gameName = "ra_username",
-                    keyboard = KeyboardState(text = current, cursorPos = current.length)
-                )
-            }
-            "ra_password" -> {
-                nav.dialogState.value = DialogState.RenameInput(
-                    gameName = "ra_password",
-                    keyboard = KeyboardState(text = settingsViewModel.raPassword, cursorPos = settingsViewModel.raPassword.length)
-                )
-            }
-            "ra_login" -> activityActions.startRaLogin(settings.raUsername, settingsViewModel.raPassword)
             "romm_host" -> {
                 val current = rommStore.host
                 nav.dialogState.value = DialogState.RenameInput(gameName = "romm_host", keyboard = KeyboardState(text = current, cursorPos = current.length))

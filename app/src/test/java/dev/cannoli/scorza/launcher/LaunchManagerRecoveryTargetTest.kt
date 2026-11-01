@@ -4,14 +4,11 @@ import dev.cannoli.scorza.config.AppConfig
 import dev.cannoli.scorza.config.EmulatorChoice
 import dev.cannoli.scorza.config.EmulatorSource
 import dev.cannoli.scorza.config.PlatformConfig
-import dev.cannoli.scorza.input.DeviceMapping
-import dev.cannoli.scorza.input.runtime.ActiveMappingHolder
 import dev.cannoli.scorza.model.Rom
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.DialogState
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -45,19 +42,13 @@ class LaunchManagerRecoveryTargetTest {
         every { installedCoreService.cacheReady } returns true
         every { installedCoreService.canReport(any()) } returns true
         every { installedCoreService.hasCoreInPackage(any(), any()) } returns false
-        val activeMappingHolder = mockk<ActiveMappingHolder>(relaxed = true)
-        every { activeMappingHolder.active } returns MutableStateFlow<DeviceMapping?>(null)
         return LaunchManager(
             context = mockk(relaxed = true),
             settings = settings,
             platformConfig = platformConfig,
             retroArchLauncher = retroArchLauncher,
-            emuLauncher = mockk(relaxed = true),
             apkLauncher = apkLauncher,
-            delfinoLauncher = mockk(relaxed = true),
             launchState = mockk(relaxed = true),
-            activeMappingHolder = activeMappingHolder,
-            atomicRename = mockk(relaxed = true),
             installedCoreService = installedCoreService,
             gameOverrides = gameOverrides,
         )

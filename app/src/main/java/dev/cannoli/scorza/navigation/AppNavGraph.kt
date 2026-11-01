@@ -39,12 +39,10 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import dev.cannoli.igm.ShortcutAction
 import dev.cannoli.scorza.R
 import dev.cannoli.scorza.input.runtime.confirmButton
 import dev.cannoli.scorza.input.runtime.labelSet
 import dev.cannoli.scorza.ui.LocalViewportInsets
-import dev.cannoli.scorza.util.buttonLabel
 import dev.cannoli.scorza.ui.ViewportInsetsPx
 import dev.cannoli.scorza.ui.components.CREDITS_ROOT_ROWS
 import dev.cannoli.scorza.ui.components.CreditsCategory
@@ -70,7 +68,6 @@ import dev.cannoli.scorza.ui.screens.LoggingSettingsScreen
 import dev.cannoli.scorza.ui.screens.KeyboardHost
 import dev.cannoli.scorza.ui.screens.PortraitMarginOverlay
 import dev.cannoli.scorza.ui.screens.SaveSlotsScreen
-import dev.cannoli.scorza.ui.screens.SaveStatePickerScreen
 import dev.cannoli.scorza.ui.screens.SettingsScreen
 import dev.cannoli.scorza.ui.screens.SystemListScreen
 import dev.cannoli.scorza.ui.viewmodel.ControllersViewModel
@@ -177,13 +174,6 @@ sealed class LauncherScreen {
     data object GameList : LauncherScreen()
     data object Settings : LauncherScreen()
     data object InputTester : LauncherScreen()
-    data class SaveStatePicker(
-        val rom: dev.cannoli.scorza.model.Rom,
-        val stateBasePath: String,
-        val slotOccupied: List<Boolean>,
-        val selectedSlotIndex: Int,
-        val awaitConfirmRelease: Boolean = false,
-    ) : LauncherScreen()
     data class SaveSlots(
         val gameKey: String,
         val tag: String,
@@ -196,12 +186,12 @@ sealed class LauncherScreen {
         val pendingDelete: Boolean = false,
     ) : LauncherScreen()
     data class GuidePicker(
-        val files: List<dev.cannoli.igm.GuideFile>,
+        val files: List<dev.cannoli.scorza.guides.GuideFile>,
         val selectedIndex: Int = 0,
     ) : LauncherScreen()
     data class Guide(
         val filePath: String,
-        val guideType: dev.cannoli.igm.GuideType,
+        val guideType: dev.cannoli.scorza.guides.GuideType,
         val page: Int = 0,
         val textZoom: Int = 1,
     ) : LauncherScreen()
@@ -302,10 +292,6 @@ sealed class LauncherScreen {
         override val itemCount: Int get() = dev.cannoli.scorza.util.LoggingPrefs.Category.entries.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
     }
-    data class ShortcutBinding(override val selectedIndex: Int = 0, override val scrollTarget: Int = 0, val shortcuts: Map<ShortcutAction, Set<Int>> = emptyMap(), val listening: Boolean = false, val heldKeys: Set<Int> = emptySet(), val countdownMs: Int = 0) : LauncherScreen(), ScrollableScreen {
-        override val itemCount: Int get() = ShortcutAction.entries.size
-        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
-    }
     data class Credits(override val selectedIndex: Int = 0, override val scrollTarget: Int = 0) : LauncherScreen(), ScrollableScreen {
         override val itemCount: Int get() = CREDITS_ROOT_ROWS.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
@@ -395,26 +381,6 @@ sealed class LauncherScreen {
         val groupKey: Int = game.groupKey,
         val versionCount: Int = 1,
     ) : LauncherScreen()
-    data class RaOfflinePlatform(val tag: String, val name: String, val count: Int)
-
-    data class RetroAchievementsOfflinePlatforms(
-        val platforms: List<RaOfflinePlatform> = emptyList(),
-        override val selectedIndex: Int = 0,
-        override val scrollTarget: Int = 0,
-    ) : LauncherScreen(), ScrollableScreen {
-        override val itemCount: Int get() = platforms.size
-        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
-    }
-    data class RetroAchievementsOfflineSets(
-        val platformTag: String = "",
-        val platformName: String = "",
-        val entries: List<dev.cannoli.scorza.ra.RaOfflineStore.Entry> = emptyList(),
-        override val selectedIndex: Int = 0,
-        override val scrollTarget: Int = 0,
-    ) : LauncherScreen(), ScrollableScreen {
-        override val itemCount: Int get() = entries.size
-        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
-    }
     data class InstalledCores(val cores: List<String> = emptyList(), val loading: Boolean = true, override val selectedIndex: Int = 0, override val scrollTarget: Int = 0, val title: String? = null) : LauncherScreen(), ScrollableScreen {
         override val itemCount: Int get() = cores.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
@@ -485,7 +451,6 @@ fun AppNavGraph(
     controllersViewModel: ControllersViewModel,
     dialogState: StateFlow<DialogState>,
     onListStateChanged: ((androidx.compose.foundation.lazy.LazyListState?) -> Unit)? = null,
-    resumableGames: Set<String> = emptySet(),
     updateAvailable: Boolean = false,
     downloadProgress: Float = 0f,
     downloadError: String? = null,
@@ -514,16 +479,6 @@ fun AppNavGraph(
         activeMapping.labelSet(dev.cannoli.ui.ButtonLabelSet.PLUMBER),
         activeMapping.confirmButton(),
     )
-
-    val labelContext = androidx.compose.ui.platform.LocalContext.current
-    val shortcutKeyLabel: (Int) -> String = { keyCode ->
-        buttonLabel(
-            labelContext,
-            keyCode,
-            activeMapping,
-            activeMapping?.glyphStyle ?: dev.cannoli.scorza.input.GlyphStyle.PLUMBER,
-        )
-    }
 
     val cannoliColors = CannoliColors(
         highlight = appSettings.colorHighlight,
@@ -603,8 +558,6 @@ fun AppNavGraph(
                     mainMenuQuit = appSettings.mainMenuQuit,
                     artWidth = appSettings.artWidth,
                     artScale = appSettings.artScale,
-                    resumableGames = resumableGames,
-                    swapPlayResume = appSettings.swapPlayResume,
                     fiveGameHandheld = appSettings.contentMode == dev.cannoli.scorza.settings.ContentMode.FIVE_GAME_HANDHELD,
                     buttonStyle = labels,
                 )
@@ -620,8 +573,6 @@ fun AppNavGraph(
                     listLineHeight = listLineHeight,
                     listVerticalPadding = listVerticalPadding,
                     onListStateChanged = onListStateChanged,
-                    resumableGames = resumableGames,
-                    swapPlayResume = appSettings.swapPlayResume,
                     artWidth = appSettings.artWidth,
                     artScale = appSettings.artScale,
                     buttonStyle = labels,
@@ -718,11 +669,7 @@ fun AppNavGraph(
                     stringResource(R.string.label_show_installed)
                 else
                     stringResource(R.string.label_show_all)
-                val highlighted = currentScreen.items.getOrNull(highlightedIndex)
-                val confirmLabel = if ((highlighted as? dev.cannoli.scorza.ui.screens.MappingItem.EmulatorOption)?.downloadable == true)
-                    stringResource(R.string.label_download)
-                else
-                    stringResource(R.string.label_select)
+                val confirmLabel = stringResource(R.string.label_select)
                 ListDialogScreen(
                     backgroundImagePath = appSettings.backgroundImagePath,
                     backgroundTint = appSettings.backgroundTint,
@@ -1114,96 +1061,6 @@ fun AppNavGraph(
                     }
                 }
             }
-            is LauncherScreen.ShortcutBinding -> {
-                if (inputRouter != null) {
-                    val handler = remember { inputRouter.currentHandler() }
-                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
-                }
-                ListDialogScreen(
-                    backgroundImagePath = appSettings.backgroundImagePath,
-                    backgroundTint = appSettings.backgroundTint,
-                    title = stringResource(R.string.title_shortcuts),
-
-                    listFontSize = listFontSize,
-                    listLineHeight = listLineHeight,
-                    fullWidth = true,
-                    rightBottomItems = if (currentScreen.listening) listOf("" to stringResource(R.string.label_hold_buttons))
-                        else listOf(labels.north to stringResource(R.string.label_clear), labels.confirm to stringResource(R.string.label_set)),
-                    buttonStyle = labels
-                ) {
-                    List(
-                        items = ShortcutAction.entries.toList(),
-                        selectedIndex = currentScreen.selectedIndex,
-                        itemHeight = itemHeight,
-                        scrollTarget = currentScreen.scrollTarget,
-                        onListStateChanged = onListStateChanged
-                    ) { _, action, isSelected ->
-                        val chord = currentScreen.shortcuts[action]
-                        val value = if (chord.isNullOrEmpty()) stringResource(R.string.value_none)
-                        else chord.joinToString(" + ") { shortcutKeyLabel(it) }
-                        PillRowKeyValue(
-                            label = stringResource(action.labelRes),
-                            value = value,
-                            isSelected = isSelected,
-                            fontSize = listFontSize,
-                            lineHeight = listLineHeight,
-                            verticalPadding = listVerticalPadding
-                        )
-                    }
-                }
-                if (currentScreen.listening) {
-                    val colors = LocalCannoliColors.current
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.92f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            modifier = Modifier.widthIn(max = 480.dp).fillMaxWidth()
-                        ) {
-                            val actionName = ShortcutAction.entries.getOrNull(currentScreen.selectedIndex)
-                                ?.let { stringResource(it.labelRes) } ?: ""
-                            Text(
-                                text = actionName,
-                                style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 24.sp,
-                                    color = colors.text
-                                )
-                            )
-                            Spacer(modifier = Modifier.height(Spacing.Sm))
-                            Text(
-                                text = if (currentScreen.heldKeys.isEmpty()) stringResource(R.string.shortcut_hold_prompt)
-                                else currentScreen.heldKeys.joinToString(" + ") { shortcutKeyLabel(it) },
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontSize = 16.sp,
-                                    color = colors.text.copy(alpha = 0.6f)
-                                )
-                            )
-                            Spacer(modifier = Modifier.height(Spacing.Lg))
-                            if (currentScreen.heldKeys.isNotEmpty()) {
-                                val progress = (currentScreen.countdownMs / 1500f).coerceIn(0f, 1f)
-                                Box(
-                                    modifier = Modifier
-                                        .widthIn(max = 280.dp).fillMaxWidth()
-                                        .height(8.dp)
-                                        .clip(RoundedCornerShape(Radius.Sm))
-                                        .background(colors.text.copy(alpha = 0.2f))
-                                ) {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth(progress)
-                                            .height(8.dp)
-                                            .clip(RoundedCornerShape(Radius.Sm))
-                                            .background(colors.highlight)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
             is LauncherScreen.IconGallery -> {
                 if (inputRouter != null) {
                     val handler = remember { inputRouter.currentHandler() }
@@ -1431,40 +1288,6 @@ fun AppNavGraph(
                     buttonStyle = labels,
                 )
             }
-            is LauncherScreen.RetroAchievementsOfflinePlatforms -> {
-                if (inputRouter != null) {
-                    val handler = remember { inputRouter.currentHandler() }
-                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
-                }
-                dev.cannoli.scorza.ui.screens.RetroAchievementsOfflinePlatformsScreen(
-                    screen = currentScreen,
-                    modifier = Modifier.fillMaxSize(),
-                    backgroundImagePath = appSettings.backgroundImagePath,
-                    backgroundTint = appSettings.backgroundTint,
-                    listFontSize = listFontSize,
-                    listLineHeight = listLineHeight,
-                    listVerticalPadding = listVerticalPadding,
-                    buttonStyle = labels,
-                    onListStateChanged = onListStateChanged,
-                )
-            }
-            is LauncherScreen.RetroAchievementsOfflineSets -> {
-                if (inputRouter != null) {
-                    val handler = remember { inputRouter.currentHandler() }
-                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
-                }
-                dev.cannoli.scorza.ui.screens.RetroAchievementsOfflineSetsScreen(
-                    screen = currentScreen,
-                    modifier = Modifier.fillMaxSize(),
-                    backgroundImagePath = appSettings.backgroundImagePath,
-                    backgroundTint = appSettings.backgroundTint,
-                    listFontSize = listFontSize,
-                    listLineHeight = listLineHeight,
-                    listVerticalPadding = listVerticalPadding,
-                    buttonStyle = labels,
-                    onListStateChanged = onListStateChanged,
-                )
-            }
             is LauncherScreen.OnboardingPermissions -> {
                 inputRouter?.let { dev.cannoli.scorza.input.screen.compose.ScreenInput(it.onboardingHandler) }
                 dev.cannoli.scorza.ui.screens.OnboardingPermissionsScreen(
@@ -1475,20 +1298,6 @@ fun AppNavGraph(
                     customPath = currentScreen.customPath,
                     selectedIndex = currentScreen.selectedIndex,
                     existingInstallVolumeIndex = currentScreen.existingInstallVolumeIndex,
-                    buttonStyle = labels,
-                )
-            }
-            is LauncherScreen.SaveStatePicker -> {
-                inputRouter?.let { dev.cannoli.scorza.input.screen.compose.ScreenInput(it.saveStatePickerHandler) }
-                SaveStatePickerScreen(
-                    rom = currentScreen.rom,
-                    stateBasePath = currentScreen.stateBasePath,
-                    slotOccupied = currentScreen.slotOccupied,
-                    selectedSlotIndex = currentScreen.selectedSlotIndex,
-                    backgroundImagePath = appSettings.backgroundImagePath,
-                    backgroundTint = appSettings.backgroundTint,
-                    listFontSize = listFontSize,
-                    listLineHeight = listLineHeight,
                     buttonStyle = labels,
                 )
             }
