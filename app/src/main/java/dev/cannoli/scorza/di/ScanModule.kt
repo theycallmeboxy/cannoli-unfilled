@@ -6,9 +6,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.config.CoreInfoRepository
+import dev.cannoli.scorza.config.FoldersConfig
 import dev.cannoli.scorza.config.PlatformConfig
-import dev.cannoli.scorza.launcher.LaunchManager
 import java.io.File
 import javax.inject.Singleton
 
@@ -39,4 +40,8 @@ object ScanModule {
             context.getString(dev.cannoli.scorza.R.string.value_needs_setup),
         )
     }
+
+    @Provides @Singleton
+    fun provideFoldersConfig(paths: CannoliPathsProvider): FoldersConfig =
+        FoldersConfig { CannoliPaths(paths.root).foldersJson }
 }

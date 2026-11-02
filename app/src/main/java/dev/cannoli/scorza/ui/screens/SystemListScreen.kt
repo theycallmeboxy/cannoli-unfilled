@@ -187,8 +187,7 @@ fun SystemListScreen(
                             is ListItem.PlatformItem -> item.platform.tag
                             is ListItem.CollectionItem -> "col:${item.id}"
                             is ListItem.GameItem -> "game:${item.recentKey}"
-                            is ListItem.ToolsFolder -> "tools"
-                            is ListItem.PortsFolder -> "ports"
+                            is ListItem.FolderItem -> "folder:${item.name}"
                         }
                     }
                 ) { _, item, isSelected ->
@@ -199,10 +198,9 @@ fun SystemListScreen(
                         is ListItem.PlatformItem -> item.platform.displayName
                         is ListItem.CollectionItem -> item.name
                         is ListItem.GameItem -> item.displayName
-                        is ListItem.ToolsFolder -> item.name
-                        is ListItem.PortsFolder -> item.name
+                        is ListItem.FolderItem -> item.name
                     }
-                    val showReorder = state.reorderMode && isSelected && (item is ListItem.PlatformItem || item is ListItem.ToolsFolder || item is ListItem.PortsFolder || item is ListItem.CollectionItem || item is ListItem.GameItem)
+                    val showReorder = state.reorderMode && isSelected && (item is ListItem.PlatformItem || item is ListItem.FolderItem || item is ListItem.CollectionItem || item is ListItem.GameItem)
                     val tagSuffix = (item as? ListItem.GameItem)
                         ?.takeIf { it.displayName in duplicateGameNames }
                         ?.let { gi ->

@@ -54,7 +54,7 @@ class CoresJsonDurabilityTest {
             "no temp files may survive a successful save",
             emptyList<String>(),
             configDir.listFiles().orEmpty().map { it.name }
-                .filter { it != "cores.json" && it != "platforms.ini" },
+                .filter { it != "cores.json" && it != "platforms.ini" && it != "emulators.json" },
         )
     }
 

@@ -1,6 +1,11 @@
 package dev.cannoli.scorza.ui.viewmodel
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
+import dev.cannoli.scorza.config.FolderEntry
+import dev.cannoli.scorza.config.FolderNode
+import dev.cannoli.scorza.config.FoldersConfig
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.AppsRepository
 import dev.cannoli.scorza.db.CollectionsRepository
@@ -9,7 +14,6 @@ import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.db.ScanScheduler
 import dev.cannoli.scorza.di.CannoliPathsProvider
-import dev.cannoli.scorza.model.AppType
 import dev.cannoli.scorza.model.Platform
 import dev.cannoli.scorza.scanner.RomDirectoryWatcher
 import dev.cannoli.scorza.settings.ContentMode
@@ -37,6 +41,8 @@ class SystemListViewModel @Inject constructor(
     private val cannoliPaths: CannoliPathsProvider,
     private val romDirectoryWatcher: RomDirectoryWatcher,
     private val scanScheduler: ScanScheduler,
+    private val foldersConfig: FoldersConfig,
+    @ApplicationContext private val context: Context,
 ) {
     private val romDirectory: File get() = cannoliPaths.romDir
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
@@ -52,7 +58,7 @@ class SystemListViewModel @Inject constructor(
 
     private fun isMissingPlatformRow(platformTag: String): Boolean {
         val config = lastScanConfig ?: return false
-        if (config.contentMode != ContentMode.PLATFORMS) return false
+        if (config.contentMode != ContentMode.PLATFORMS || folderPath.isNotEmpty()) return false
         val tag = platformTag.uppercase()
         return _state.value.items.none { item ->
             item is ListItem.PlatformItem && item.platform.allTags.any { it.uppercase() == tag }
@@ -66,8 +72,6 @@ class SystemListViewModel @Inject constructor(
             showFavorites = config.showFavorites,
             contentMode = config.contentMode,
             fghCollectionId = config.fghCollectionId,
-            toolsName = config.toolsName,
-            portsName = config.portsName,
             scanDisk = false,
         )
     }
@@ -113,8 +117,8 @@ class SystemListViewModel @Inject constructor(
                 else -> ""
             }
         }
-        data class ToolsFolder(val name: String, val count: Int) : ListItem()
-        data class PortsFolder(val name: String, val count: Int) : ListItem()
+        /** A folder from folders.json. [count] is how many entries it holds directly. */
+        data class FolderItem(val name: String, val count: Int) : ListItem()
     }
 
     data class State(
@@ -125,7 +129,9 @@ class SystemListViewModel @Inject constructor(
         val isLoading: Boolean = true,
         val reorderMode: Boolean = false,
         val reorderOriginalIndex: Int = -1,
-        val hasGameItems: Boolean = false
+        val hasGameItems: Boolean = false,
+        /** The open folder, root first. Empty on the main menu. */
+        val folderPath: List<String> = emptyList(),
     )
 
     private val _state = MutableStateFlow(State())
@@ -136,13 +142,16 @@ class SystemListViewModel @Inject constructor(
     private var savedPosition: Saved? = null
     private var currentFghCollectionId: Long? = null
 
+    // The folder being shown and, for each level above it, where the cursor was when the user
+    // went in, so backing out lands on the folder they opened.
+    private var folderPath: List<String> = emptyList()
+    private val folderPositions = mutableListOf<Saved>()
+
     private data class ScanConfig(
         val showRecentlyPlayed: Boolean,
         val showFavorites: Boolean,
         val contentMode: ContentMode,
         val fghCollectionId: Long?,
-        val toolsName: String,
-        val portsName: String,
     )
 
     private var lastScanConfig: ScanConfig? = null
@@ -153,7 +162,7 @@ class SystemListViewModel @Inject constructor(
         _state.update { it.copy(scrollTarget = scrollIdx) }
     }
 
-    fun scan(showRecentlyPlayed: Boolean = true, showFavorites: Boolean = true, contentMode: ContentMode = ContentMode.PLATFORMS, fghCollectionId: Long? = null, toolsName: String = "Tools", portsName: String = "Ports", scanDisk: Boolean = true, reconcileOrphans: Boolean = false, onProgress: ((tag: String, current: Int, total: Int) -> Unit)? = null, onReady: () -> Unit = {}) {
+    fun scan(showRecentlyPlayed: Boolean = true, showFavorites: Boolean = true, contentMode: ContentMode = ContentMode.PLATFORMS, fghCollectionId: Long? = null, scanDisk: Boolean = true, reconcileOrphans: Boolean = false, onProgress: ((tag: String, current: Int, total: Int) -> Unit)? = null, onReady: () -> Unit = {}) {
         val prev = _state.value
         val prevItemCount = prev.items.size
         val restored = savedPosition
@@ -162,9 +171,20 @@ class SystemListViewModel @Inject constructor(
         val prevSelectedIndex = restored?.index ?: prev.selectedIndex
         val prevFirstVisible = restored?.scroll ?: firstVisibleIndex
         currentFghCollectionId = fghCollectionId
-        lastScanConfig = ScanConfig(showRecentlyPlayed, showFavorites, contentMode, fghCollectionId, toolsName, portsName)
+        lastScanConfig = ScanConfig(showRecentlyPlayed, showFavorites, contentMode, fghCollectionId)
 
         scope.launch(Dispatchers.IO) {
+            foldersConfig.reloadIfChanged()
+            // A folder renamed or removed in folders.json while it was open: fall back to the
+            // deepest level that still exists.
+            val openFolder = withContext(Dispatchers.Main) {
+                while (folderPath.isNotEmpty() && foldersConfig.find(folderPath) == null) {
+                    folderPath = folderPath.dropLast(1)
+                    folderPositions.removeLastOrNull()
+                }
+                foldersConfig.find(folderPath)
+            }
+            val shownPath = folderPath
             if (scanDisk) {
                 scanAllPlatformDirs(reconcileOrphans) { tag, current, total ->
                     withContext(Dispatchers.Main) { onProgress?.invoke(tag, current, total) }
@@ -172,17 +192,17 @@ class SystemListViewModel @Inject constructor(
             }
             val knownTagsInDb = romsRepository.knownPlatformTags()
             val watcherTags = knownTagsInDb
-                .filter { it != TAG_TOOLS && it != TAG_PORTS && platformConfig.isKnownTag(it) }
+                .filter { !isReservedTag(it) && platformConfig.isKnownTag(it) }
             romDirectoryWatcher.start(romDirectory, watcherTags)
             val countsByTag = romsRepository.platformCounts().mapKeys { it.key.uppercase() }
             val knownTags = (knownTagsInDb + countsByTag.keys).distinct()
-                .filter { it != TAG_TOOLS && it != TAG_PORTS }
+                .filter { !isReservedTag(it) }
 
             val allPlatforms = knownTags
                 .filter { platformConfig.isKnownTag(it) }
                 .map { tag ->
                     val count = countsByTag[tag] ?: 0
-                    platformConfig.resolvePlatform(tag, romDirectory, count)
+                    platformConfig.resolvePlatform(tag, count)
                 }
 
             val groupedPlatforms = allPlatforms.groupBy { it.displayName }.map { (_, group) ->
@@ -196,13 +216,13 @@ class SystemListViewModel @Inject constructor(
                 }
             }
 
-            val toolCount = appsRepository.count(AppType.TOOL)
-            val portCount = appsRepository.count(AppType.PORT)
-
             val items = mutableListOf<ListItem>()
             val favoritesId = collectionsRepository.favoritesId()
+            val inFolders = foldersConfig.platformTagsInFolders()
 
-            if (contentMode == ContentMode.FIVE_GAME_HANDHELD) {
+            if (openFolder != null) {
+                items.addAll(folderItems(openFolder, groupedPlatforms))
+            } else if (contentMode == ContentMode.FIVE_GAME_HANDHELD) {
                 val fghId = fghCollectionId?.takeIf { collectionsRepository.byId(it) != null }
                 currentFghCollectionId = fghId
                 if (fghId != null) {
@@ -232,11 +252,12 @@ class SystemListViewModel @Inject constructor(
             }
 
             val reorderableItems = mutableListOf<ListItem>()
-            when (contentMode) {
+            if (openFolder == null) when (contentMode) {
                 ContentMode.PLATFORMS -> {
-                    groupedPlatforms.filter { it.gameCount > 0 }.sortedBy { it.displayName }.forEach {
-                        reorderableItems.add(ListItem.PlatformItem(it))
-                    }
+                    groupedPlatforms
+                        .filter { it.gameCount > 0 && it.allTags.none { tag -> tag.uppercase() in inFolders } }
+                        .sortedBy { it.displayName }
+                        .forEach { reorderableItems.add(ListItem.PlatformItem(it)) }
                 }
                 ContentMode.COLLECTIONS -> {
                     collectionsRepository.topLevel().forEach { row ->
@@ -246,9 +267,8 @@ class SystemListViewModel @Inject constructor(
                 }
                 ContentMode.FIVE_GAME_HANDHELD -> {}
             }
-            if (contentMode != ContentMode.FIVE_GAME_HANDHELD) {
-                if (portCount > 0) reorderableItems.add(ListItem.PortsFolder(portsName, portCount))
-                if (toolCount > 0) reorderableItems.add(ListItem.ToolsFolder(toolsName, toolCount))
+            if (openFolder == null && contentMode != ContentMode.FIVE_GAME_HANDHELD) {
+                foldersConfig.roots.forEach { reorderableItems.add(ListItem.FolderItem(it.name, it.entries.size)) }
             }
             if (reorderableItems.isNotEmpty()) {
                 val ordered = applyCustomOrder(reorderableItems, romsRepository.knownPlatformTags())
@@ -256,7 +276,7 @@ class SystemListViewModel @Inject constructor(
             }
 
             val current = _state.value
-            if (items == current.items && groupedPlatforms == current.platforms) {
+            if (items == current.items && groupedPlatforms == current.platforms && current.folderPath == shownPath) {
                 if (current.isLoading) {
                     _state.update { it.copy(isLoading = false) }
                 }
@@ -284,10 +304,70 @@ class SystemListViewModel @Inject constructor(
                 selectedIndex = safeIndex,
                 scrollTarget = scrollTo,
                 isLoading = false,
-                hasGameItems = items.any { it is ListItem.GameItem }
+                hasGameItems = items.any { it is ListItem.GameItem },
+                folderPath = shownPath,
             )
             withContext(Dispatchers.Main) { onReady() }
         }
+    }
+
+    /** A folder's entries in file order. Platforms with no games stay hidden, as on the main menu. */
+    private fun folderItems(node: FolderNode, platforms: List<Platform>): List<ListItem> =
+        node.entries.mapNotNull { entry ->
+            when (entry) {
+                is FolderEntry.Folder -> ListItem.FolderItem(entry.node.name, entry.node.entries.size)
+                is FolderEntry.Platform -> platforms
+                    .firstOrNull { p -> p.allTags.any { it.uppercase() == entry.tag } }
+                    ?.takeIf { it.gameCount > 0 }
+                    ?.let { ListItem.PlatformItem(it) }
+                is FolderEntry.App -> {
+                    val app = appsRepository.forFolderEntry(entry.packageName, entry.name) { appLabel(entry.packageName) }
+                    ListItem.GameItem(dev.cannoli.scorza.model.ListItem.AppItem(app))
+                }
+            }
+        }.distinct()
+
+    private fun appLabel(packageName: String): String = try {
+        val pm = context.packageManager
+        pm.getApplicationLabel(pm.getApplicationInfo(packageName, 0)).toString()
+    } catch (_: android.content.pm.PackageManager.NameNotFoundException) {
+        packageName
+    }
+
+    fun isInFolder(): Boolean = folderPath.isNotEmpty()
+
+    /** Opens the folder [name] inside the one being shown. */
+    fun enterFolder(name: String, onReady: () -> Unit = {}) {
+        val current = _state.value
+        val at = current.items.indexOfFirst { it is ListItem.FolderItem && it.name == name }
+            .takeIf { it >= 0 } ?: current.selectedIndex
+        folderPositions.add(Saved(current.items.getOrNull(at), at, firstVisibleIndex))
+        folderPath = folderPath + name
+        savedPosition = Saved(null, 0, 0)
+        // A new level starts at the top, not at the parent's cursor index.
+        _state.update { it.copy(selectedIndex = 0, scrollTarget = 0) }
+        rebuild(onReady)
+    }
+
+    /** Goes up one folder level. False when already on the main menu. */
+    fun exitFolder(onReady: () -> Unit = {}): Boolean {
+        if (folderPath.isEmpty()) return false
+        folderPath = folderPath.dropLast(1)
+        savedPosition = folderPositions.removeLastOrNull()
+        rebuild(onReady)
+        return true
+    }
+
+    private fun rebuild(onReady: () -> Unit) {
+        val config = lastScanConfig ?: ScanConfig(true, true, ContentMode.PLATFORMS, null)
+        scan(
+            showRecentlyPlayed = config.showRecentlyPlayed,
+            showFavorites = config.showFavorites,
+            contentMode = config.contentMode,
+            fghCollectionId = config.fghCollectionId,
+            scanDisk = false,
+            onReady = onReady,
+        )
     }
 
     /** [reconcileOrphans] folds in platforms that still hold rows but no longer have a folder,
@@ -343,6 +423,8 @@ class SystemListViewModel @Inject constructor(
         _state.value.items
 
     fun enterReorderMode() {
+        // A folder's order is the order folders.json lists it in.
+        if (folderPath.isNotEmpty()) return
         _state.update { current ->
             val item = current.items.getOrNull(current.selectedIndex) ?: return@update current
             if (!item.isReorderable()) return@update current
@@ -403,8 +485,7 @@ class SystemListViewModel @Inject constructor(
         } else {
             val tags = current.items.mapNotNull { it.orderTag() }
             if (tags.isNotEmpty()) {
-                ensureReservedTag(TAG_TOOLS)
-                ensureReservedTag(TAG_PORTS)
+                tags.filter { isReservedTag(it) }.forEach { ensureReservedTag(it) }
                 scope.launch(Dispatchers.IO) {
                     romsRepository.setPlatformOrder(tags)
                 }
@@ -417,19 +498,18 @@ class SystemListViewModel @Inject constructor(
         romScanner.ensureReservedPlatformTag(tag)
     }
 
-    fun cancelReorder(showRecentlyPlayed: Boolean = true, showFavorites: Boolean = true, contentMode: ContentMode = ContentMode.PLATFORMS, fghCollectionId: Long? = null, toolsName: String = "Tools", portsName: String = "Ports") {
+    fun cancelReorder(showRecentlyPlayed: Boolean = true, showFavorites: Boolean = true, contentMode: ContentMode = ContentMode.PLATFORMS, fghCollectionId: Long? = null) {
         val current = _state.value
         if (!current.reorderMode) return
-        scan(showRecentlyPlayed, showFavorites, contentMode, fghCollectionId, toolsName, portsName)
+        scan(showRecentlyPlayed, showFavorites, contentMode, fghCollectionId)
     }
 
-    private fun ListItem.isReorderable(): Boolean = this is ListItem.PlatformItem || this is ListItem.ToolsFolder || this is ListItem.PortsFolder || this is ListItem.CollectionItem || this is ListItem.GameItem
+    private fun ListItem.isReorderable(): Boolean = this is ListItem.PlatformItem || this is ListItem.FolderItem || this is ListItem.CollectionItem || this is ListItem.GameItem
 
     private fun ListItem.orderTag(): String? = when (this) {
         is ListItem.PlatformItem -> platform.tag
         is ListItem.CollectionItem -> name
-        is ListItem.ToolsFolder -> TAG_TOOLS
-        is ListItem.PortsFolder -> TAG_PORTS
+        is ListItem.FolderItem -> FOLDER_TAG_PREFIX + name
         is ListItem.GameItem -> null
         else -> null
     }
@@ -448,7 +528,10 @@ class SystemListViewModel @Inject constructor(
     fun close() { scope.cancel() }
 
     companion object {
-        const val TAG_TOOLS = "__TOOLS__"
-        const val TAG_PORTS = "__PORTS__"
+        // Folders share the platforms table's sort order under reserved tags. Older builds used
+        // __TOOLS__ and __PORTS__ the same way, which is why every reserved tag starts with __.
+        const val FOLDER_TAG_PREFIX = "__FOLDER__/"
+
+        fun isReservedTag(tag: String): Boolean = tag.startsWith("__")
     }
 }

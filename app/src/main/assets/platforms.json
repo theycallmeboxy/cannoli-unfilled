@@ -1,4 +1,16 @@
 {
+  "apps": {
+    "retroarch": {
+      "package": "com.retroarch.aarch64",
+      "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+      "action": "android.intent.action.MAIN",
+      "extras": [
+        { "key": "ROM", "kind": "string", "value": "{rom_path}" },
+        { "key": "LIBRETRO", "kind": "string", "value": "/data/data/{package}/cores/{core}_android.so" },
+        { "key": "CONFIGFILE", "kind": "string", "value": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg" }
+      ]
+    }
+  },
   "GB": {
     "name": "Game Boy",
     "core": "gambatte_libretro",

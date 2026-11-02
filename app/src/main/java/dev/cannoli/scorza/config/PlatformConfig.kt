@@ -32,49 +32,97 @@ class PlatformConfig(
     private var defaultCores = mapOf<String, String>()
     private var defaultPlatformNames = mapOf<String, String>()
     private var defaultApps = mapOf<String, List<AppConfig>>()
+    private var appTemplates = mapOf<String, AppConfig>()
     private var arcadePlatforms = setOf<String>()
+
+    /** Problems found in the last read of Config/emulators.json, one line per skipped entry. */
+    var emulatorConfigErrors: List<String> = emptyList()
+        private set
+    private var emulatorsLoadedMtime = 0L
+
+    // The bundled names, kept apart from whatever emulators.json says. Older builds copied
+    // every one of them into platforms.ini, and a copy is not a rename.
+    private val bundledPlatformNames: Map<String, String>
 
     init {
         // Bundled asset defaults are always available regardless of storage permission, so seed
-        // them at construction. load() will be called after permission to overlay user INI.
-        loadPlatformsAsset()
+        // them at construction. load() replaces them with the user's emulators.json once storage
+        // is readable.
+        val bundled = parseDefinitions(readBundledDefinitions(), BUNDLED_NAME)
+        bundledPlatformNames = bundled.names
+        applyDefinitions(bundled)
     }
 
-    private fun loadPlatformsAsset() {
-        val json = JSONObject(assets.open("platforms.json").use { it.bufferedReader().readText() })
-        val cores = mutableMapOf<String, String>()
-        val names = mutableMapOf<String, String>()
-        val apps = mutableMapOf<String, List<AppConfig>>()
-        val arcade = mutableSetOf<String>()
-        for (tag in json.keys()) {
-            val entry = json.getJSONObject(tag)
-            entry.optString("name", "").takeIf { it.isNotEmpty() }?.let { names[tag] = it }
-            entry.optString("core", "").takeIf { it.isNotEmpty() }?.let { cores[tag] = it }
-            if (entry.optBoolean("arcade")) arcade.add(tag)
-            val appArray = entry.optJSONArray("app")
-            val list = mutableListOf<AppConfig>()
-            if (appArray != null) {
-                for (i in 0 until appArray.length()) {
-                    val item = appArray.get(i)
-                    val obj = when (item) {
-                        is String -> JSONObject().put("package", item)
-                        is JSONObject -> item
-                        else -> throw IllegalArgumentException("platforms.json[$tag].app[$i]: expected string or object")
-                    }
-                    list.add(parseAppConfig(obj))
-                }
-            } else {
-                entry.optString("app", "").takeIf { it.isNotEmpty() }?.let {
-                    list.add(AppConfig(packageName = it))
-                }
-            }
-            if (list.isNotEmpty()) apps[tag] = list
+    /**
+     * The renames in platforms.ini [platforms]. An entry equal to the bundled name is a copy an
+     * older build wrote there on first run; honouring it would shadow the name in emulators.json.
+     */
+    private fun iniPlatformNames(): Map<String, String> =
+        ini.getSection("platforms").filter { (tag, name) -> name != bundledPlatformNames[tag.uppercase()] }
+
+    private fun readBundledDefinitions(): String =
+        assets.open(BUNDLED_NAME).use { it.bufferedReader().readText() }
+
+    /**
+     * Reads Config/emulators.json, copying the bundled definitions there first when it is
+     * missing. A file that is not valid JSON falls back to the bundled definitions as a whole;
+     * a file that is valid but has bad entries keeps every good entry and skips the bad ones.
+     */
+    private fun loadEmulatorDefinitions() {
+        val file = paths.emulatorsJson
+        if (!file.exists()) seedEmulatorsJson(file)
+        val text = try { file.readText() } catch (e: java.io.IOException) {
+            applyDefinitions(parseDefinitions(readBundledDefinitions(), BUNDLED_NAME))
+            emulatorConfigErrors = listOf("${file.name}: unreadable (${e.message}), using built-in definitions")
+            logEmulatorConfigErrors()
+            return
         }
-        defaultCores = cores
-        defaultPlatformNames = names
-        defaultApps = apps
-        arcadePlatforms = arcade
+        emulatorsLoadedMtime = file.lastModified()
+        val parsed = try {
+            parseDefinitions(text, file.name)
+        } catch (e: org.json.JSONException) {
+            parseDefinitions(readBundledDefinitions(), BUNDLED_NAME)
+                .copy(errors = listOf("${file.name}: not valid JSON (${e.message}), using built-in definitions"))
+        }
+        applyDefinitions(parsed)
+        emulatorConfigErrors = parsed.errors
+        logEmulatorConfigErrors()
     }
+
+    private fun seedEmulatorsJson(file: File) {
+        try {
+            file.parentFile?.mkdirs()
+            assets.open(BUNDLED_NAME).use { input -> file.outputStream().use { input.copyTo(it) } }
+        } catch (e: java.io.IOException) {
+            dev.cannoli.scorza.util.ErrorLog.write("emulators.json seed failed: ${e.message}")
+        }
+    }
+
+    private fun logEmulatorConfigErrors() {
+        for (error in emulatorConfigErrors) dev.cannoli.scorza.util.ErrorLog.write(error)
+    }
+
+    /** Re-reads emulators.json when it changed on disk since the last read. True if it did. */
+    fun reloadEmulatorsIfChanged(): Boolean {
+        val file = paths.emulatorsJson
+        if (!file.exists() || file.lastModified() == emulatorsLoadedMtime) return false
+        loadEmulatorDefinitions()
+        return true
+    }
+
+    private fun applyDefinitions(defs: Definitions) {
+        defaultCores = defs.cores
+        defaultPlatformNames = defs.names
+        defaultApps = defs.apps
+        appTemplates = defs.templates
+        arcadePlatforms = defs.arcade
+    }
+
+    /**
+     * The launch template for RetroArch, from the `apps.retroarch` entry. Null when the user
+     * removed it, in which case the launcher uses its built-in RetroActivityFuture intent.
+     */
+    fun getRetroArchTemplate(): AppConfig? = appTemplates[RETROARCH_TEMPLATE]
 
     private var ini: IniData = IniData(emptyMap())
     private var userChoices: MutableMap<String, EmulatorChoice> = java.util.concurrent.ConcurrentHashMap()
@@ -84,14 +132,8 @@ class PlatformConfig(
     private val paths: CannoliPaths get() = CannoliPaths(cannoliRootProvider())
     private val coresFile get() = paths.coresJson
 
-    private fun romsTagDir(tag: String, romsDir: File = paths.romsDir): File {
-        val direct = File(romsDir, tag)
-        if (direct.exists()) return direct
-        return romsDir.listFiles()?.firstOrNull { it.isDirectory && it.name.equals(tag, ignoreCase = true) } ?: direct
-    }
-
     fun load() {
-        loadPlatformsAsset()
+        loadEmulatorDefinitions()
         val configFile = paths.platformsIni
         if (!configFile.exists()) {
             writeDefaultIni(configFile)
@@ -333,12 +375,12 @@ class PlatformConfig(
 
     fun isKnownTag(tag: String): Boolean {
         val upper = tag.uppercase()
-        return upper in defaultPlatformNames || upper in ini.getSection("platforms")
+        return upper in defaultPlatformNames || iniPlatformNames().keys.any { it.uppercase() == upper }
     }
 
     fun isArcade(tag: String): Boolean = tag.uppercase() in arcadePlatforms
 
-    fun getAllTags(): Set<String> = defaultPlatformNames.keys + ini.getSection("platforms").keys
+    fun getAllTags(): Set<String> = defaultPlatformNames.keys + iniPlatformNames().keys
 
     fun getAppPackage(tag: String): String? =
         userChoices[tag]?.appPackage ?: defaultApps[tag.uppercase()]?.firstOrNull()?.packageName
@@ -614,14 +656,14 @@ class PlatformConfig(
 
     fun getDisplayName(tag: String): String {
         val upper = tag.uppercase()
-        return ini.get("platforms", upper)
+        return iniPlatformNames()[upper]
             ?: defaultPlatformNames[upper]
             ?: tag
     }
 
     fun setDisplayName(tag: String, name: String) {
         val configFile = paths.platformsIni
-        val currentNames = ini.getSection("platforms").toMutableMap()
+        val currentNames = iniPlatformNames().toMutableMap()
         val naturalName = defaultPlatformNames[tag.uppercase()] ?: tag
         if (name.isBlank() || name == naturalName) {
             currentNames.remove(tag)
@@ -649,7 +691,7 @@ class PlatformConfig(
     // screen describe one core while a different one launched.
     fun getCoreName(tag: String): String? = getCoreMapping(tag).ifEmpty { null }
 
-    fun resolvePlatform(tag: String, romsDir: File, gameCount: Int): Platform {
+    fun resolvePlatform(tag: String, gameCount: Int): Platform {
         return Platform(
             tag = tag,
             displayName = getDisplayName(tag),
@@ -662,18 +704,94 @@ class PlatformConfig(
         file.parentFile?.mkdirs()
         val sb = StringBuilder()
         sb.appendLine("[platforms]")
-        for ((tag, name) in defaultPlatformNames) {
-            sb.appendLine("%-6s = %s".format(tag, name))
-        }
+        sb.appendLine("; Optional - renames a platform. Names and emulators live in emulators.json.")
+        sb.appendLine("; GBA = Game Boy Advance")
         sb.appendLine()
         sb.appendLine("[cores]")
-        sb.appendLine("; Optional - overrides bundled TAG->core lookup")
+        sb.appendLine("; Optional - overrides the TAG->core lookup in emulators.json")
         sb.appendLine("; GBA = mgba_libretro")
         file.writeText(sb.toString())
     }
 
+    internal data class Definitions(
+        val cores: Map<String, String>,
+        val names: Map<String, String>,
+        val apps: Map<String, List<AppConfig>>,
+        val templates: Map<String, AppConfig>,
+        val arcade: Set<String>,
+        val errors: List<String>,
+    )
+
     companion object {
+        private const val BUNDLED_NAME = "platforms.json"
+        // Top-level key holding shared launch templates. Platform tags are upper case, so a
+        // lower-case key cannot collide with one.
+        private const val TEMPLATES_KEY = "apps"
+        const val RETROARCH_TEMPLATE = "retroarch"
+
         fun parseAppConfigForTest(obj: JSONObject): AppConfig = parseAppConfig(obj)
+
+        /** Parses one launch intent object in the emulators.json schema. Throws on a bad entry. */
+        internal fun parseLaunchConfig(obj: JSONObject): AppConfig = parseAppConfig(obj)
+
+        /**
+         * Parses the platform definitions. Throws JSONException only when the text is not a JSON
+         * object at all; any single bad platform, template or app entry is skipped and reported
+         * in [Definitions.errors] so one typo cannot take every other platform down with it.
+         */
+        internal fun parseDefinitions(text: String, source: String): Definitions {
+            val json = JSONObject(text)
+            val errors = mutableListOf<String>()
+            val templates = mutableMapOf<String, AppConfig>()
+            json.optJSONObject(TEMPLATES_KEY)?.let { obj ->
+                for (name in obj.keys()) {
+                    try {
+                        templates[name] = parseAppConfig(obj.getJSONObject(name))
+                    } catch (e: Exception) {
+                        errors.add("$source: $TEMPLATES_KEY.$name skipped: ${e.message}")
+                    }
+                }
+            }
+            val cores = mutableMapOf<String, String>()
+            val names = mutableMapOf<String, String>()
+            val apps = mutableMapOf<String, List<AppConfig>>()
+            val arcade = mutableSetOf<String>()
+            for (key in json.keys()) {
+                if (key == TEMPLATES_KEY) continue
+                val tag = key.uppercase()
+                val entry = json.optJSONObject(key)
+                if (entry == null) {
+                    errors.add("$source: $key skipped: expected an object")
+                    continue
+                }
+                entry.optString("name", "").takeIf { it.isNotEmpty() }?.let { names[tag] = it }
+                entry.optString("core", "").takeIf { it.isNotEmpty() }?.let { cores[tag] = it }
+                if (entry.optBoolean("arcade")) arcade.add(tag)
+                val list = mutableListOf<AppConfig>()
+                val appArray = entry.optJSONArray("app")
+                if (appArray != null) {
+                    for (i in 0 until appArray.length()) {
+                        try {
+                            list.add(
+                                when (val item = appArray.get(i)) {
+                                    is String -> templates[item] ?: AppConfig(packageName = item)
+                                    is JSONObject -> parseAppConfig(item)
+                                    else -> throw IllegalArgumentException("expected a string or an object")
+                                }
+                            )
+                        } catch (e: Exception) {
+                            errors.add("$source: $key.app[$i] skipped: ${e.message}")
+                        }
+                    }
+                } else {
+                    entry.optString("app", "").takeIf { it.isNotEmpty() }?.let {
+                        list.add(templates[it] ?: AppConfig(packageName = it))
+                    }
+                }
+                if (list.isNotEmpty()) apps[tag] = list
+            }
+            return Definitions(cores, names, apps, templates, arcade, errors)
+        }
 
         private fun parseAppConfig(obj: JSONObject): AppConfig {
             val pkg = obj.optString("package", "").ifEmpty {

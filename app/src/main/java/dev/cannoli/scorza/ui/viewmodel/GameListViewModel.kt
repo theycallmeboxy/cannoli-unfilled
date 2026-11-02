@@ -312,32 +312,6 @@ class GameListViewModel @Inject constructor(
         withContext(Dispatchers.Main) { onReady() }
     }
 
-    fun loadApkList(type: String, displayName: String, onReady: () -> Unit = {}) {
-        breadcrumbStack.clear()
-        indexStack.clear()
-        scope.launch(Dispatchers.IO) {
-            try {
-                val appType = if (type == "tools") AppType.TOOL else AppType.PORT
-                val apps = appsRepository.all(appType)
-                val favAppIds = if (showFavoriteStars) collectionsRepository.favoriteAppIds() else emptySet()
-                val items = apps
-                    .sortedBy { it.id !in favAppIds }
-                    .map { ListItem.AppItem(it) }
-                _state.value = State(
-                    platformTag = type,
-                    breadcrumb = displayName,
-                    items = items,
-                    allItems = items,
-                    favoriteAppIds = favAppIds,
-                    selectedIndex = 0,
-                    isLoading = false
-                )
-            } finally {
-                withContext(Dispatchers.Main) { onReady() }
-            }
-        }
-    }
-
     fun loadRecentlyPlayed(onReady: () -> Unit = {}) {
         breadcrumbStack.clear()
         indexStack.clear()
@@ -470,13 +444,6 @@ class GameListViewModel @Inject constructor(
                     done()
                 }
             }
-        } else if (current.platformTag == "tools" || current.platformTag == "ports") {
-            loadApkList(current.platformTag, current.breadcrumb) {
-                val s = _state.value
-                val (idx, scroll) = reloadPosition(s.items, preserveId, preserveIndex, preserveScroll, prevCount = -1)
-                _state.value = s.copy(selectedIndex = idx, scrollTarget = scroll)
-                done()
-            }
         } else if (current.platformTag == "recently_played") {
             _state.value = current.copy(items = emptyList(), isLoading = true)
             loadRecentlyPlayed(done)
@@ -561,16 +528,10 @@ class GameListViewModel @Inject constructor(
                 val combined = children + roms + apps
                 if (current.isFavorites) combined
                 else sortFavoritesFirst(combined)
-            } else if (current.platformTag == "tools" || current.platformTag == "ports") {
-                val type = if (current.platformTag == "tools") AppType.TOOL else AppType.PORT
-                appsRepository.all(type).map { ListItem.AppItem(it) }
             } else {
                 loadPlatformItems(current.platformTag, current.platformTags, current.subfolderPath)
             }
-            val sortedItems = if (current.platformTag == "tools" || current.platformTag == "ports") {
-                val freshFavs = collectionsRepository.favoriteAppIds()
-                newItems.sortedBy { (it as? ListItem.AppItem)?.app?.id !in freshFavs }
-            } else newItems
+            val sortedItems = newItems
             val visible = applyItemFilter(sortedItems, current.searchTerm)
             val newIndex = visible.indexOfFirst { itemRef(it) == ref }
                 .let { if (it >= 0) it else oldIndex.coerceAtMost(visible.lastIndex.coerceAtLeast(0)) }
@@ -646,8 +607,7 @@ class GameListViewModel @Inject constructor(
 
     fun enterReorderMode() {
         _state.update { current ->
-            val isApkList = current.platformTag == "tools" || current.platformTag == "ports"
-            val canReorder = current.isCollectionsList || isApkList || current.isCollection
+            val canReorder = current.isCollectionsList || current.isCollection
             if (!canReorder || current.items.isEmpty() || current.searchTerm != null) return@update current
             current.copy(reorderMode = true, reorderOriginalIndex = current.selectedIndex)
         }
@@ -676,8 +636,6 @@ class GameListViewModel @Inject constructor(
     }
 
     private fun canReorderSwap(current: State, a: Int, b: Int): Boolean {
-        val isApkList = current.platformTag == "tools" || current.platformTag == "ports"
-        if (isApkList) return true
         val itemA = current.items[a]; val itemB = current.items[b]
         if ((itemA is ListItem.ChildCollectionItem) != (itemB is ListItem.ChildCollectionItem)) return false
         val favA = isItemFavorited(current, itemA)
@@ -701,9 +659,6 @@ class GameListViewModel @Inject constructor(
         if (current.isCollectionsList) {
             val ids = current.items.mapNotNull { (it as? ListItem.CollectionItem)?.collection?.id }
             scope.launch(Dispatchers.IO) { collectionsRepository.setCollectionOrder(ids) }
-        } else if (current.platformTag == "tools" || current.platformTag == "ports") {
-            val ids = current.items.mapNotNull { (it as? ListItem.AppItem)?.app?.id }
-            scope.launch(Dispatchers.IO) { appsRepository.setOrder(ids) }
         } else if (current.isCollection && current.collectionId != null) {
             val collectionId = current.collectionId
             val childIds = current.items.mapNotNull { (it as? ListItem.ChildCollectionItem)?.collection?.id }
@@ -725,8 +680,6 @@ class GameListViewModel @Inject constructor(
         if (!current.reorderMode) return
         if (current.isCollectionsList) {
             loadCollectionsList()
-        } else if (current.platformTag == "tools" || current.platformTag == "ports") {
-            loadApkList(current.platformTag, current.breadcrumb)
         } else if (current.isCollection && current.collectionId != null) {
             val id = current.collectionId
             scope.launch(Dispatchers.IO) { loadCollectionByIdInternal(id) {} }

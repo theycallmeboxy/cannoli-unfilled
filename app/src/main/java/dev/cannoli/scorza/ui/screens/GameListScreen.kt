@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cannoli.scorza.R
-import dev.cannoli.scorza.model.AppType
 import dev.cannoli.scorza.model.ListItem
 import dev.cannoli.scorza.settings.ArtScale
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
@@ -272,7 +271,7 @@ fun GameListScreen(
                 }
             }
 
-            val isToolApp = (selected as? ListItem.AppItem)?.app?.type == AppType.TOOL
+            val isToolApp = selected is ListItem.AppItem
             val actionLabel = if (state.multiSelectMode) {
                 stringResource(R.string.label_toggle)
             } else if (selected is ListItem.SubfolderItem || state.isCollectionsList) {

@@ -2,11 +2,9 @@ package dev.cannoli.scorza.input.screen
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.config.PlatformConfig
-import dev.cannoli.scorza.db.AppsRepository
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.di.IoScope
 import dev.cannoli.scorza.input.ActivityActions
@@ -14,10 +12,8 @@ import dev.cannoli.scorza.input.InputTesterController
 import dev.cannoli.scorza.input.LauncherActions
 import dev.cannoli.scorza.input.PageJump
 import dev.cannoli.scorza.input.ScreenInputHandler
-import dev.cannoli.scorza.launcher.ApkLauncher
 import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.IntentAuditor
-import dev.cannoli.scorza.model.AppType
 import dev.cannoli.scorza.navigation.BrowsePurpose
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
@@ -40,7 +36,6 @@ class SettingsInputHandler @Inject constructor(
     private val settings: SettingsRepository,
     private val platformConfig: PlatformConfig,
     private val installedCoreService: InstalledCoreService,
-    private val appsRepository: AppsRepository,
     private val setupCoordinator: SetupCoordinator,
     private val inputTesterController: InputTesterController,
     private val updateManager: UpdateManager,
@@ -126,8 +121,6 @@ class SettingsInputHandler @Inject constructor(
                 Intent(android.provider.Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
             "installed_cores" -> queryInstalledCores()
-            "manage_tools" -> openAppPicker("tools")
-            "manage_ports" -> openAppPicker("ports")
             "regenerate_system_folders" -> {
                 val romDir = cannoliPaths.romDir
                 val tags = platformConfig.getAllTags()
@@ -262,60 +255,5 @@ class SettingsInputHandler @Inject constructor(
                 nav.screenStack[nav.screenStack.lastIndex] = screen.copy(cores = cores, loading = false)
             }
         }
-    }
-
-    private fun openAppPicker(type: String) {
-        val installed = getInstalledLauncherApps()
-        val allApps = buildList {
-            if (type == "tools" && context.packageManager.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
-                add("Android TV Settings" to ApkLauncher.VIRTUAL_TV_SETTINGS_PACKAGE)
-            }
-            addAll(installed)
-        }
-        val appType = if (type == "tools") AppType.TOOL else AppType.PORT
-        val existing = appsRepository.all(appType).map { it.packageName }.toSet()
-        val initialChecked = allApps.indices.filter { allApps[it].second in existing }.toSet()
-        val title = if (type == "tools") "Manage Tools" else "Manage Ports"
-        nav.push(LauncherScreen.AppPicker(
-            type = type,
-            title = title,
-            apps = allApps.map { it.first },
-            packages = allApps.map { it.second },
-            selectedIndex = 0,
-            checkedIndices = initialChecked,
-            initialChecked = initialChecked
-        ))
-    }
-
-    private fun getInstalledLauncherApps(): List<Pair<String, String>> {
-        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        val resolveInfos = context.packageManager.queryIntentActivities(intent, 0)
-        return resolveInfos
-            .mapNotNull { ri ->
-                val pkg = ri.activityInfo.packageName
-                if (pkg == context.packageName) return@mapNotNull null
-                val label = ri.loadLabel(context.packageManager).toString()
-                label to pkg
-            }
-            .distinctBy { it.second }
-            .sortedBy { it.first.lowercase(java.util.Locale.ROOT) }
-    }
-
-    fun confirmAppPicker(state: LauncherScreen.AppPicker) {
-        val selected = state.checkedIndices.mapNotNull { idx ->
-            val name = state.apps.getOrNull(idx) ?: return@mapNotNull null
-            val pkg = state.packages.getOrNull(idx) ?: return@mapNotNull null
-            name to pkg
-        }
-        val appType = if (state.type == "tools") AppType.TOOL else AppType.PORT
-        ioScope.launch {
-            val keep = selected.map { it.second }.toSet()
-            appsRepository.all(appType).forEach { app ->
-                if (app.packageName !in keep) appsRepository.delete(app.id)
-            }
-            selected.forEach { (name, pkg) -> appsRepository.upsert(appType, name, pkg) }
-            launcherActions.rescanSystemList()
-        }
-        nav.pop()
     }
 }

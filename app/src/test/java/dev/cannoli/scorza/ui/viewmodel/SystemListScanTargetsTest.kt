@@ -1,7 +1,6 @@
 package dev.cannoli.scorza.ui.viewmodel
 
 import dev.cannoli.scorza.config.PlatformConfig
-import dev.cannoli.scorza.db.AppsRepository
 import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.db.RecentlyPlayedRepository
 import dev.cannoli.scorza.db.RomScanner
@@ -60,9 +59,9 @@ class SystemListScanTargetsTest {
         val platformConfig = mockk<PlatformConfig>(relaxed = true)
         every { platformConfig.isKnownTag(any()) } answers { firstArg<String>() in KNOWN }
         every { platformConfig.isArcade(any()) } returns false
-        every { platformConfig.resolvePlatform(any(), any(), any()) } answers {
+        every { platformConfig.resolvePlatform(any(), any()) } answers {
             val tag = firstArg<String>()
-            Platform(tag = tag, displayName = tag, coreName = null, gameCount = thirdArg())
+            Platform(tag = tag, displayName = tag, coreName = null, gameCount = secondArg())
         }
 
         val scheduler = mockk<ScanScheduler>(relaxed = true)
@@ -78,6 +77,8 @@ class SystemListScanTargetsTest {
             cannoliPaths = paths,
             romDirectoryWatcher = mockk<RomDirectoryWatcher>(relaxed = true),
             scanScheduler = scheduler,
+            foldersConfig = dev.cannoli.scorza.config.FoldersConfig { File(tmp.root, "folders.json") },
+            context = mockk(relaxed = true),
         ).also { created.add(it) }
     }
 

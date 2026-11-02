@@ -21,6 +21,7 @@ class LaunchManager(
     private val launchState: LaunchState,
     private val installedCoreService: InstalledCoreService? = null,
     private val gameOverrides: dev.cannoli.scorza.db.GameOverrideStore? = null,
+    private val foldersConfig: dev.cannoli.scorza.config.FoldersConfig? = null,
 ) {
     // Per-game overrides are keyed by rom_id, which the scanner keeps stable across renames,
     // moves and auto-organize, so an override follows its game instead of being orphaned.
@@ -42,7 +43,7 @@ class LaunchManager(
         if (gameOverride?.source == EmulatorSource.Standalone && gameOverride.appPackage != null) {
             val cfg = platformConfig.getAppConfig(rom.platformTag, gameOverride.appPackage)
             return launchResultDialog(
-                launchStandalone(launchFile, cfg), rom.platformTag, rom.id
+                launchStandalone(rom, launchFile, cfg), rom.platformTag, rom.id
             )
         }
         val overrideRomId = if (gameOverride != null) rom.id else null
@@ -68,7 +69,7 @@ class LaunchManager(
                 ?: platformConfig.getFirstInstalledApp(rom.platformTag, context.packageManager)
                 ?: platformConfig.getAppPackage(rom.platformTag)?.let { platformConfig.getAppConfig(rom.platformTag, it) }
             if (cfg != null) {
-                launchStandalone(launchFile, cfg)
+                launchStandalone(rom, launchFile, cfg)
             } else {
                 LaunchResult.CoreNotInstalled("unknown")
             }
@@ -92,8 +93,9 @@ class LaunchManager(
                 val coreName = platformConfig.getCoreDisplayName(resolvedCore)
                 return errorAndReset(DialogState.MissingCore(coreName, label, rom.platformTag, overrideRomId))
             }
-            val raConfig = "/storage/emulated/0/Android/data/$raPackage/files/retroarch.cfg"
-            retroArchLauncher.launchRetroArchIntent(launchFile, resolvedCore, raConfig, raPackage)
+            retroArchLauncher.launchRetroArchIntent(
+                launchFile, resolvedCore, platformConfig.getRetroArchTemplate(), raPackage,
+            )
         } else {
             // App-only platform (no core) that reached here has nothing installed to
             // run it, so name the app it wants instead of a core it never had.
@@ -112,7 +114,8 @@ class LaunchManager(
         debugLog("launchApp entered: ${app.type} / ${app.packageName}")
         if (launchState.launching) return null
         launchState.launching = true
-        return launchResultDialog(apkLauncher.launch(app.packageName))
+        val custom = foldersConfig?.intentFor(app.packageName)
+        return launchResultDialog(if (custom != null) apkLauncher.launchConfigured(custom) else apkLauncher.launch(app.packageName))
     }
 
     private fun errorAndReset(dialog: DialogState): DialogState {
@@ -158,8 +161,13 @@ class LaunchManager(
         } catch (_: Exception) {}
     }
 
-    private fun launchStandalone(launchFile: File, cfg: AppConfig): LaunchResult =
-        apkLauncher.launchWithRom(cfg.packageName, launchFile, cfg)
+    // A standalone entry may name the platform's core with {core} too, e.g. to pass it to a
+    // RetroArch build listed as an app.
+    private fun launchStandalone(rom: Rom, launchFile: File, cfg: AppConfig): LaunchResult {
+        val vars = platformConfig.getCoreName(rom.platformTag)
+            ?.let { mapOf(EmulatorIntentBuilder.VAR_CORE to it) } ?: emptyMap()
+        return apkLauncher.launchWithRom(cfg.packageName, launchFile, cfg, vars)
+    }
 
     companion object {
         // Null means no stored preference anywhere, so the caller falls through to RetroArch.

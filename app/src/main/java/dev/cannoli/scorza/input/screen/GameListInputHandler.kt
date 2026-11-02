@@ -9,7 +9,6 @@ import dev.cannoli.scorza.input.MENU_ADD_FAVORITE
 import dev.cannoli.scorza.input.MENU_DELETE_ART
 import dev.cannoli.scorza.input.MENU_DELETE_GAME
 import dev.cannoli.scorza.input.MENU_MANAGE_COLLECTIONS
-import dev.cannoli.scorza.input.MENU_REMOVE
 import dev.cannoli.scorza.input.MENU_REMOVE_FAVORITE
 import dev.cannoli.scorza.input.MENU_REMOVE_FROM_COLLECTION
 import dev.cannoli.scorza.input.MENU_REMOVE_FROM_RECENTS
@@ -44,8 +43,7 @@ class GameListInputHandler @Inject constructor(
     val collectionSelectHoldRunnable = Runnable {
         collectionSelectHeld = true
         val glState = gameListViewModel.state.value
-        val isApkList = glState.platformTag == "tools" || glState.platformTag == "ports"
-        if ((glState.isCollection && !glState.isCollectionsList && glState.subfolderPath == null) || isApkList) {
+        if (glState.isCollection && !glState.isCollectionsList && glState.subfolderPath == null) {
             if (!gameListViewModel.isReorderMode() && !gameListViewModel.isMultiSelectMode()) {
                 gameListViewModel.enterMultiSelect()
             }
@@ -137,19 +135,14 @@ class GameListInputHandler @Inject constructor(
                         is FavRef.App -> ref.id in glState.favoriteAppIds
                     }
                 }
-                val isApkList = glState.platformTag == "tools" || glState.platformTag == "ports"
                 val options = mutableListOf<String>()
                 if (glState.platformTag == "recently_played") options.add(MENU_REMOVE_FROM_RECENTS)
                 options.add(if (allFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
                 if (glState.isCollection && glState.collectionId != null) {
                     options.add(MENU_REMOVE_FROM_COLLECTION)
                 }
-                if (isApkList) {
-                    options.addAll(listOf(MENU_MANAGE_COLLECTIONS, MENU_REMOVE))
-                } else {
-                    options.add(MENU_MANAGE_COLLECTIONS)
-                    options.addAll(listOf(MENU_DELETE_ART, MENU_DELETE_GAME))
-                }
+                options.add(MENU_MANAGE_COLLECTIONS)
+                options.addAll(listOf(MENU_DELETE_ART, MENU_DELETE_GAME))
                 gameListViewModel.confirmMultiSelect()
                 nav.dialogState.value = DialogState.BulkContextMenu(
                     gamePaths = paths,
@@ -182,18 +175,7 @@ class GameListInputHandler @Inject constructor(
         if (gameSelectDown) return
         gameSelectDown = true
         val glState = gameListViewModel.state.value
-        val isApkList = glState.platformTag == "tools" || glState.platformTag == "ports"
         if (glState.isCollection && !glState.isCollectionsList && glState.subfolderPath == null) {
-            if (gameListViewModel.isReorderMode()) {
-                gameListViewModel.confirmReorder()
-                selectHandled = true
-            } else if (gameListViewModel.isMultiSelectMode()) {
-                gameListViewModel.confirmMultiSelect()
-                selectHandled = true
-            } else {
-                postSelectHoldTimer()
-            }
-        } else if (isApkList) {
             if (gameListViewModel.isReorderMode()) {
                 gameListViewModel.confirmReorder()
                 selectHandled = true
@@ -224,8 +206,7 @@ class GameListInputHandler @Inject constructor(
         // so a release can arrive here with no press behind it. Flags below still reset either way.
         if (gameSelectDown && !nav.selectHeld && !collectionSelectHeld && !selectHandled) {
             val glState = gameListViewModel.state.value
-            val isApkList = glState.platformTag == "tools" || glState.platformTag == "ports"
-            if (((glState.isCollection && !glState.isCollectionsList && glState.subfolderPath == null) || isApkList)
+            if (glState.isCollection && !glState.isCollectionsList && glState.subfolderPath == null
                 && !gameListViewModel.isReorderMode() && !gameListViewModel.isMultiSelectMode()) {
                 gameListViewModel.enterReorderMode()
             }
@@ -272,13 +253,12 @@ class GameListInputHandler @Inject constructor(
 
         val recentKey = selectedRecentKey(item) ?: return
         val tag = gameListViewModel.state.value.platformTag
-        val trackRecent = tag != "tools"
         val errorDialog = launcherActions.launchSelected(item)
         if (errorDialog != null) {
             nav.dialogState.value = errorDialog
         } else if (nav.dialogState.value is DialogState.SaveSyncChecking) {
-            if (trackRecent) launcherActions.recordPendingRecent(recentKey, tag == "recently_played")
-        } else if (trackRecent) {
+            launcherActions.recordPendingRecent(recentKey, tag == "recently_played")
+        } else {
             launcherActions.recordRecentlyPlayedByPath(recentKey)
             if (tag == "recently_played") nav.pendingRecentlyPlayedReorder = true
         }

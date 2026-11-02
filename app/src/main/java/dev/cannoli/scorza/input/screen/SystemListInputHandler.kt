@@ -84,9 +84,11 @@ class SystemListInputHandler @Inject constructor(
                 showFavorites = settings.showFavorites,
                 contentMode = settings.contentMode,
                 fghCollectionId = launcherActions.validateFghCollection(),
-                toolsName = settings.toolsName,
-                portsName = settings.portsName
             )
+        } else if (systemListViewModel.isInFolder()) {
+            if (nav.navigating) return
+            nav.navigating = true
+            systemListViewModel.exitFolder { nav.navigating = false }
         } else if (settings.mainMenuQuit) {
             nav.dialogState.value = DialogState.QuitConfirm
         }
@@ -191,19 +193,9 @@ class SystemListInputHandler @Inject constructor(
                     launcherActions.recordRecentlyPlayedByPath(recentKey)
                 }
             }
-            is SystemListViewModel.ListItem.ToolsFolder -> {
+            is SystemListViewModel.ListItem.FolderItem -> {
                 nav.navigating = true
-                gameListViewModel.loadApkList("tools", item.name) {
-                    nav.screenStack.add(LauncherScreen.GameList)
-                    nav.navigating = false
-                }
-            }
-            is SystemListViewModel.ListItem.PortsFolder -> {
-                nav.navigating = true
-                gameListViewModel.loadApkList("ports", item.name) {
-                    nav.screenStack.add(LauncherScreen.GameList)
-                    nav.navigating = false
-                }
+                systemListViewModel.enterFolder(item.name) { nav.navigating = false }
             }
             else -> {}
         }
@@ -224,16 +216,18 @@ class SystemListInputHandler @Inject constructor(
             val options = buildList {
                 add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
                 add(MENU_MANAGE_COLLECTIONS)
-                add(MENU_EMULATOR_OVERRIDE)
-                add(MENU_DELETE_GAME)
+                // An app comes from folders.json, which is where it is edited or removed.
+                if (item.item is ListItem.RomItem) {
+                    add(MENU_EMULATOR_OVERRIDE)
+                    add(MENU_DELETE_GAME)
+                }
             }
             nav.dialogState.value = DialogState.ContextMenu(gameName = menuName, options = options)
             return
         }
+        // Folders are named in folders.json, so only platforms rename from here.
         val name = when (item) {
             is SystemListViewModel.ListItem.PlatformItem -> item.platform.displayName
-            is SystemListViewModel.ListItem.ToolsFolder -> item.name
-            is SystemListViewModel.ListItem.PortsFolder -> item.name
             else -> return
         }
         val options = buildList {

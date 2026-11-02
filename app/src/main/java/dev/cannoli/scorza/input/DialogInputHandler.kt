@@ -521,22 +521,7 @@ class DialogInputHandler @Inject constructor(
                     }
                 }
             }
-            is DialogState.MissingApp -> {
-                val glState = gameListViewModel.state.value
-                if (glState.platformTag == "tools" || glState.platformTag == "ports") {
-                    val item = gameListViewModel.getSelectedItem()
-                    if (item is ListItem.AppItem) {
-                        nav.dialogState.value = DialogState.None
-                        ioScope.launch {
-                            appsRepository.delete(item.app.id)
-                            gameListViewModel.reload()
-                            launcherActions.rescanSystemList()
-                        }
-                    }
-                } else {
-                    openEmulatorRecovery(ds.platformTag, ds.romId)
-                }
-            }
+            is DialogState.MissingApp -> openEmulatorRecovery(ds.platformTag, ds.romId)
             is DialogState.MissingCore -> openEmulatorRecovery(ds.platformTag, ds.romId)
             is DialogState.DeleteCollectionConfirm -> {
                 val glState = gameListViewModel.state.value
@@ -1524,17 +1509,6 @@ class DialogInputHandler @Inject constructor(
                 gameListViewModel.reload()
                 nav.dialogState.value = DialogState.None
             }
-            selected == MENU_REMOVE -> {
-                if (app != null) {
-                    pendingContextReturn = null
-                    ioScope.launch {
-                        appsRepository.delete(app.id)
-                        gameListViewModel.reload()
-                        launcherActions.rescanSystemList()
-                    }
-                    nav.dialogState.value = DialogState.None
-                }
-            }
             selected == MENU_ADD_FAVORITE || selected == MENU_REMOVE_FAVORITE -> {
                 pendingContextReturn = null
                 gameListViewModel.toggleFavorite { launcherActions.rescanSystemList() }
@@ -1699,20 +1673,6 @@ class DialogInputHandler @Inject constructor(
                 gameListViewModel.reload()
                 nav.dialogState.value = DialogState.None
             }
-            MENU_REMOVE -> {
-                pendingContextReturn = null
-                val pathSet = state.gamePaths.toSet()
-                ioScope.launch {
-                    gameListViewModel.state.value.items.forEach { item ->
-                        if (item is ListItem.AppItem && item.recentKey() in pathSet) {
-                            appsRepository.delete(item.app.id)
-                        }
-                    }
-                    gameListViewModel.reload()
-                    launcherActions.rescanSystemList()
-                }
-                nav.dialogState.value = DialogState.None
-            }
             MENU_REMOVE_FROM_COLLECTION -> {
                 pendingContextReturn = null
                 val glState = gameListViewModel.state.value
@@ -1842,8 +1802,6 @@ class DialogInputHandler @Inject constructor(
         val rom = (item as? ListItem.RomItem)?.rom
         val app = (item as? ListItem.AppItem)?.app
         val isApk = app != null
-        val platformTag = rom?.platformTag ?: (if (app?.type == AppType.TOOL) "tools" else "ports")
-        val romPath = rom?.path?.absolutePath
         val isFav = when {
             rom != null -> rom.id in glState.favoriteRomIds
             app != null -> app.id in glState.favoriteAppIds
@@ -1852,11 +1810,10 @@ class DialogInputHandler @Inject constructor(
         return buildList {
             if (glState.platformTag == "recently_played") add(MENU_REMOVE_FROM_RECENTS)
             add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
+            // An app's name and place come from folders.json, so it is renamed or removed there.
             if (isApk) {
                 add(MENU_MANAGE_COLLECTIONS)
-                add(MENU_RENAME)
                 if (app?.artFile != null) add(MENU_DELETE_ART)
-                add(MENU_REMOVE)
             } else {
                 addAll(gameContextOptions.map { menuItem ->
                     when {

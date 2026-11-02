@@ -35,8 +35,9 @@ object LaunchModule {
         launchState: LaunchState,
         installedCoreService: InstalledCoreService,
         gameOverrides: dev.cannoli.scorza.db.GameOverrideStore,
+        foldersConfig: dev.cannoli.scorza.config.FoldersConfig,
     ): LaunchManager = LaunchManager(
         context, settings, platformConfig,
-        retroArchLauncher, apkLauncher, launchState, installedCoreService, gameOverrides
+        retroArchLauncher, apkLauncher, launchState, installedCoreService, gameOverrides, foldersConfig,
     )
 }

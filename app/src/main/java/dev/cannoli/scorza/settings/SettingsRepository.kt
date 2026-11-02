@@ -423,7 +423,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
 
     companion object {
         const val DEFAULT_ROOT = "/storage/emulated/0/Cannoli/"
-        const val DEFAULT_RA_PACKAGE = "dev.cannoli.ricotta.aarch64"
+        const val DEFAULT_RA_PACKAGE = "com.retroarch.aarch64"
         private const val KEY_SETUP_COMPLETED = "setup_completed"
         private const val KEY_SD_ROOT = "sd_root"
         private const val KEY_ROM_DIRECTORY = "rom_directory"

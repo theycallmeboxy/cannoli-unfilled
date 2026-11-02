@@ -61,7 +61,7 @@ class LaunchManagerRecoveryTargetTest {
         every { gameOverrides.get(gc.id) } returns
             EmulatorChoice(EmulatorSource.Standalone, appPackage = MISSING)
         every { platformConfig.getAppConfig("GC", MISSING) } returns AppConfig(MISSING)
-        every { apkLauncher.launchWithRom(any(), any(), any()) } returns
+        every { apkLauncher.launchWithRom(any(), any(), any(), any()) } returns
             LaunchResult.AppNotInstalled(MISSING)
 
         val dialog = mgr.launchRom(gc) as DialogState.MissingApp
@@ -77,7 +77,7 @@ class LaunchManagerRecoveryTargetTest {
             dev.cannoli.scorza.config.EmulatorChoice(dev.cannoli.scorza.config.EmulatorSource.Standalone)
         every { platformConfig.getUserAppMapping("GC") } returns MISSING
         every { platformConfig.getAppConfig("GC", MISSING) } returns AppConfig(MISSING)
-        every { apkLauncher.launchWithRom(any(), any(), any()) } returns
+        every { apkLauncher.launchWithRom(any(), any(), any(), any()) } returns
             LaunchResult.AppNotInstalled(MISSING)
 
         val dialog = mgr.launchRom(gc) as DialogState.MissingApp

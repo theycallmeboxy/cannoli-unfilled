@@ -12,7 +12,17 @@ import java.io.File
 
 object EmulatorIntentBuilder {
 
-    fun resolve(context: Context, config: AppConfig, romFile: File): ResolvedIntent {
+    /**
+     * [vars] fills `{name}` placeholders in extra values on top of the built-in ones
+     * (`{rom_path}`, `{package}`). The launcher passes `core` for the platform's chosen core.
+     */
+    fun resolve(
+        context: Context,
+        config: AppConfig,
+        romFile: File,
+        vars: Map<String, String> = emptyMap(),
+    ): ResolvedIntent {
+        val allVars = mapOf(VAR_ROM_PATH to romFile.absolutePath, VAR_PACKAGE to config.packageName) + vars
         val component = config.activity?.let { ComponentName(config.packageName, it) }
         val pkgOnly = if (component == null) config.packageName else null
         val dataUri: Uri? = when (val d = config.data) {
@@ -23,7 +33,7 @@ object EmulatorIntentBuilder {
             is DataBinding.CustomScheme -> Uri.parse("${d.scheme}://${d.authority}")
                 .buildUpon().appendPath(romFile.absolutePath).build()
         }
-        val resolvedExtras = config.extras.mapNotNull { spec -> resolveExtra(context, spec, romFile) }
+        val resolvedExtras = config.extras.mapNotNull { spec -> resolveExtra(context, spec, romFile, allVars) }
         return ResolvedIntent(
             component = component,
             packageName = pkgOnly,
@@ -85,13 +95,18 @@ object EmulatorIntentBuilder {
         return intent
     }
 
-    private fun resolveExtra(context: Context, spec: ExtraSpec, romFile: File): ResolvedExtra? {
+    private fun resolveExtra(context: Context, spec: ExtraSpec, romFile: File, vars: Map<String, String>): ResolvedExtra? {
         val allowed = spec.whenExtension
         if (allowed != null && romFile.extension.lowercase() !in allowed) return null
-        return resolveExtraValue(context, spec, romFile)
+        return resolveExtraValue(context, spec, romFile, vars)
     }
 
-    private fun resolveExtraValue(context: Context, spec: ExtraSpec, romFile: File): ResolvedExtra? = when (spec.kind) {
+    private fun resolveExtraValue(
+        context: Context,
+        spec: ExtraSpec,
+        romFile: File,
+        vars: Map<String, String>,
+    ): ResolvedExtra? = when (spec.kind) {
         ExtraValueKind.FILE_PATH ->
             ResolvedExtra.StringExtra(spec.key, romFile.absolutePath)
         ExtraValueKind.FILE_URI_STRING ->
@@ -99,18 +114,18 @@ object EmulatorIntentBuilder {
         ExtraValueKind.FILE_URI_PARCELABLE ->
             ResolvedExtra.UriExtra(spec.key, fileProviderUri(context, romFile))
         ExtraValueKind.STRING_ARRAY ->
-            ResolvedExtra.StringArrayExtra(spec.key, spec.values.orEmpty().map { substitute(it, romFile) })
+            ResolvedExtra.StringArrayExtra(spec.key, spec.values.orEmpty().map { substitute(it, romFile, vars) })
         ExtraValueKind.STRING ->
-            resolveValue(spec, romFile)?.let { ResolvedExtra.StringExtra(spec.key, it) }
+            resolveValue(spec, romFile, vars)?.let { ResolvedExtra.StringExtra(spec.key, it) }
         ExtraValueKind.INT -> {
-            val raw = resolveValue(spec, romFile)
+            val raw = resolveValue(spec, romFile, vars)
             val number = raw?.toIntOrNull() ?: throw IllegalArgumentException(
                 "ExtraSpec `${spec.key}`: expected an integer from ${romFile.name}, got `${raw.orEmpty()}`"
             )
             ResolvedExtra.IntExtra(spec.key, number)
         }
         ExtraValueKind.BOOL -> {
-            val raw = resolveValue(spec, romFile)
+            val raw = resolveValue(spec, romFile, vars)
             val flag = raw?.lowercase()?.toBooleanStrictOrNull() ?: throw IllegalArgumentException(
                 "ExtraSpec `${spec.key}`: expected true or false, got `${raw.orEmpty()}`"
             )
@@ -120,15 +135,16 @@ object EmulatorIntentBuilder {
 
     // A value that resolves to nothing, or to a lookup the map has no entry for, drops the extra
     // rather than sending a blank one. Receivers apply their own default for a missing extra.
-    private fun resolveValue(spec: ExtraSpec, romFile: File): String? {
-        val resolved = substitute(spec.value ?: return null, romFile)
+    private fun resolveValue(spec: ExtraSpec, romFile: File, vars: Map<String, String>): String? {
+        val resolved = substitute(spec.value ?: return null, romFile, vars)
         if (resolved.isEmpty()) return null
         val map = spec.map ?: return resolved
         return map[resolved]
     }
 
-    private fun substitute(template: String, romFile: File): String {
+    private fun substitute(template: String, romFile: File, vars: Map<String, String>): String {
         var out = template
+        for ((name, value) in vars) out = out.replace("{$name}", value)
         if (out.contains(ROM_CONTENTS)) out = out.replace(ROM_CONTENTS, firstNonBlankLine(romFile))
         if (out.contains(ROM_ID)) out = out.replace(ROM_ID, romId(romFile))
         if (out.contains(ROM_EXTENSION)) out = out.replace(ROM_EXTENSION, romFile.extension.lowercase())
@@ -151,6 +167,9 @@ object EmulatorIntentBuilder {
     private const val ROM_CONTENTS = "{rom_contents}"
     private const val ROM_ID = "{rom_id}"
     private const val ROM_EXTENSION = "{rom_extension}"
+    const val VAR_ROM_PATH = "rom_path"
+    const val VAR_PACKAGE = "package"
+    const val VAR_CORE = "core"
     private val TAGGED_ID = Regex("""^\[[^]]+]\s*(.+)$""")
 
     private fun fileProviderUri(context: Context, romFile: File): Uri =

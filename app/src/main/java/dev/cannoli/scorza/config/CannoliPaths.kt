@@ -42,6 +42,8 @@ class CannoliPaths(val root: File) {
     val settingsJson: File get() = File(configDir, "settings.json")
     val platformsIni: File get() = File(configDir, "platforms.ini")
     val coresJson: File get() = File(configDir, "cores.json")
+    val emulatorsJson: File get() = File(configDir, "emulators.json")
+    val foldersJson: File get() = File(configDir, "folders.json")
     val arcadeMapFile: File get() = File(configDir, "arcade_map.txt")
     val ignoreExtensionsRoms: File get() = File(configDir, "ignore_extensions_roms.txt")
     val ignoreFilesRoms: File get() = File(configDir, "ignore_files_roms.txt")

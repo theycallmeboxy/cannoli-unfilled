@@ -251,10 +251,7 @@ sealed class LauncherScreen {
         override val itemCount: Int get() = collectionIds.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
     }
-    data class AppPicker(val type: String, val title: String, val apps: List<String>, val packages: List<String>, override val selectedIndex: Int = 0, val checkedIndices: Set<Int> = emptySet(), val initialChecked: Set<Int> = emptySet(), override val scrollTarget: Int = 0) : LauncherScreen(), ScrollableScreen {
-        override val itemCount: Int get() = apps.size
-        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
-    }
+
     data class ChildPicker(val parentId: Long, val collectionIds: List<Long>, val displayNames: List<String> = emptyList(), override val selectedIndex: Int = 0, val checkedIndices: Set<Int> = emptySet(), val initialChecked: Set<Int> = emptySet(), override val scrollTarget: Int = 0) : LauncherScreen(), ScrollableScreen {
         override val itemCount: Int get() = collectionIds.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
@@ -1028,39 +1025,6 @@ fun AppNavGraph(
                     }
                 }
             }
-            is LauncherScreen.AppPicker -> {
-                if (inputRouter != null) {
-                    val handler = remember { inputRouter.currentHandler() }
-                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
-                }
-                ListDialogScreen(
-                    backgroundImagePath = appSettings.backgroundImagePath,
-                    backgroundTint = appSettings.backgroundTint,
-                    title = currentScreen.title,
-                    listFontSize = listFontSize,
-                    listLineHeight = listLineHeight,
-                    fullWidth = true,
-                    rightBottomItems = emptyList(),
-                    buttonStyle = labels
-                ) {
-                    List(
-                        items = currentScreen.apps,
-                        selectedIndex = currentScreen.selectedIndex,
-                        itemHeight = itemHeight,
-                        scrollTarget = currentScreen.scrollTarget,
-                        onListStateChanged = onListStateChanged
-                    ) { index, app, isSelected ->
-                        PillRowText(
-                            label = app,
-                            isSelected = isSelected,
-                            fontSize = listFontSize,
-                            lineHeight = listLineHeight,
-                            verticalPadding = listVerticalPadding,
-                            checkState = index in currentScreen.checkedIndices
-                        )
-                    }
-                }
-            }
             is LauncherScreen.IconGallery -> {
                 if (inputRouter != null) {
                     val handler = remember { inputRouter.currentHandler() }
@@ -1732,7 +1696,6 @@ fun AppNavGraph(
             downloads = overlayDownloads,
             updateAvailable = updateAvailable,
             buttonStyle = labels,
-            appListPlatformTag = gameListViewModel?.state?.collectAsState()?.value?.platformTag,
         )
 
         val systemListState = systemListViewModel?.state?.collectAsState()?.value

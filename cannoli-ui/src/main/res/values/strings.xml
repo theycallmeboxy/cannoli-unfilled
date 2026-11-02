@@ -655,6 +655,11 @@
     <string name="device_controller">Controller</string>
     <!-- OSD toast. %1$d = player number, %2$s = controller name. -->
     <string name="osd_controller_connected">P%1$d: %2$s</string>
+    <!-- OSD toast. %1$d = number of problems found in Config/emulators.json. -->
+    <plurals name="osd_emulators_json_errors">
+        <item quantity="one">emulators.json has %1$d problem, see Logs/error.log</item>
+        <item quantity="other">emulators.json has %1$d problems, see Logs/error.log</item>
+    </plurals>
     <!-- OSD toast. %1$d = player number, %2$s = controller name. -->
     <string name="osd_controller_disconnected_port">P%1$d: %2$s disconnected</string>
     <!-- OSD toast. %1$s = controller name. -->

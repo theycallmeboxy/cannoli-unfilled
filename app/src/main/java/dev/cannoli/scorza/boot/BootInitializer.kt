@@ -58,6 +58,8 @@ class BootInitializer @Inject constructor(
     private val nav: NavigationController,
     private val launcherActions: LauncherActions,
     private val setupCoordinator: SetupCoordinator,
+    private val foldersConfig: dev.cannoli.scorza.config.FoldersConfig,
+    private val appsRepository: dev.cannoli.scorza.db.AppsRepository,
 ) {
 
     suspend fun run(onPhase: (BootPhase, Float, String) -> Unit): BootResult {
@@ -97,6 +99,19 @@ class BootInitializer @Inject constructor(
         if (result is ImportResult.Failure) {
             ScanLog.write("ERROR import returned Failure: ${result.cause.message}")
             return BootResult.Failure(result.cause.message ?: context.getString(R.string.boot_import_failed))
+        }
+
+        // After the import, so an install that predates folders.json can carry its Tools and
+        // Ports lists over into it.
+        withContext(Dispatchers.IO) {
+            foldersConfig.load(seed = {
+                dev.cannoli.scorza.config.FoldersConfig.seedFromLegacy(listOf(
+                    settings.toolsName to appsRepository.all(dev.cannoli.scorza.model.AppType.TOOL)
+                        .map { it.displayName to it.packageName },
+                    settings.portsName to appsRepository.all(dev.cannoli.scorza.model.AppType.PORT)
+                        .map { it.displayName to it.packageName },
+                ))
+            })
         }
 
         ioScope.launch {

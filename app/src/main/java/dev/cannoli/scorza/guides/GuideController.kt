@@ -4,11 +4,9 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 
 /**
- * Guide navigation state plus the shared open/save/scroll-signal logic used by every host that
- * shows the Cannoli guide viewer: the in-game menu (IGMController, also consumed by the RicottaArch
- * fork via ricotta/IGMOverlay.kt) and the launcher's browse-time viewer. Host-agnostic: owns no
- * screen type and no EmulatorBridge. Each host keeps page/textZoom/selectedIndex in its own screen
- * data class and maps its input to the neutral methods here.
+ * Guide navigation state plus the open/save/scroll-signal logic behind the launcher's guide
+ * viewer. Owns no screen type: the host keeps page/textZoom/selectedIndex in its own screen data
+ * class and maps its input to the neutral methods here.
  */
 class GuideController {
     private var guideManager: GuideManager? = null

@@ -127,6 +127,7 @@ class MainActivity : ComponentActivity(), ActivityActions {
     private var coreQueryReceiver: android.content.BroadcastReceiver? = null
     private var pairingUiJob: kotlinx.coroutines.Job? = null
     private var coldStart = true
+    private var reportedEmulatorErrors: List<String> = emptyList()
 
     private val storagePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -401,6 +402,7 @@ class MainActivity : ComponentActivity(), ActivityActions {
         hideSystemUI()
         settings.reload()
         settingsViewModel.get().load()
+        reportEmulatorConfig()
         val activeDialogState = nav.dialogState
         if (activeDialogState.value is DialogState.RommConnected && rommStore.token.isNullOrEmpty()) {
             activeDialogState.value = DialogState.None
@@ -599,6 +601,19 @@ class MainActivity : ComponentActivity(), ActivityActions {
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
                 )
             )
+        }
+    }
+
+    // emulators.json is edited by hand, so pick up a change on every return to the launcher and
+    // say so once when the file has entries that had to be skipped.
+    private fun reportEmulatorConfig() {
+        val config = platformConfig.get()
+        config.reloadEmulatorsIfChanged()
+        val errors = config.emulatorConfigErrors
+        if (errors == reportedEmulatorErrors) return
+        reportedEmulatorErrors = errors
+        if (errors.isNotEmpty()) {
+            osdController.show(resources.getQuantityString(R.plurals.osd_emulators_json_errors, errors.size, errors.size))
         }
     }
 

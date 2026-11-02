@@ -106,8 +106,6 @@ class LauncherActions @Inject constructor(
             showFavorites = settings.showFavorites,
             contentMode = settings.contentMode,
             fghCollectionId = fghId,
-            toolsName = settings.toolsName,
-            portsName = settings.portsName,
             scanDisk = scanDisk,
             reconcileOrphans = reconcileOrphans,
             onProgress = onProgress,
@@ -282,14 +280,6 @@ class LauncherActions @Inject constructor(
                     platformConfig.setDisplayName(item.platform.tag, newName)
                     rescanSystemList()
                 }
-            }
-            is SystemListViewModel.ListItem.ToolsFolder -> {
-                settings.toolsName = newName
-                rescanSystemList()
-            }
-            is SystemListViewModel.ListItem.PortsFolder -> {
-                settings.portsName = newName
-                rescanSystemList()
             }
             is SystemListViewModel.ListItem.CollectionItem -> {
                 ioScope.launch {

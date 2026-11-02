@@ -39,14 +39,45 @@ class ApkLauncher @Inject constructor(
         return context.startActivityNoAnim(intent, "Failed to launch app")
     }
 
-    fun launchWithRom(packageName: String, romFile: File, config: AppConfig): LaunchResult {
+    /**
+     * Opens an app with the custom intent its folders.json entry gives. There is no game file,
+     * so only fixed-value extras apply; file extras in the entry are ignored.
+     */
+    fun launchConfigured(config: AppConfig): LaunchResult {
+        val pkg = config.packageName
+        if (!context.isPackageInstalled(pkg)) return LaunchResult.AppNotInstalled(pkg)
+        val intent = Intent(config.action).apply {
+            if (config.activity != null) component = android.content.ComponentName(pkg, config.activity)
+            else setPackage(pkg)
+            addFlags(config.intentFlags)
+            for (extra in config.extras) when (extra.kind) {
+                dev.cannoli.scorza.config.ExtraValueKind.STRING -> putExtra(extra.key, extra.value)
+                dev.cannoli.scorza.config.ExtraValueKind.INT -> extra.value?.toIntOrNull()?.let { putExtra(extra.key, it) }
+                dev.cannoli.scorza.config.ExtraValueKind.BOOL -> extra.value?.toBooleanStrictOrNull()?.let { putExtra(extra.key, it) }
+                dev.cannoli.scorza.config.ExtraValueKind.STRING_ARRAY -> putExtra(extra.key, extra.values.orEmpty().toTypedArray())
+                else -> debugLog("  -> extra ${extra.key} needs a game file, skipped")
+            }
+        }
+        // MAIN with no activity named means "open the app", which needs its launcher activity.
+        if (intent.component == null && intent.action == Intent.ACTION_MAIN) {
+            context.packageManager.getLaunchIntentForPackage(pkg)?.component?.let { intent.component = it }
+        }
+        return context.startActivityNoAnim(intent, "Failed to launch app")
+    }
+
+    fun launchWithRom(
+        packageName: String,
+        romFile: File,
+        config: AppConfig,
+        vars: Map<String, String> = emptyMap(),
+    ): LaunchResult {
         debugLog("ApkLauncher.launchWithRom pkg=$packageName rom=${romFile.absolutePath} method=${config.launchMethod}")
         if (!context.isPackageInstalled(packageName)) {
             debugLog("  -> package not installed")
             return LaunchResult.AppNotInstalled(packageName)
         }
         val resolved = try {
-            EmulatorIntentBuilder.resolve(context, config, romFile)
+            EmulatorIntentBuilder.resolve(context, config, romFile, vars)
         } catch (e: IllegalArgumentException) {
             debugLog("  -> extra resolution failed: ${e.message}")
             return LaunchResult.Error(

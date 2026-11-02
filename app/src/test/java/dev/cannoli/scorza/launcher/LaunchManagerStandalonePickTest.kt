@@ -45,7 +45,7 @@ class LaunchManagerStandalonePickTest {
         // standalone app list.
         every { platformConfig.getCoreName("GC") } returns null
         every { platformConfig.getPlatformChoice("GC") } returns null
-        every { apkLauncher.launchWithRom(any(), any(), any()) } returns LaunchResult.Success
+        every { apkLauncher.launchWithRom(any(), any(), any(), any()) } returns LaunchResult.Success
         return LaunchManager(
             context = mockk(relaxed = true),
             settings = settings,
@@ -59,7 +59,7 @@ class LaunchManagerStandalonePickTest {
 
     private fun launchedPackage(): String {
         val pkg = slot<String>()
-        verify { apkLauncher.launchWithRom(capture(pkg), any(), any()) }
+        verify { apkLauncher.launchWithRom(capture(pkg), any(), any(), any()) }
         return pkg.captured
     }
 

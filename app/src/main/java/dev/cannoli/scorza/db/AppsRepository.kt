@@ -40,6 +40,24 @@ class AppsRepository(
         type.name, packageName, mapper = ::rowToApp,
     )
 
+    /**
+     * The row for an app listed in folders.json, created on first sight. Apps are identified by
+     * package alone: a package that older builds listed under both Tools and Ports keeps its
+     * oldest row, so its favorites and play history carry over. [displayName], when given, is
+     * written through so a rename in folders.json shows up; a new row without one takes
+     * [fallbackName].
+     */
+    fun forFolderEntry(packageName: String, displayName: String?, fallbackName: () -> String): App {
+        val existing = db.queryOne(
+            "SELECT $COLUMNS FROM apps WHERE package_name = ? ORDER BY id LIMIT 1",
+            packageName, mapper = ::rowToApp,
+        )
+        if (existing == null) return byId(upsert(AppType.TOOL, displayName ?: fallbackName(), packageName))!!
+        if (displayName == null || existing.displayName == displayName) return existing
+        updateDisplayName(existing.id, displayName)
+        return byId(existing.id)!!
+    }
+
     fun count(type: AppType): Int = db.queryOne(
         "SELECT COUNT(*) FROM apps WHERE type = ?", type.name,
     ) { it.getInt(0) } ?: 0

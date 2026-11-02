@@ -87,7 +87,6 @@ fun DialogOverlay(
     buttonStyle: ButtonStyle = ButtonStyle(),
     // Only the Tools and Ports lists offer to drop a shortcut for an app that has gone missing,
     // and that depends on the list being viewed rather than on anything the dialog carries.
-    appListPlatformTag: String? = null,
 ) {
     val itemHeight = pillItemHeight(listLineHeight, listVerticalPadding)
     when (dialogState) {
@@ -914,7 +913,6 @@ fun DialogOverlay(
 
         is DialogState.MissingApp -> MissingAppDialog(
             appName = dialogState.appName,
-            showRemove = appListPlatformTag == "tools" || appListPlatformTag == "ports",
             showChangeEmulator = dialogState.platformTag != null,
             buttonStyle = buttonStyle,
         )

@@ -193,7 +193,6 @@ class InputRouter @Inject constructor(
         is LauncherScreen.ColorList         -> colorListHandler()
         is LauncherScreen.CollectionPicker  -> collectionPickerHandler()
         is LauncherScreen.ChildPicker       -> childPickerHandler()
-        is LauncherScreen.AppPicker         -> appPickerHandler()
         is LauncherScreen.Credits           -> creditsHandler()
         is LauncherScreen.CreditsSection    -> creditsSectionHandler()
         is LauncherScreen.InstalledCores    -> installedCoresHandler()
@@ -368,15 +367,6 @@ class InputRouter @Inject constructor(
             }
         },
         onBack = { dialogHandler.onChildPickerConfirm(this) },
-    )
-
-    private fun appPickerHandler() = scrollable<LauncherScreen.AppPicker>(
-        onConfirm = {
-            val newChecked = if (selectedIndex in checkedIndices) checkedIndices - selectedIndex
-                             else checkedIndices + selectedIndex
-            nav.replaceTop(copy(checkedIndices = newChecked))
-        },
-        onBack = { settingsHandler.confirmAppPicker(this) },
     )
 
     private fun creditsHandler() = scrollable<LauncherScreen.Credits>(
