@@ -81,7 +81,7 @@ sealed interface DialogState {
         override fun withKeyboard(keyboard: KeyboardState) = copy(keyboard = keyboard)
     }
     data class DeleteFolderConfirm(val path: List<String>) : DialogState
-    data class FolderEditError(val message: String) : DialogState
+    data class ConfigEditError(val message: String) : DialogState
     /** Offers to copy [systemName] from systems.template.json for the unclaimed ROM folder [folder]. */
     data class AdoptRomFolderConfirm(val folder: String, val systemName: String) : DialogState
     data class KeyboardHelp(val restore: DialogState, val layout: KeyboardLayout) : DialogState

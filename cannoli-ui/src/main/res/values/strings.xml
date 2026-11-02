@@ -527,6 +527,18 @@
     <string name="dialog_no_template_for_folder" tools:ignore="MissingTranslation">No system in systems.template.json uses Roms/%1$s. Add one to systems.json to show these games.</string>
     <!-- %1$s = folder name. Its contents are not deleted. -->
     <string name="dialog_delete_folder_confirm" tools:ignore="MissingTranslation">Delete %1$s? What it holds moves up a level.</string>
+    <!-- Title of the "Launch With" emulator picker on a game's menu. %1$s = game name. -->
+    <string name="launch_with_title" tools:ignore="MissingTranslation">Launch %1$s with</string>
+    <!-- Title of the "Default Emulator" picker on a system's menu. %1$s = system name. -->
+    <string name="default_emulator_title" tools:ignore="MissingTranslation">Default emulator for %1$s</string>
+    <!-- Emulator picker mark: the system's first emulator, used by every game without its own pick. -->
+    <string name="value_default" tools:ignore="MissingTranslation">Default</string>
+    <!-- Emulator picker mark: the emulator this game was set to launch with. -->
+    <string name="value_current" tools:ignore="MissingTranslation">Current</string>
+    <!-- Emulator picker mark: the emulator's app is not installed. -->
+    <string name="value_not_installed" tools:ignore="MissingTranslation">Not Installed</string>
+    <!-- Emulator picker mark: the emulator reports it doesn't have the core this system uses. -->
+    <string name="value_core_missing" tools:ignore="MissingTranslation">Core Missing</string>
     <!-- OSD toast. %1$d = number of problems found in the config files (emulators.json, systems.json...). -->
     <plurals name="osd_config_errors" tools:ignore="MissingTranslation">
         <item quantity="one">Config has %1$d problem, see Logs/error.log</item>

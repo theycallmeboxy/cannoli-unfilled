@@ -4,7 +4,9 @@ import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.EmulatorChoiceEditor
 import dev.cannoli.scorza.config.library.Library
+import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.config.library.LibraryParser
 import dev.cannoli.scorza.config.library.LibraryValidator
 import dev.cannoli.scorza.model.App
@@ -72,7 +74,11 @@ class LaunchManagerTest {
             "data": { "kind": "custom_scheme", "scheme": "plugin", "authority": "plugin.video.example" } } }
     """.trimIndent()
 
-    private fun manager(overrides: String = """{ "games": {} }""", state: LaunchState = LaunchState()): LaunchManager {
+    private fun manager(
+        overrides: String = """{ "games": {} }""",
+        state: LaunchState = LaunchState(),
+        platformConfig: PlatformConfig? = null,
+    ): LaunchManager {
         val library: Library = LibraryValidator.validate(
             LibraryParser.parseEmulators(emulators).value,
             LibraryParser.parseSystems(systems).value,
@@ -88,7 +94,7 @@ class LaunchManagerTest {
         return LaunchManager(
             context = context,
             settings = settings,
-            platformConfig = PlatformConfig { library },
+            platformConfig = platformConfig ?: PlatformConfig { library },
             apkLauncher = apkLauncher,
             launchState = state,
             romDir = { romDir },
@@ -121,6 +127,38 @@ class LaunchManagerTest {
         val pkg = slot<String>()
         verify { apkLauncher.launchWithRom(capture(pkg), any(), any(), any()) }
         assertEquals(PIZZABOY, pkg.captured)
+    }
+
+    @Test fun `a choice made with Launch With is what the next launch uses`() {
+        val configDir = tmp.newFolder("Config")
+        File(configDir, LibraryParser.EMULATORS).writeText(emulators)
+        File(configDir, LibraryParser.SYSTEMS).writeText(systems)
+        val config = LibraryConfig({ configDir }) { null }.also { it.load() }
+        val state = LaunchState()
+        val mgr = manager(state = state, platformConfig = PlatformConfig { config.library })
+        val edit = EmulatorChoiceEditor(config)
+        val gba = config.library.systems.getValue("GBA")
+
+        assertNull(edit.setGameChoice(gba, "Game Boy Advance/Metroid.gba", "pizzaboy"))
+        assertNull(mgr.launchRom(metroid))
+        verify { apkLauncher.launchWithRom(PIZZABOY, any(), any(), any()) }
+
+        // Back to the default: the override goes and RetroArch launches it again.
+        state.launching = false
+        assertNull(edit.setGameChoice(gba, "Game Boy Advance/Metroid.gba", "retroarch"))
+        assertNull(mgr.launchRom(metroid))
+        verify { apkLauncher.launchWithRom(RETROARCH, any(), any(), mapOf("core" to "mgba_libretro")) }
+    }
+
+    @Test fun `a new default emulator is what games without an override launch with`() {
+        val configDir = tmp.newFolder("Config")
+        File(configDir, LibraryParser.EMULATORS).writeText(emulators)
+        File(configDir, LibraryParser.SYSTEMS).writeText(systems)
+        val config = LibraryConfig({ configDir }) { null }.also { it.load() }
+
+        assertNull(EmulatorChoiceEditor(config).makeDefault("GBA", "pizzaboy"))
+        assertNull(manager(platformConfig = PlatformConfig { config.library }).launchRom(metroid))
+        verify { apkLauncher.launchWithRom(PIZZABOY, any(), any(), any()) }
     }
 
     @Test fun `a system with no emulator says so instead of launching`() {

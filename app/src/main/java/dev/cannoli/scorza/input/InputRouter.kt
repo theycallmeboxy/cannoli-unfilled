@@ -50,6 +50,7 @@ class InputRouter @Inject constructor(
     private val scrollListFactory: ScrollListInputHandler.Factory,
     private val launcherActions: LauncherActions,
     private val folderEditor: FolderEditor,
+    private val emulatorPickers: EmulatorPickers,
     private val screenInputRegistry: dev.cannoli.scorza.input.runtime.ScreenInputRegistry,
     @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
@@ -184,6 +185,13 @@ class InputRouter @Inject constructor(
         is LauncherScreen.ChildPicker       -> childPickerHandler()
         is LauncherScreen.FolderPicker      -> scrollable<LauncherScreen.FolderPicker>(
             onConfirm = { folderEditor.confirmMove(this) },
+        )
+        is LauncherScreen.EmulatorPicker    -> scrollable<LauncherScreen.EmulatorPicker>(
+            onConfirm = { emulatorPickers.confirm(this) { if (fromGameMenu) dialogHandler.restoreContextMenu() } },
+            onBack = {
+                nav.pop()
+                if (fromGameMenu) dialogHandler.restoreContextMenu()
+            },
         )
         is LauncherScreen.AppPicker         -> scrollable<LauncherScreen.AppPicker>(
             onConfirm = {

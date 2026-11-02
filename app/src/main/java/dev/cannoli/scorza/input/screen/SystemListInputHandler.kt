@@ -2,6 +2,7 @@ package dev.cannoli.scorza.input.screen
 
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.db.CollectionsRepository
+import dev.cannoli.scorza.input.EmulatorPickers
 import dev.cannoli.scorza.input.FolderEditor
 import dev.cannoli.scorza.input.LauncherActions
 import dev.cannoli.scorza.input.MENU_ADD_TO_FOLDER
@@ -38,6 +39,7 @@ class SystemListInputHandler @Inject constructor(
     private val settingsViewModel: SettingsViewModel,
     private val launcherActions: LauncherActions,
     private val folderEditor: FolderEditor,
+    private val emulatorPickers: EmulatorPickers,
     private val rommConnectionStore: dev.cannoli.scorza.romm.RommConnectionStore,
 ) : ScreenInputHandler {
 
@@ -206,6 +208,7 @@ class SystemListInputHandler @Inject constructor(
                 add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
                 add(MENU_MANAGE_COLLECTIONS)
                 if (item.item is ListItem.RomItem) {
+                    emulatorPickers.gameMenuRow(item.item.rom)?.let(::add)
                     add(MENU_DELETE_GAME)
                 } else {
                     // An app or shortcut on the main list is a directory.json entry.
@@ -230,6 +233,8 @@ class SystemListInputHandler @Inject constructor(
                 add(MENU_NEW_FOLDER)
                 add(MENU_DELETE)
             } else {
+                (item as? SystemListViewModel.ListItem.PlatformItem)
+                    ?.let { emulatorPickers.systemMenuRow(it.platform.tag) }?.let(::add)
                 // Taking a system out leaves it under "Not in the menu" until it is placed again.
                 add(MENU_MOVE_TO_FOLDER)
                 add(MENU_REMOVE_FROM_FOLDER)

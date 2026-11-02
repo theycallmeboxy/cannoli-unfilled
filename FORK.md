@@ -23,8 +23,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   collection setting. The main menu always shows platforms and folders.
 - **Emulator Mapping and Settings → Emulation:** the platform list with its emulator and core
   picker, BIOS status, the per-game overrides list and Reset, the RetroArch package setting, and
-  the Installed Cores screen. A game's "Emulator Override" menu entry is gone too, until "Launch
-  With" replaces it.
+  the Installed Cores screen. A game's "Emulator Override" menu entry is replaced by "Launch
+  With" (below).
 - **Built-in emulator knowledge:** the core catalog (`core_info`), `cores.json`, `platforms.ini`
   renames, the special-case RetroArch launcher, and the leftover Ricotta names. Renaming a
   platform from the main menu is gone with `platforms.ini`: a system's name is set in
@@ -80,6 +80,16 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   places it in a folder you choose. Picking such a ROM folder offers to copy its system, and the
   emulators that system uses, from the templates. "Add To This Folder" lists these systems above
   the apps. The main menu's bottom bar shows how many there are.
+- **Launch With:** a game's START menu, wherever it's shown (a system's list, Recents, Favorites,
+  collections, search, or a game on the main menu), has "Launch With", showing the emulator the
+  game uses. It lists the system's emulators from `systems.json`, with the first marked Default.
+  An emulator whose app isn't installed is marked Not Installed, and one that reports it lacks
+  the system's core is marked Core Missing. Picking one saves it for that game in
+  `Config/overrides.json`; picking the default removes the game's entry.
+- **Default Emulator:** a system's START menu on the main menu or in a folder has "Default
+  Emulator", with the same list and marks. Picking one moves it to the top of the system's
+  `emulators` list in `systems.json`, which makes it the default for every game without its own
+  pick. The entry moves as written, notes included.
 - **Kitchen config API:** `/api/config` serves the files it is given. It lists none for now: the
   new config files are added in a later stage.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
@@ -99,6 +109,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-02 | Launch With and Default Emulator pickers |
 | 2026-11-02 | Menu and folders come from directory.json; shortcuts; unplaced systems while editing |
 | 2026-11-02 | Systems and emulators come from systems.json and emulators.json; emulator mapping removed |
 | 2026-11-02 | Config model and templates for the new config files |
@@ -120,8 +131,8 @@ The fork starts from upstream commit `7755e376`.
 
 - [ ] **Test on a device:** the app installs and opens on a Pocket Block (Android 12); nothing
       has been launched from it yet. Check RetroArch and standalone
-      launches, editing and breaking `emulators.json`, nested folders, shortcuts, and placing
-      systems from "Not in the menu".
+      launches, editing and breaking `emulators.json`, nested folders, shortcuts, placing
+      systems from "Not in the menu", and "Launch With" and "Default Emulator" with their marks.
 - [ ] **Kitchen page for config files:** needs a fork of CannoliHQ/kitchen, bun in the build
       container, and `release.yml` pointed at the fork. For now, use Kitchen's Files tool.
 - [ ] **Local builds include no Kitchen web assets:** only CI adds them.

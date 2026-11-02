@@ -74,6 +74,7 @@ class DialogInputHandler @Inject constructor(
     private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
     private val launcherActions: LauncherActions,
     private val folderEditor: FolderEditor,
+    private val emulatorPickers: EmulatorPickers,
     private val activityActions: ActivityActions,
     private val controllersViewModel: dev.cannoli.scorza.ui.viewmodel.ControllersViewModel,
     private val rommStore: dev.cannoli.scorza.romm.RommConnectionStore,
@@ -521,7 +522,7 @@ class DialogInputHandler @Inject constructor(
                 nav.dialogState.value = DialogState.None
                 folderEditor.deleteFolder(ds.path)
             }
-            is DialogState.FolderEditError -> nav.dialogState.value = DialogState.None
+            is DialogState.ConfigEditError -> nav.dialogState.value = DialogState.None
             is DialogState.AdoptRomFolderConfirm -> folderEditor.adoptRomFolder(ds.folder)
             is DialogState.DeleteCollectionConfirm -> {
                 val glState = gameListViewModel.state.value
@@ -1086,7 +1087,7 @@ class DialogInputHandler @Inject constructor(
             }
             is DialogState.DeleteFolderConfirm,
             is DialogState.AdoptRomFolderConfirm,
-            is DialogState.FolderEditError -> nav.dialogState.value = DialogState.None
+            is DialogState.ConfigEditError -> nav.dialogState.value = DialogState.None
             is DialogState.QuitConfirm -> {
                 nav.dialogState.value = DialogState.None
             }
@@ -1386,7 +1387,8 @@ class DialogInputHandler @Inject constructor(
                 nav.pendingMainListItem = null
                 onMainListItemMenuConfirm(listItem, state)
             } else {
-                when (state.options[state.selectedOption]) {
+                when (state.options[state.selectedOption].substringBefore('\t')) {
+                    MENU_DEFAULT_EMULATOR -> systemListViewModel.getSelectedPlatformTag()?.let(emulatorPickers::openForSystem)
                     MENU_RENAME -> {
                         nav.dialogState.value = DialogState.RenameInput(
                             gameName = state.gameName,
@@ -1505,6 +1507,10 @@ class DialogInputHandler @Inject constructor(
             selected == MENU_ROMM_SAVES -> {
                 if (rom == null) return
                 openRommSavesMenu()
+            }
+            selected.substringBefore('\t') == MENU_LAUNCH_WITH -> {
+                if (rom == null) return
+                emulatorPickers.openForGame(rom, fromGameMenu = true)
             }
             selected == MENU_GUIDES -> {
                 if (rom == null) return
@@ -1749,6 +1755,8 @@ class DialogInputHandler @Inject constructor(
                 if (app?.artFile != null) add(MENU_DELETE_ART)
             } else {
                 addAll(gameContextOptions)
+                // Right after Manage Collections, where the old Emulator Override row sat.
+                rom?.let(emulatorPickers::gameMenuRow)?.let { add(indexOf(MENU_MANAGE_COLLECTIONS) + 1, it) }
                 if (rom?.artFile != null) {
                     val idx = indexOf(MENU_DELETE_GAME)
                     if (idx >= 0) add(idx, MENU_DELETE_ART) else add(MENU_DELETE_ART)
@@ -2137,6 +2145,8 @@ class DialogInputHandler @Inject constructor(
             selected == MENU_DELETE || selected == MENU_DELETE_GAME -> {
                 nav.dialogState.value = DialogState.DeleteConfirm(gameName = displayName)
             }
+            selected.substringBefore('\t') == MENU_LAUNCH_WITH ->
+                rom?.let { emulatorPickers.openForGame(it, fromGameMenu = false) }
             selected == MENU_MOVE_TO_FOLDER ->
                 folderEditor.openMovePicker(SystemListViewModel.ListItem.GameItem(item), displayName)
             selected == MENU_REMOVE_FROM_FOLDER ->

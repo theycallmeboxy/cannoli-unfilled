@@ -135,6 +135,15 @@ data class Library(
             ?: system.emulators.firstOrNull()
     }
 
+    /**
+     * What the pickers and menus call [ref]: its own name, else the emulator's display name with
+     * the core it runs, as in "RetroArch · mgba_libretro".
+     */
+    fun choiceLabel(ref: EmulatorRef): String = ref.label ?: buildString {
+        append(emulators[ref.emulator]?.label ?: ref.emulator)
+        ref.params[Placeholders.CORE]?.let { append(" · ").append(it) }
+    }
+
     /** How [romPath] in [systemId] launches, or null when the system is unknown or has no emulator. */
     fun launchFor(systemId: String, romPath: String): LaunchPlan? {
         val system = systems[systemId] ?: return null

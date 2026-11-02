@@ -131,7 +131,7 @@ class FolderEditor @Inject constructor(
                     nav.dialogState.value = if (template != null) {
                         DialogState.AdoptRomFolderConfirm(entry.folder, template)
                     } else {
-                        DialogState.FolderEditError(
+                        DialogState.ConfigEditError(
                             context.getString(dev.cannoli.ui.R.string.dialog_no_template_for_folder, entry.folder)
                         )
                     }
@@ -163,10 +163,10 @@ class FolderEditor @Inject constructor(
             withContext(Dispatchers.Main) {
                 when (result) {
                     is DirectoryEditor.Adoption.Added -> openPlacePicker(result.systemId, result.name)
-                    DirectoryEditor.Adoption.NoTemplate -> nav.dialogState.value = DialogState.FolderEditError(
+                    DirectoryEditor.Adoption.NoTemplate -> nav.dialogState.value = DialogState.ConfigEditError(
                         context.getString(dev.cannoli.ui.R.string.dialog_no_template_for_folder, folder)
                     )
-                    is DirectoryEditor.Adoption.Failed -> nav.dialogState.value = DialogState.FolderEditError(result.reason)
+                    is DirectoryEditor.Adoption.Failed -> nav.dialogState.value = DialogState.ConfigEditError(result.reason)
                 }
                 launcherActions.rescanSystemList(scanDisk = false)
             }
@@ -254,7 +254,7 @@ class FolderEditor @Inject constructor(
         ioScope.launch {
             val failure = edit()
             withContext(Dispatchers.Main) {
-                nav.dialogState.value = if (failure != null) DialogState.FolderEditError(failure) else DialogState.None
+                nav.dialogState.value = if (failure != null) DialogState.ConfigEditError(failure) else DialogState.None
                 launcherActions.rescanSystemList(scanDisk = false)
             }
         }

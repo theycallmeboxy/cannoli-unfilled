@@ -940,7 +940,7 @@ fun DialogOverlay(
             confirmLabel = stringResource(R.string.label_confirm),
         )
 
-        is DialogState.FolderEditError -> MessageOverlay(
+        is DialogState.ConfigEditError -> MessageOverlay(
             message = dialogState.message,
             buttonStyle = buttonStyle,
             buttonLabel = stringResource(R.string.label_back),

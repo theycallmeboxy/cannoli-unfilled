@@ -218,6 +218,25 @@ sealed class LauncherScreen {
     }
 
     /**
+     * Picks an emulator from system [systemId]'s list: for the game at [romPath] (under Roms/),
+     * "Launch With", written to overrides.json; with no [romPath], the system's "Default
+     * Emulator", moved to the top of its list in systems.json. [fromGameMenu] returns to the game
+     * list's context menu when it closes.
+     */
+    data class EmulatorPicker(
+        val title: String,
+        val systemId: String,
+        val romPath: String?,
+        val choices: List<dev.cannoli.scorza.launcher.EmulatorChoice>,
+        val fromGameMenu: Boolean = false,
+        override val selectedIndex: Int = 0,
+        override val scrollTarget: Int = 0,
+    ) : LauncherScreen(), ScrollableScreen {
+        override val itemCount: Int get() = choices.size
+        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
+    }
+
+    /**
      * "Add To This Folder": [systems] not on the menu yet, then the installed [apps]. Indices in
      * [checkedIndices] count the systems first.
      */
@@ -727,6 +746,56 @@ fun AppNavGraph(
                             fontSize = listFontSize,
                             lineHeight = listLineHeight,
                             verticalPadding = listVerticalPadding,
+                        )
+                    }
+                }
+            }
+            is LauncherScreen.EmulatorPicker -> {
+                if (inputRouter != null) {
+                    val handler = remember { inputRouter.currentHandler() }
+                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
+                }
+                val defaultText = stringResource(R.string.value_default)
+                val currentText = stringResource(R.string.value_current)
+                val appMissingText = stringResource(R.string.value_not_installed)
+                val coreMissingText = stringResource(R.string.value_core_missing)
+                ListDialogScreen(
+                    backgroundImagePath = appSettings.backgroundImagePath,
+                    backgroundTint = appSettings.backgroundTint,
+                    title = currentScreen.title,
+                    listFontSize = listFontSize,
+                    listLineHeight = listLineHeight,
+                    fullWidth = true,
+                    rightBottomItems = listOf(labels.confirm to stringResource(R.string.label_select)),
+                    buttonStyle = labels
+                ) {
+                    List(
+                        items = currentScreen.choices,
+                        selectedIndex = currentScreen.selectedIndex,
+                        itemHeight = itemHeight,
+                        scrollTarget = currentScreen.scrollTarget,
+                        onListStateChanged = onListStateChanged
+                    ) { _, choice, isSelected ->
+                        // The first is the system's default; the game's own pick, when it has one,
+                        // says Current. A missing app or core comes first, with the warning icon.
+                        val warning = when (choice.mark) {
+                            dev.cannoli.scorza.launcher.ChoiceMark.APP_MISSING -> appMissingText
+                            dev.cannoli.scorza.launcher.ChoiceMark.CORE_MISSING -> coreMissingText
+                            dev.cannoli.scorza.launcher.ChoiceMark.NONE -> null
+                        }
+                        val value = listOfNotNull(
+                            warning,
+                            currentText.takeIf { choice.isCurrent && !choice.isDefault },
+                            defaultText.takeIf { choice.isDefault },
+                        ).joinToString(" · ")
+                        PillRowKeyValue(
+                            label = choice.label,
+                            value = value,
+                            isSelected = isSelected,
+                            fontSize = listFontSize,
+                            lineHeight = listLineHeight,
+                            verticalPadding = listVerticalPadding,
+                            valueIcon = if (warning != null) CannoliIcons.NotInstalled.glyph else null,
                         )
                     }
                 }

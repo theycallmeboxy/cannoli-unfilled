@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.config.library.DirectoryEditor
+import dev.cannoli.scorza.config.library.EmulatorChoiceEditor
 import dev.cannoli.scorza.config.library.LibraryConfig
 import java.io.IOException
 import javax.inject.Singleton
@@ -33,4 +34,7 @@ object ScanModule {
 
     @Provides @Singleton
     fun provideDirectoryEditor(libraryConfig: LibraryConfig): DirectoryEditor = DirectoryEditor(libraryConfig)
+
+    @Provides @Singleton
+    fun provideEmulatorChoiceEditor(libraryConfig: LibraryConfig): EmulatorChoiceEditor = EmulatorChoiceEditor(libraryConfig)
 }
