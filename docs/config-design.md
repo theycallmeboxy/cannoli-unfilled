@@ -262,9 +262,37 @@ These work as today:
 
 `/api/config` serves the four real files plus `overrides.json`.
 
+## Decisions
+
+- **Existing installs start empty**, like new ones. Nothing is converted from the old files or the
+  database: the only install is a test device.
+- **RomM stays as it is.** It matches by system ID, so a system using one of Cannoli's built-in
+  IDs (`GBA`, `PS`…) matches as before, and a made-up ID gets no RomM match. RomM is revisited
+  later.
+
+## Build stages
+
+Each stage builds, passes the tests, and is committed on its own.
+
+1. **Config model:** parsers and validation for the five files, with `_` keys ignored, plus the
+   three template files. The templates are generated from `assets/platforms.json` by a script in
+   `scripts/` and shipped as assets. Not wired into the app yet. Unit tests.
+2. **Launching and scanning:**
+   - Systems replace `PlatformConfig` for ROM folders, extensions and names.
+   - A game launches with its override, or else its system's first emulator, with placeholders
+     filled in.
+   - Removed: `EmulatorSource`, `cores.json`, the core picker and catalog, the RetroArch package
+     setting, the RetroArch launcher special case, Settings → Emulation, and the Ricotta names.
+   - The installed-cores query becomes generic.
+3. **Menu:**
+   - `directory.json` drives the main menu and folders, and folder editing writes it.
+   - Unplaced systems and unclaimed ROM folders show while editing, and in Add To This Folder.
+   - `folders.json` goes away.
+4. **Pickers:** "Launch With" (written to `overrides.json`) and "Default Emulator", with
+   app-installed and core-installed marks.
+5. **Kitchen and docs:** `/api/config` serves the new files, and `CONFIG.md` and `FORK.md` are
+   rewritten.
+
 ## Open questions
 
-1. **Existing installs:** should the first run convert today's files and per-game choices into the
-   new ones, or start empty? The only install so far is the test device.
-2. **System IDs and RomM:** RomM matching uses Cannoli's built-in IDs (`GBA`, `PS`…). A
-   made-up ID would simply get no RomM match.
+None right now.
