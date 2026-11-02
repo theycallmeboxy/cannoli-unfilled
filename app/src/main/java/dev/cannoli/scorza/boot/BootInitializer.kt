@@ -42,6 +42,7 @@ class BootInitializer @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
     private val platformConfig: PlatformConfig,
+    private val libraryConfig: dev.cannoli.scorza.config.library.LibraryConfig,
     private val cannoliDatabase: CannoliDatabase,
     private val scanScheduler: ScanScheduler,
     private val cannoliPaths: CannoliPathsProvider,
@@ -68,10 +69,9 @@ class BootInitializer @Inject constructor(
         dev.cannoli.scorza.util.RommLog.init(root.absolutePath)
         dev.cannoli.scorza.util.ErrorLog.init(root.absolutePath)
         setupCoordinator.logStorageDiagnostics()
-        platformConfig.load()
-        // Backfill only. Fills platforms that have no stored choice and never touches one the
-        // user made, so it is safe to run on every boot rather than only on first run.
-        platformConfig.seedUnsetPlatforms(context.packageManager)
+        // emulators.json, systems.json and the rest. A new install gets them empty, plus the
+        // reference templates to copy from. Problems are logged and shown once the menu is up.
+        libraryConfig.load()
         ioScope.launch { dev.cannoli.scorza.util.DirectoryLayout.ensure(root, romDir, context.assets, platformConfig) }
 
         val importer = Importer(
@@ -133,7 +133,6 @@ class BootInitializer @Inject constructor(
     private fun hasLegacyData(root: File): Boolean {
         val p = CannoliPaths(root)
         return p.collectionsDir.exists() ||
-            p.coresJson.exists() ||
             p.raGameIdsFile.exists() ||
             p.raGameIdsLegacyFile.exists() ||
             p.recentlyPlayedFile.exists() ||

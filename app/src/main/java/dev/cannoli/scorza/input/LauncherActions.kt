@@ -49,7 +49,6 @@ class LauncherActions @Inject constructor(
     private val appsRepository: AppsRepository,
     private val launchManager: LaunchManager,
     private val platformConfig: PlatformConfig,
-    private val gameOverrideStore: dev.cannoli.scorza.db.GameOverrideStore,
     private val artworkLookup: ArtworkLookup,
     private val arcadeTitleLookup: ArcadeTitleLookup,
     private val nav: NavigationController,
@@ -164,7 +163,7 @@ class LauncherActions @Inject constructor(
         ioScope.launch {
             val romDir = pathsProvider.romDir
             if (dev.cannoli.scorza.util.DirectoryLayout.romDirNeedsScaffold(romDir)) {
-                dev.cannoli.scorza.util.DirectoryLayout.scaffoldRomFolders(romDir, platformConfig.getAllTags())
+                dev.cannoli.scorza.util.DirectoryLayout.scaffoldRomFolders(romDir, platformConfig.romFolders())
             }
             withContext(Dispatchers.Main) {
                 // The settings screens below were built against the old library, so the scan lands
@@ -195,7 +194,7 @@ class LauncherActions @Inject constructor(
         }
         val tag = rom.platformTag
         val base = java.text.Normalizer.normalize(rom.path.nameWithoutExtension, java.text.Normalizer.Form.NFC)
-        val emulator = RomKeys.coreDisplayNameFor(rom, platformConfig, gameOverrideStore.get(rom.id))
+        val emulator = RomKeys.emulatorNameFor(platformConfig, tag, gameKey)
         pendingLaunch = { launchManager.launchRom(rom) }
         nav.dialogState.value = DialogState.SaveSyncChecking
         ioScope.launch {
@@ -246,26 +245,6 @@ class LauncherActions @Inject constructor(
             requirePin = !settings.kitchenCodeBypass,
             fromQuickMenu = fromQuickMenu
         )
-    }
-
-    fun handleSystemListRename(state: DialogState.RenameInput) {
-        val newName = state.currentName.trim()
-        val item = systemListViewModel.getSelectedItem()
-        val blankResetsToDefault = item is SystemListViewModel.ListItem.PlatformItem
-        if (newName == state.gameName || (newName.isEmpty() && !blankResetsToDefault)) {
-            nav.dialogState.value = DialogState.None
-            return
-        }
-        when (item) {
-            is SystemListViewModel.ListItem.PlatformItem -> {
-                ioScope.launch {
-                    platformConfig.setDisplayName(item.platform.tag, newName)
-                    rescanSystemList()
-                }
-            }
-            else -> {}
-        }
-        nav.dialogState.value = DialogState.None
     }
 
     private fun resolvePathToRef(path: String): LibraryRef? {

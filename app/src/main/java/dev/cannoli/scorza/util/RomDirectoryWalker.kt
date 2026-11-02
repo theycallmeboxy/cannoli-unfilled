@@ -5,6 +5,15 @@ import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import java.io.File
 
+/** Where each platform's ROMs live under Roms/ and which files count as games. */
+interface RomLayout {
+    /** The platform's folder under Roms/. */
+    fun folderFor(tag: String): String = tag
+
+    /** Lower case, no dot. Null accepts every file but the global ignore list. */
+    fun extensionsFor(tag: String): Set<String>? = null
+}
+
 /**
  * Walks a ROM directory and returns the in-memory list of ROMs that should exist for a platform.
  * Reorganizes loose multi-disc sets into per-game subfolders with a generated `<base>.m3u` so
@@ -16,6 +25,7 @@ class RomDirectoryWalker(
     private val pathsProvider: CannoliPathsProvider,
     private val assets: AssetManager,
     private val arcadeTitleLookup: ArcadeTitleLookup,
+    private val layout: RomLayout = object : RomLayout {},
 ) {
     private val cannoliRoot: File get() = pathsProvider.root
     private val romDirectory: File get() = pathsProvider.romDir
@@ -56,18 +66,26 @@ class RomDirectoryWalker(
         ensureIgnoreLists()
         val tag = platformTag.uppercase()
         val tagDir = resolveTagDir(tag) ?: return null
+        // Paths are keyed by the configured folder name, which for a system whose folder is its
+        // own ID is the tag, as before.
+        val prefix = "${layout.folderFor(tag)}${File.separator}"
         val rekeys = mutableListOf<RekeyMove>()
-        organizeDir(tagDir, "$tag${File.separator}", tag, rekeys, depth = 0)
+        organizeDir(tagDir, prefix, tag, rekeys, depth = 0)
         val out = mutableListOf<ScannedRom>()
-        scanDir(tagDir, "$tag${File.separator}", isArcade, out, depth = 0)
+        scanDir(tagDir, prefix, isArcade, layout.extensionsFor(tag), out, depth = 0)
         return WalkResult(tagDir = tagDir, roms = out, rekeys = rekeys)
     }
 
+    /** The platform's folder under Roms/, matched without regard to case. Null when it is absent. */
     fun resolveTagDir(tag: String): File? {
-        val direct = File(romDirectory, tag)
+        val folder = layout.folderFor(tag)
+        val direct = File(romDirectory, folder)
         if (direct.exists()) return direct
-        return romDirectory.listFiles()?.firstOrNull { it.isDirectory && it.name.equals(tag, ignoreCase = true) }
+        return romDirectory.listFiles()?.firstOrNull { it.isDirectory && it.name.equals(folder, ignoreCase = true) }
     }
+
+    /** Where the platform's folder is or would be, for callers that create it. */
+    fun tagDirFor(tag: String): File = resolveTagDir(tag) ?: File(romDirectory, layout.folderFor(tag))
 
     fun invalidateNameMap(tagDir: File) = arcadeTitleLookup.invalidate(tagDir)
 
@@ -232,6 +250,7 @@ class RomDirectoryWalker(
         dir: File,
         relPrefix: String,
         isArcade: Boolean,
+        extensions: Set<String>?,
         out: MutableList<ScannedRom>,
         depth: Int,
     ) {
@@ -243,17 +262,18 @@ class RomDirectoryWalker(
             if (isArcade && isArcadeSupportDir(subdir)) continue
             val launch = findDirLaunchFile(subdir)
             if (launch != null) {
+                if (!accepts(launch.file, extensions)) continue
                 val launchRel = "$relPrefix${subdir.name}${File.separator}${launch.file.name}"
                 val (displayName, tags) = RomNaming.splitNameAndTags(subdir.name)
                 out.add(ScannedRom(launchRel, displayName, tags))
             } else if (subdir.listFiles()?.any { !it.name.startsWith(".") } == true) {
-                scanDir(subdir, "$relPrefix${subdir.name}${File.separator}", isArcade, out, depth + 1)
+                scanDir(subdir, "$relPrefix${subdir.name}${File.separator}", isArcade, extensions, out, depth + 1)
             }
         }
 
         if (files.isEmpty()) return
 
-        val romFiles = files.filterNot { isIgnoredExtension(it) }
+        val romFiles = files.filter { !isIgnoredExtension(it) && accepts(it, extensions) }
         val discCandidates = romFiles.filter { discRegex.containsMatchIn(it.nameWithoutExtension) }
         val discGroups = discCandidates.groupBy { discRegex.replace(it.nameWithoutExtension, "").trim() }
         val m3uByBase = romFiles
@@ -660,6 +680,10 @@ class RomDirectoryWalker(
     private fun isIgnored(file: File): Boolean =
         file.name.lowercase() in ignoredFiles ||
             (file.isFile && file.extension.lowercase() in ignoredExtensions)
+
+    // A system's own file types, when it lists them. A .p8.png cartridge counts as .png.
+    private fun accepts(file: File, extensions: Set<String>?): Boolean =
+        extensions == null || file.extension.lowercase() in extensions
 
     private fun isIgnoredExtension(file: File): Boolean =
         file.extension.lowercase() in ignoredExtensions

@@ -6,10 +6,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.AppsRepository
 import dev.cannoli.scorza.db.CannoliDatabase
 import dev.cannoli.scorza.db.CollectionsRepository
-import dev.cannoli.scorza.db.GameOverrideStore
 import dev.cannoli.scorza.db.RecentlyPlayedRepository
 import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.db.RommLinkRepository
@@ -29,10 +29,6 @@ object DatabaseModule {
         CannoliDatabase(paths)
 
     @Provides @Singleton
-    fun provideGameOverrideStore(db: CannoliDatabase): GameOverrideStore =
-        GameOverrideStore(db)
-
-    @Provides @Singleton
     fun provideArtworkLookup(paths: CannoliPathsProvider): ArtworkLookup =
         ArtworkLookup(paths)
 
@@ -45,7 +41,8 @@ object DatabaseModule {
         paths: CannoliPathsProvider,
         arcadeTitleLookup: ArcadeTitleLookup,
         @ApplicationContext context: Context,
-    ): RomDirectoryWalker = RomDirectoryWalker(paths, context.assets, arcadeTitleLookup)
+        platformConfig: PlatformConfig,
+    ): RomDirectoryWalker = RomDirectoryWalker(paths, context.assets, arcadeTitleLookup, platformConfig)
 
     @Provides @Singleton
     fun provideRomScanner(

@@ -64,8 +64,7 @@ class RomDirectoryWatcher @Inject constructor(
                 val name = path ?: return
                 val child = File(romDir, name)
                 if (!child.isDirectory) return
-                val tag = name.uppercase()
-                if (!platformConfig.isKnownTag(tag)) return
+                val tag = platformConfig.tagForFolder(name) ?: return
                 if (observers.containsKey(tag)) return
                 startPlatformObserver(romDir, tag)
                 scanScheduler.enqueue(tag)
@@ -82,7 +81,7 @@ class RomDirectoryWatcher @Inject constructor(
 
     @Suppress("DEPRECATION")
     private fun startPlatformObserver(romDir: File, tag: String) {
-        val dir = File(romDir, tag)
+        val dir = File(romDir, platformConfig.folderFor(tag))
         if (!dir.isDirectory) return
         val obs = object : FileObserver(dir.absolutePath, perPlatformMask) {
             override fun onEvent(event: Int, path: String?) {

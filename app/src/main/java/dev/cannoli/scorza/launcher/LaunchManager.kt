@@ -1,13 +1,13 @@
 package dev.cannoli.scorza.launcher
 
 import android.content.Context
-import android.content.pm.PackageManager
-import dev.cannoli.scorza.config.AppConfig
+import dev.cannoli.scorza.R
 import dev.cannoli.scorza.config.CannoliPaths
-import dev.cannoli.scorza.config.EmulatorSource
 import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.Placeholders
 import dev.cannoli.scorza.model.App
 import dev.cannoli.scorza.model.Rom
+import dev.cannoli.scorza.romm.sync.RomKeys
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.DialogState
 import java.io.File
@@ -16,98 +16,43 @@ class LaunchManager(
     private val context: Context,
     private val settings: SettingsRepository,
     private val platformConfig: PlatformConfig,
-    private val retroArchLauncher: RetroArchLauncher,
     private val apkLauncher: ApkLauncher,
     private val launchState: LaunchState,
+    private val romDir: () -> File,
     private val installedCoreService: InstalledCoreService? = null,
-    private val gameOverrides: dev.cannoli.scorza.db.GameOverrideStore? = null,
     private val foldersConfig: dev.cannoli.scorza.config.FoldersConfig? = null,
 ) {
-    // Per-game overrides are keyed by rom_id, which the scanner keeps stable across renames,
-    // moves and auto-organize, so an override follows its game instead of being orphaned.
-    private fun overrideFor(rom: Rom): dev.cannoli.scorza.config.EmulatorChoice? =
-        gameOverrides?.get(rom.id)
-
     init {
         apkLauncher.debugLog = ::debugLog
     }
 
+    /**
+     * Launches [rom] with the emulator systems.json and overrides.json give it: the game's
+     * override, else its system's first emulator, with the system's values for its placeholders.
+     */
     fun launchRom(rom: Rom): DialogState? {
         debugLog("launchRom entered: ${rom.platformTag} / ${rom.path.name}")
         if (launchState.launching) return null
         launchState.launching = true
         launchState.lastLaunched = rom
-        val launchFile = rom.path
 
-        val gameOverride = overrideFor(rom)
-        if (gameOverride?.source == EmulatorSource.Standalone && gameOverride.appPackage != null) {
-            val cfg = platformConfig.getAppConfig(rom.platformTag, gameOverride.appPackage)
-            return launchResultDialog(
-                launchStandalone(rom, launchFile, cfg), rom.platformTag, rom.id
-            )
+        val plan = platformConfig.launchFor(rom.platformTag, RomKeys.relativeKey(rom.path, romDir()))
+            ?: return errorAndReset(DialogState.LaunchError(
+                context.getString(R.string.launch_error_no_emulator, platformConfig.getDisplayName(rom.platformTag))
+            ))
+        val emulator = plan.emulator
+        val pkg = emulator.intent.packageName
+        debugLog("  plan: ${plan.ref.choiceName} -> $pkg vars=${plan.vars}")
+        if (!context.isPackageInstalled(pkg)) {
+            return errorAndReset(DialogState.MissingApp(emulator.label, pkg))
         }
-        val overrideRomId = if (gameOverride != null) rom.id else null
-
-        val resolvedCore = gameOverride?.coreId?.ifEmpty { null }
-            ?: platformConfig.getCoreName(rom.platformTag)
-        val source = pickSource(
-            gameSource = gameOverride?.source,
-            platformSource = platformConfig.getPlatformChoice(rom.platformTag)?.source,
-            // configuredCores, not installedCores: a core present only in a RetroArch the
-            // user is not using must not suppress the standalone fallback.
-            raAvailable = {
-                resolvedCore != null &&
-                    installedCoreService?.configuredCores()?.any { it.value.contains(resolvedCore) } == true
-            },
-            standaloneAvailable = {
-                platformConfig.getFirstInstalledApp(rom.platformTag, context.packageManager) != null
-            },
-        )
-        val result = if (source == EmulatorSource.Standalone) {
-            val cfg = platformConfig.getUserAppMapping(rom.platformTag)
-                ?.let { platformConfig.getAppConfig(rom.platformTag, it) }
-                ?: platformConfig.getFirstInstalledApp(rom.platformTag, context.packageManager)
-                ?: platformConfig.getAppPackage(rom.platformTag)?.let { platformConfig.getAppConfig(rom.platformTag, it) }
-            if (cfg != null) {
-                launchStandalone(rom, launchFile, cfg)
-            } else {
-                LaunchResult.CoreNotInstalled("unknown")
-            }
-        } else if (resolvedCore != null) {
-            val raPackage = settings.retroArchPackage
-            if (!context.isPackageInstalled(raPackage)) {
-                val appName = try {
-                    val info = context.packageManager.getApplicationInfo(raPackage, 0)
-                    context.packageManager.getApplicationLabel(info).toString()
-                } catch (_: PackageManager.NameNotFoundException) { raPackage }
-                return errorAndReset(DialogState.MissingApp(appName, raPackage, rom.platformTag, overrideRomId))
-            }
-            // The core-install check applies to any package that can report its
-            // cores. It self-skips for one that cannot, since a missing report is
-            // not evidence of a missing core.
-            if (installedCoreService != null
-                && installedCoreService.cacheReady
-                && installedCoreService.canReport(raPackage)
-                && !installedCoreService.hasCoreInPackage(resolvedCore, raPackage)) {
-                val label = InstalledCoreService.getPackageLabel(raPackage)
-                val coreName = platformConfig.getCoreDisplayName(resolvedCore)
-                return errorAndReset(DialogState.MissingCore(coreName, label, rom.platformTag, overrideRomId))
-            }
-            retroArchLauncher.launchRetroArchIntent(
-                launchFile, resolvedCore, platformConfig.getRetroArchTemplate(), raPackage,
-            )
-        } else {
-            // App-only platform (no core) that reached here has nothing installed to
-            // run it, so name the app it wants instead of a core it never had.
-            val appPkg = platformConfig.getAppPackage(rom.platformTag)
-            if (appPkg != null && !context.isPackageInstalled(appPkg)) {
-                LaunchResult.AppNotInstalled(appPkg)
-            } else {
-                LaunchResult.CoreNotInstalled("unknown")
-            }
+        // Only an emulator that answered the installed-cores query can block here; one that
+        // cannot report is given the benefit of the doubt.
+        val core = plan.vars[Placeholders.CORE]
+        if (core != null && installedCoreService?.coreStatus(pkg, core) == CoreStatus.MISSING) {
+            return errorAndReset(DialogState.MissingCore(core, emulator.label))
         }
-
-        return launchResultDialog(result, rom.platformTag)
+        return launchResultDialog(apkLauncher.launchWithRom(pkg, rom.path, emulator.intent, plan.vars))
     }
 
     fun launchApp(app: App): DialogState? {
@@ -124,21 +69,17 @@ class LaunchManager(
         return dialog
     }
 
-    private fun launchResultDialog(result: LaunchResult, platformTag: String? = null, romId: Long? = null): DialogState? {
-        val dialog = toLaunchDialog(result, platformTag, romId)
+    private fun launchResultDialog(result: LaunchResult): DialogState? {
+        val dialog = toLaunchDialog(result)
         if (dialog != null) launchState.launching = false
         return dialog
     }
 
-    private fun toLaunchDialog(result: LaunchResult, platformTag: String? = null, romId: Long? = null): DialogState? {
+    private fun toLaunchDialog(result: LaunchResult): DialogState? {
         return when (result) {
-            is LaunchResult.CoreNotInstalled -> DialogState.MissingCore(result.coreName, platformTag = platformTag, romId = romId)
-            is LaunchResult.AppNotInstalled -> {
-                // getApplicationLabel cannot resolve a package that is not installed, and this
-                // branch only fires when it is not, so use the curated label like MissingCore does.
-                val appName = InstalledCoreService.getPackageLabel(result.packageName)
-                DialogState.MissingApp(appName, result.packageName, platformTag, romId)
-            }
+            // getApplicationLabel cannot resolve a package that is not installed, so the dialog
+            // names the package itself.
+            is LaunchResult.AppNotInstalled -> DialogState.MissingApp(result.packageName, result.packageName)
             is LaunchResult.Error -> DialogState.LaunchError(result.message)
             LaunchResult.Success -> null
         }
@@ -159,30 +100,5 @@ class LaunchManager(
             val stamp = synchronized(debugFmt) { debugFmt.format(java.util.Date()) }
             dev.cannoli.scorza.util.LogWriter.write(debugSink, "$stamp $message\n")
         } catch (_: Exception) {}
-    }
-
-    // A standalone entry may name the platform's core with {core} too, e.g. to pass it to a
-    // RetroArch build listed as an app.
-    private fun launchStandalone(rom: Rom, launchFile: File, cfg: AppConfig): LaunchResult {
-        val vars = platformConfig.getCoreName(rom.platformTag)
-            ?.let { mapOf(EmulatorIntentBuilder.VAR_CORE to it) } ?: emptyMap()
-        return apkLauncher.launchWithRom(cfg.packageName, launchFile, cfg, vars)
-    }
-
-    companion object {
-        // Null means no stored preference anywhere, so the caller falls through to RetroArch.
-        // The availability probes are lazy because a stored choice decides the answer on its
-        // own, and probing to reach a conclusion already known is wasted work.
-        fun pickSource(
-            gameSource: EmulatorSource?,
-            platformSource: EmulatorSource?,
-            raAvailable: () -> Boolean,
-            standaloneAvailable: () -> Boolean,
-        ): EmulatorSource? {
-            val stored = gameSource ?: platformSource
-            if (stored != null) return stored
-            if (!raAvailable() && standaloneAvailable()) return EmulatorSource.Standalone
-            return null
-        }
     }
 }

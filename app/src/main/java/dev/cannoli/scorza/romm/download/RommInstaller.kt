@@ -5,28 +5,30 @@ import java.io.File
 
 data class InstallResult(val linkRelativePath: String, val artBaseName: String)
 
-class RommInstaller {
+/** [folderFor] gives a platform's folder under Roms/, which is the tag unless systems.json says otherwise. */
+class RommInstaller(private val folderFor: (String) -> String = { it }) {
 
     fun isMultiPart(game: RommGame): Boolean = game.files.size > 1
 
-    /** Installs [source] for [game] under [romDir]/[tag]. [source] is a downloaded file for single-part games and a staged directory for multi-part games. Deletes [source]. */
+    /** Installs [source] for [game] under [romDir] in [tag]'s folder. [source] is a downloaded file for single-part games and a staged directory for multi-part games. Deletes [source]. */
     fun install(game: RommGame, tag: String, source: File, romDir: File): InstallResult {
-        val tagDir = File(romDir, tag)
-        return if (isMultiPart(game)) installMultiPart(game, tag, tagDir, source)
-        else installSingle(game, tag, tagDir, source)
+        val folder = folderFor(tag)
+        val tagDir = File(romDir, folder)
+        return if (isMultiPart(game)) installMultiPart(game, folder, tagDir, source)
+        else installSingle(game, folder, tagDir, source)
     }
 
-    private fun installSingle(game: RommGame, tag: String, tagDir: File, temp: File): InstallResult {
+    private fun installSingle(game: RommGame, folder: String, tagDir: File, temp: File): InstallResult {
         tagDir.mkdirs()
         val safeName = File(game.fsName).name
         val dest = File(tagDir, safeName)
         if (!dest.canonicalPath.startsWith(tagDir.canonicalPath)) throw Exception("invalid fsName: path traversal")
         if (dest.exists()) dest.delete()
         if (!temp.renameTo(dest)) { temp.copyTo(dest, overwrite = true); temp.delete() }
-        return InstallResult("$tag/$safeName", dest.nameWithoutExtension)
+        return InstallResult("$folder/$safeName", dest.nameWithoutExtension)
     }
 
-    private fun installMultiPart(game: RommGame, tag: String, tagDir: File, staging: File): InstallResult {
+    private fun installMultiPart(game: RommGame, folder: String, tagDir: File, staging: File): InstallResult {
         val folderName = sanitizeFsName(game.fsName)
         val topLevel = staging.listFiles { f: File -> f.isFile }.orEmpty().sortedBy { it.name.lowercase() }
         val single = topLevel.singleOrNull()
@@ -42,7 +44,7 @@ class RommInstaller {
             staging.copyRecursively(dest, overwrite = true)
             staging.deleteRecursively()
         }
-        val linkRel = if (launchName != null) "$tag/$folderName/$launchName" else "$tag/$folderName"
+        val linkRel = if (launchName != null) "$folder/$folderName/$launchName" else "$folder/$folderName"
         return InstallResult(linkRel, folderName)
     }
 

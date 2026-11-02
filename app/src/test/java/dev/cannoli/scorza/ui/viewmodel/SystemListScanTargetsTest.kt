@@ -59,9 +59,17 @@ class SystemListScanTargetsTest {
         val platformConfig = mockk<PlatformConfig>(relaxed = true)
         every { platformConfig.isKnownTag(any()) } answers { firstArg<String>() in KNOWN }
         every { platformConfig.isArcade(any()) } returns false
+        // As systems.json would say: Game Boy keeps its ROMs in a folder named for it.
+        every { platformConfig.tagForFolder(any()) } answers {
+            when (val folder = firstArg<String>()) {
+                "Game Boy" -> "GB"
+                "GB" -> null
+                else -> folder.uppercase().takeIf { it in KNOWN }
+            }
+        }
         every { platformConfig.resolvePlatform(any(), any()) } answers {
             val tag = firstArg<String>()
-            Platform(tag = tag, displayName = tag, coreName = null, gameCount = secondArg())
+            Platform(tag = tag, displayName = tag, gameCount = secondArg())
         }
 
         val scheduler = mockk<ScanScheduler>(relaxed = true)
@@ -99,7 +107,7 @@ class SystemListScanTargetsTest {
 
     @Test fun `reconcile visits a platform that lost its folder`() {
         val romDir = tmp.newFolder("Roms")
-        File(romDir, "GB").mkdirs()
+        File(romDir, "Game Boy").mkdirs()
 
         val vm = viewModel(romDir, indexed = mapOf("GB" to 1, "SNES" to 4))
         val scanned = scannedTags(vm, reconcileOrphans = true)
@@ -109,7 +117,7 @@ class SystemListScanTargetsTest {
 
     @Test fun `an ordinary scan leaves an orphaned platform alone`() {
         val romDir = tmp.newFolder("Roms")
-        File(romDir, "GB").mkdirs()
+        File(romDir, "Game Boy").mkdirs()
 
         val vm = viewModel(romDir, indexed = mapOf("GB" to 1, "SNES" to 4))
         val scanned = scannedTags(vm, reconcileOrphans = false)
@@ -128,7 +136,7 @@ class SystemListScanTargetsTest {
 
     @Test fun `declining the reconcile leaves the orphaned rows in place`() {
         val romDir = tmp.newFolder("Roms")
-        File(romDir, "GB").mkdirs()
+        File(romDir, "Game Boy").mkdirs()
 
         val vm = viewModel(romDir, indexed = mapOf("GB" to 1, "SNES" to 4))
         assertEquals(listOf("GB"), scannedTags(vm, reconcileOrphans = false))
@@ -137,13 +145,25 @@ class SystemListScanTargetsTest {
 
     @Test fun `a folder that is not a platform is never scanned`() {
         val romDir = tmp.newFolder("Roms")
-        File(romDir, "GB").mkdirs()
+        File(romDir, "Game Boy").mkdirs()
         File(romDir, "#recycle").mkdirs()
 
         val vm = viewModel(romDir, indexed = mapOf("GB" to 1))
         val scanned = scannedTags(vm, reconcileOrphans = true)
 
         assertEquals(listOf("GB"), scanned)
+    }
+
+    @Test fun `a folder is scanned as the system that names it, not by its own name`() {
+        val romDir = tmp.newFolder("Roms")
+        File(romDir, "Game Boy").mkdirs()
+        File(romDir, "GB").mkdirs()
+        File(romDir, "nes").mkdirs()
+
+        val vm = viewModel(romDir, indexed = emptyMap())
+        val scanned = scannedTags(vm, reconcileOrphans = false)
+
+        assertEquals(listOf("GB", "NES"), scanned.sorted())
     }
 
     private companion object {

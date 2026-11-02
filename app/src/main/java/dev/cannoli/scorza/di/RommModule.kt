@@ -248,11 +248,12 @@ object RommModule {
         http: RommHttp,
         paths: CannoliPathsProvider,
         settings: dev.cannoli.scorza.settings.SettingsRepository,
+        platformConfig: PlatformConfig,
         @IoScope ioScope: CoroutineScope,
     ): RommDownloader = RommDownloader(
         queue = RommDownloadQueue(),
         client = client,
-        installer = RommInstaller(),
+        installer = RommInstaller(platformConfig::folderFor),
         links = links,
         artwork = artwork,
         artDownloader = artDownloader,

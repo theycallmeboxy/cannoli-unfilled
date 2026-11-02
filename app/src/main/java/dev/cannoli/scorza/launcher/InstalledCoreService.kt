@@ -8,7 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Handler
 import android.os.Looper
 import dagger.hilt.android.qualifiers.ApplicationContext
-import dev.cannoli.scorza.settings.SettingsRepository
+import dev.cannoli.scorza.config.library.LibraryConfig
 import kotlinx.coroutines.suspendCancellableCoroutine
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -16,6 +16,9 @@ import kotlin.coroutines.resume
 
 const val ACTION_QUERY_INSTALLED_CORES = "com.retroarch.QUERY_INSTALLED_CORES"
 const val ACTION_INSTALLED_CORES_RESULT = "com.retroarch.INSTALLED_CORES_RESULT"
+
+/** What a package's last report says about one core. */
+enum class CoreStatus { PRESENT, MISSING, UNKNOWN }
 
 // UNSCANNED and NOT_INSTALLED exist because absence of information is not information. Folding
 // them into REPORTS made the picker label every core Not Installed both before the boot scan
@@ -29,10 +32,15 @@ fun PackageManager.hasCoreQueryReceiver(packageName: String): Boolean =
     queryBroadcastReceivers(Intent(ACTION_QUERY_INSTALLED_CORES).setPackage(packageName), 0)
         .any { it.activityInfo?.packageName == packageName }
 
+/**
+ * Asks emulators which libretro cores they have, through the broadcast upstream RetroArch's
+ * InstalledCoresReceiver answers. Nothing here is specific to RetroArch: the packages asked are
+ * those of the emulators in emulators.json that declare a receiver for the query.
+ */
 @Singleton
 class InstalledCoreService @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val settings: SettingsRepository,
+    private val libraryConfig: LibraryConfig,
 ) {
 
     private val handler = Handler(Looper.getMainLooper())
@@ -57,15 +65,11 @@ class InstalledCoreService @Inject constructor(
     var cacheReady: Boolean = false
         private set
 
-    // Cores marked installed since the current query began, unioned back in at publish time.
-    private val markedSinceQuery = mutableMapOf<String, MutableSet<String>>()
-
     suspend fun queryAllPackages() {
-        synchronized(this) { markedSinceQuery.clear() }
         val answered = mutableMapOf<String, Set<String>>()
         val silent = mutableSetOf<String>()
         val unsupported = mutableSetOf<String>()
-        val discovered = discoverRaPackages()
+        val discovered = emulatorPackages()
         for (pkg in discovered) {
             // No receiver means no reply is coming, so paying the timeout would only stall
             // the scan by three seconds per package to learn nothing.
@@ -73,17 +77,14 @@ class InstalledCoreService @Inject constructor(
                 unsupported.add(pkg)
                 continue
             }
-            // An empty reply is not the same as no reply. A freshly installed RicottaArch has
-            // no cores by design and genuinely answers zero; treating that as unresponsive made
-            // the shipped default package skip the missing-core check and report every platform
-            // as ready.
+            // An empty reply is not the same as no reply: a fresh RetroArch has no cores and
+            // genuinely answers zero, which must read as "missing", not "unknown".
             val cores = queryPackage(pkg)
             if (cores == null) silent.add(pkg) else answered[pkg] = cores
         }
         publishQueryResult(answered, silent, unsupported, discovered.toSet())
     }
 
-    // Synchronized on the same monitor as markInstalled so the two writers never interleave.
     @Synchronized
     private fun publishQueryResult(
         answered: Map<String, Set<String>>,
@@ -95,12 +96,9 @@ class InstalledCoreService @Inject constructor(
         // A package that did not answer keeps whatever was cached, since there is no fresh
         // information about it.
         for ((pkg, cores) in installedCores) if (pkg !in answered) merged[pkg] = cores
-        // A package that did answer is replaced wholesale, so a core deleted inside RetroArch
-        // stops being reported. Unioning everything used to make deletions invisible forever.
-        // Cores marked installed while this query was in flight are re-added, which is what the
-        // blanket union was really protecting.
-        for ((pkg, cores) in answered) merged[pkg] = cores + markedSinceQuery[pkg].orEmpty()
-        markedSinceQuery.clear()
+        // A package that did answer is replaced wholesale, so a core deleted inside the emulator
+        // stops being reported.
+        merged.putAll(answered)
         installedCores = merged
         unresponsivePackages = silent
         unsupportedPackages = unsupported
@@ -108,11 +106,12 @@ class InstalledCoreService @Inject constructor(
         cacheReady = true
     }
 
-    private fun discoverRaPackages(): List<String> {
-        return context.packageManager.getInstalledPackages(0)
-            .map { it.packageName }
-            .filter { it.startsWith("com.retroarch") || it.startsWith("dev.cannoli.ricotta") }
-    }
+    // Every installed package an emulators.json entry launches.
+    private fun emulatorPackages(): List<String> =
+        libraryConfig.library.emulators.values
+            .map { it.intent.packageName }
+            .distinct()
+            .filter { context.packageManager.isPackageInstalled(it) }
 
     /** Null means the package never answered. An empty set means it answered with no cores. */
     private suspend fun queryPackage(pkg: String, timeoutMs: Long = 3000L): Set<String>? =
@@ -149,24 +148,6 @@ class InstalledCoreService @Inject constructor(
             }
         }
 
-    fun hasCoreInPackage(coreId: String, pkg: String): Boolean =
-        installedCores[pkg]?.contains(coreId) == true
-
-    @Synchronized
-    fun markInstalled(pkg: String, coreId: String) {
-        val existing = installedCores[pkg].orEmpty()
-        installedCores = installedCores + (pkg to existing + coreId)
-        unresponsivePackages = unresponsivePackages - pkg
-        // Recorded so a query that started before this download cannot publish a stale set
-        // that omits the core we just installed.
-        markedSinceQuery.getOrPut(pkg) { mutableSetOf() }.add(coreId)
-    }
-
-    fun configuredCores(): Map<String, Set<String>> {
-        val pkg = settings.retroArchPackage
-        return installedCores.filterKeys { it == pkg }
-    }
-
     // Ordered so the two "we have nothing to go on" cases are settled before any classification
     // drawn from a scan, since those sets are only meaningful once a scan has actually run.
     fun reportingFor(pkg: String): CoreReporting = when {
@@ -177,25 +158,17 @@ class InstalledCoreService @Inject constructor(
         else -> CoreReporting.REPORTS
     }
 
-    fun canReport(pkg: String): Boolean = reportingFor(pkg) == CoreReporting.REPORTS
-
-    fun configuredReporting(): CoreReporting = reportingFor(settings.retroArchPackage)
-
-    fun configuredUnreportable(): Set<String> {
-        val pkg = settings.retroArchPackage
-        return if (canReport(pkg)) emptySet() else setOf(pkg)
+    /**
+     * Whether [packageName] has [core] (as systems.json names it, e.g. mgba_libretro). Only a
+     * package that answered the query can say a core is missing; anything else is unknown.
+     */
+    fun coreStatus(packageName: String, core: String): CoreStatus = when {
+        reportingFor(packageName) != CoreReporting.REPORTS -> CoreStatus.UNKNOWN
+        installedCores[packageName]?.contains(core) == true -> CoreStatus.PRESENT
+        else -> CoreStatus.MISSING
     }
 
     companion object {
-        private val PACKAGE_LABELS = mapOf(
-            "dev.cannoli.ricotta.aarch64" to "RicottaArch",
-            "dev.cannoli.ricotta" to "RicottaArch",
-            "com.retroarch.aarch64" to "RetroArch",
-            "com.retroarch" to "RetroArch"
-        )
-
-        fun getPackageLabel(pkg: String): String = PACKAGE_LABELS[pkg] ?: pkg
-
         fun soToCoreId(filename: String): String =
             filename.removeSuffix("_android.so").removeSuffix(".so")
     }

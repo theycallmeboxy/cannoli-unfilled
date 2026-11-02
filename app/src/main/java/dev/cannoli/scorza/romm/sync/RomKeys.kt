@@ -1,22 +1,19 @@
 package dev.cannoli.scorza.romm.sync
 
 import dev.cannoli.scorza.config.PlatformConfig
-import dev.cannoli.scorza.model.Rom
+import dev.cannoli.scorza.config.library.Placeholders
 import java.io.File
 
 object RomKeys {
     fun relativeKey(rom: File, romRoot: File): String =
         rom.absolutePath.removePrefix(romRoot.absolutePath).removePrefix(File.separator)
 
-    // ifEmpty matters: a standalone override stores an empty coreId, which is non-null, so the
-    // elvis never fired and the Save Slots header rendered a blank emulator name.
-    fun coreDisplayNameFor(
-        rom: Rom,
-        platformConfig: PlatformConfig,
-        override: dev.cannoli.scorza.config.EmulatorChoice?,
-    ): String? {
-        val coreId = override?.coreId?.ifEmpty { null }
-            ?: platformConfig.getCoreName(rom.platformTag) ?: return null
-        return platformConfig.getCoreDisplayName(coreId)
+    /**
+     * The emulator name sent with a save: the choice's own name when it has one, else its core,
+     * else the emulator's name. Null when the game's system has no emulator to launch it with.
+     */
+    fun emulatorNameFor(platformConfig: PlatformConfig, tag: String, gameKey: String): String? {
+        val plan = platformConfig.launchFor(tag, gameKey) ?: return null
+        return plan.ref.label ?: plan.ref.params[Placeholders.CORE] ?: plan.emulator.label
     }
 }

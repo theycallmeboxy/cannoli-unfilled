@@ -72,9 +72,10 @@ class SystemListFoldersTest {
 
         val platformConfig = mockk<PlatformConfig>(relaxed = true)
         every { platformConfig.isKnownTag(any()) } returns true
+        every { platformConfig.tagForFolder(any()) } answers { firstArg<String>().uppercase() }
         every { platformConfig.resolvePlatform(any(), any()) } answers {
             val tag = firstArg<String>()
-            Platform(tag = tag, displayName = tag, coreName = null, gameCount = secondArg())
+            Platform(tag = tag, displayName = tag, gameCount = secondArg())
         }
 
         val apps = mockk<AppsRepository>(relaxed = true)

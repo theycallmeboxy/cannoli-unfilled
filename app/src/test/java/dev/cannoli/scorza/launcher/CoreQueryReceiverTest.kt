@@ -34,13 +34,13 @@ class CoreQueryReceiverTest {
     }
 
     @Test fun `the answer is scoped to the package asked about`() {
-        installReceiver(RICOTTA)
-        assertTrue(pm.hasCoreQueryReceiver(RICOTTA))
+        installReceiver(OTHER)
+        assertTrue(pm.hasCoreQueryReceiver(OTHER))
         assertFalse(pm.hasCoreQueryReceiver(STOCK))
     }
 
     private companion object {
         const val STOCK = "com.retroarch.aarch64"
-        const val RICOTTA = "dev.cannoli.ricotta.aarch64"
+        const val OTHER = "org.example.emulator"
     }
 }

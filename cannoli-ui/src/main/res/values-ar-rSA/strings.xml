@@ -11,7 +11,6 @@
     <string name="label_firmware">FIRMWARE</string>
     <string name="label_close">CLOSE</string>
     <string name="label_help">HELP</string>
-    <string name="label_remove">REMOVE SHORTCUT</string>
     <string name="label_delete">DELETE</string>
     <string name="label_confirm">CONFIRM</string>
     <string name="label_toggle">TOGGLE</string>
@@ -40,7 +39,6 @@
     <string name="settings_library">Library</string>
     <string name="settings_status_bar">Status Bar</string>
     <string name="settings_input">Input</string>
-    <string name="settings_emulation">Emulation</string>
     <string name="settings_integrations">Integrations</string>
     <string name="settings_advanced">Advanced</string>
     <string name="settings_debug">Debug</string>
@@ -108,12 +106,8 @@
     <string name="setting_color_accent">Accent</string>
     <string name="setting_color_background">Background</string>
     <string name="setting_color_status_bar">Status Bar</string>
-    <string name="setting_installed_cores">%s Installed Cores</string>
-    <string name="title_installed_cores">%s Installed Cores</string>
-    <string name="installed_cores_none">No cores found</string>
     <string name="setting_sd_root">Cannoli Root</string>
     <string name="setting_rom_directory">ROM Directory</string>
-    <string name="setting_ra_package">RetroArch Package</string>
     <string name="setting_scan_library">Scan Mode</string>
     <string name="value_automatically">Automatic</string>
     <string name="value_manually">Manual</string>
@@ -267,15 +261,9 @@
     <string name="value_12h">12h</string>
     <string name="value_24h">24h</string>
     <string name="value_not_set">Not set</string>
-    <string name="value_not_installed">Not Installed</string>
-    <string name="value_none_installed">None Installed</string>
-    <string name="value_active">Active</string>
     <!-- Dialogs -->
     <string name="empty_list">%1$s is empty</string>
     <string name="dialog_delete_confirm">Delete \"%1$s\"?</string>
-    <string name="value_empty_override">(empty override)</string>
-    <string name="emulator_platform_setting">Platform Setting</string>
-    <string name="emulator_platform_setting_named">Platform Setting (%1$s)</string>
     <string name="rename_error_directory">Failed to rename directory</string>
     <string name="rename_error_generic">Rename failed</string>
     <string name="rename_cannot_resolve_dir">Couldn\'t find the game folder</string>
@@ -290,7 +278,6 @@
     <string name="import_favorites">Creating Favorites collection</string>
     <string name="import_collections">Migrating collections</string>
     <string name="import_collection_parents">Migrating collection hierarchy</string>
-    <string name="import_overrides">Migrating game overrides</string>
     <string name="import_ra_ids">Migrating RetroAchievements IDs</string>
     <string name="import_recently_played">Migrating recently played</string>
     <string name="import_ordering">Migrating ordering</string>
@@ -357,7 +344,6 @@
     <string name="keyboard_title_rename_game">Rename Game</string>
     <string name="keyboard_title_rename_app">Rename App</string>
     <string name="keyboard_title_rename_folder">Rename Folder</string>
-    <string name="keyboard_title_rename_platform">Rename Platform</string>
     <string name="keyboard_title_new_slot">New Slot</string>
     <string name="keyboard_title_rename_slot">Rename Slot</string>
     <string name="keyboard_title_rename_controller">Rename Controller</string>
@@ -402,38 +388,8 @@
     <string name="setting_geo_height">Height</string>
     <string name="setting_geo_hpos">Horizontal Position</string>
     <string name="setting_geo_vpos">Vertical Position</string>
-    <!-- Emulator Mapping -->
-    <string name="setting_emulator_mapping">Emulator Mapping</string>
     <string name="label_reset">RESET</string>
-    <string name="label_show_all">SHOW ALL</string>
-    <string name="label_show_installed">SHOW INSTALLED</string>
-    <string name="value_not_bundled">NOT BUNDLED</string>
-    <string name="value_no_overrides">No per-game overrides.</string>
-    <string name="value_no_firmware">No firmware required for this core.</string>
-    <string name="mapping_action_bios">BIOS Files</string>
-    <string name="mapping_action_overrides">Per-game overrides</string>
-    <string name="mapping_action_reset">Reset to default</string>
-    <string name="mapping_required_missing">%d required missing</string>
-    <string name="title_platform_mapping">%s Mapping</string>
-    <string name="title_platform_bios">%s BIOS</string>
-    <string name="filter_all">ALL</string>
-    <string name="filter_missing">MISSING</string>
-    <string name="filter_unmapped">UNMAPPED</string>
-    <string name="filter_mapped">MAPPED</string>
-    <string name="value_unmapped">Unmapped</string>
     <string name="label_download">DOWNLOAD</string>
-    <string name="bios_required">REQUIRED</string>
-    <string name="bios_optional">OPTIONAL</string>
-    <string name="bios_present">Present</string>
-    <string name="bios_missing">Missing</string>
-    <plurals name="override_game_count">
-        <item quantity="zero">%d games</item>
-        <item quantity="one">%d game</item>
-        <item quantity="two">%d games</item>
-        <item quantity="few">%d games</item>
-        <item quantity="many">%d games</item>
-        <item quantity="other">%d games</item>
-    </plurals>
     <string name="bulk_selected">%d Selected</string>
     <plurals name="bulk_delete_count">
         <item quantity="zero">%d items</item>
@@ -452,9 +408,6 @@
         <item quantity="many">Created %d system folders</item>
         <item quantity="other">Created %d system folders</item>
     </plurals>
-    <string name="value_no_cores_found">No Cores Found</string>
-    <string name="label_clear_override">CLEAR</string>
-    <string name="dialog_reset_platform_confirm">Reset %1$s? This clears your emulator selection for this platform and restores the bundled default.</string>
     <!-- Save Slots screen -->
     <string name="save_slots_screen_title">%1$s Slots</string>
     <string name="save_slots_active">Active</string>

@@ -11,7 +11,6 @@ import dev.cannoli.scorza.launcher.ApkLauncher
 import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.LaunchManager
 import dev.cannoli.scorza.launcher.LaunchState
-import dev.cannoli.scorza.launcher.RetroArchLauncher
 import dev.cannoli.scorza.settings.SettingsRepository
 import javax.inject.Singleton
 
@@ -20,24 +19,17 @@ import javax.inject.Singleton
 object LaunchModule {
 
     @Provides @Singleton
-    fun provideRetroArchLauncher(
-        @ApplicationContext context: Context,
-        settings: SettingsRepository,
-    ): RetroArchLauncher = RetroArchLauncher(context) { settings.retroArchPackage }
-
-    @Provides @Singleton
     fun provideLaunchManager(
         @ApplicationContext context: Context,
         settings: SettingsRepository,
         platformConfig: PlatformConfig,
-        retroArchLauncher: RetroArchLauncher,
         apkLauncher: ApkLauncher,
         launchState: LaunchState,
+        paths: CannoliPathsProvider,
         installedCoreService: InstalledCoreService,
-        gameOverrides: dev.cannoli.scorza.db.GameOverrideStore,
         foldersConfig: dev.cannoli.scorza.config.FoldersConfig,
     ): LaunchManager = LaunchManager(
-        context, settings, platformConfig,
-        retroArchLauncher, apkLauncher, launchState, installedCoreService, gameOverrides, foldersConfig,
+        context, settings, platformConfig, apkLauncher, launchState, { paths.romDir },
+        installedCoreService, foldersConfig,
     )
 }

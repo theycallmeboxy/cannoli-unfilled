@@ -11,8 +11,6 @@
     <string name="label_firmware">ΠΡΟΣΑΡΜΟΓΗ</string>
     <string name="label_close">ΚΛΕΙΣΤΕ</string>
     <string name="label_help">ΒΟΗΘΕΙΑ</string>
-    <string name="label_remove">ΑΦΑΙΡΕΣΗ ΣΥΝΤΟΜΗΣ</string>
-    <string name="label_change_emulator">ΑΛΛΑΓΗ ΕΜΠΟΡΙΟΥ</string>
     <string name="label_delete">ΔΙΑΓΡΑΦΗ</string>
     <string name="label_confirm">ΕΠΙΒΕΒΑΙΩΣΗ</string>
     <string name="label_toggle">ΤΟΓΑΛΙΑ</string>
@@ -44,7 +42,6 @@
     <string name="settings_library">Βιβλιοθήκη</string>
     <string name="settings_status_bar">Γραμμή Κατάστασης</string>
     <string name="settings_input">Input</string>
-    <string name="settings_emulation">Προσομοίωση</string>
     <string name="settings_integrations">Ενσωματώσεις</string>
     <string name="settings_advanced">Προχωρημένα</string>
     <string name="settings_debug">Debug</string>
@@ -140,13 +137,9 @@
     <string name="setting_color_background">Φόντο</string>
     <string name="setting_color_status_bar">Γραμμή Κατάστασης</string>
     <!-- Settings row. %s is the emulator app name (e.g. RetroArch). -->
-    <!-- Screen title. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="installed_cores_none">Δεν βρέθηκαν πυρήνες</string>
     <!-- Setting: the app's root storage folder on the SD card. -->
     <string name="setting_sd_root">Ρίζα Κανόλι</string>
     <string name="setting_rom_directory">Κατάλογος ROM</string>
-    <!-- Setting: which installed RetroArch app/package to launch games with. -->
-    <string name="setting_ra_package">Πακέτο RetroArch</string>
     <string name="setting_scan_library">Λειτουργία Σάρωσης</string>
     <!-- Scan Mode value: scan the library automatically. -->
     <string name="value_automatically">Αυτόματο</string>
@@ -314,20 +307,10 @@
     <string name="value_12h">12η</string>
     <string name="value_24h">24η</string>
     <string name="value_not_set">Δεν έχει οριστεί</string>
-    <string name="value_not_installed">Μη Εγκατεστημένο</string>
-    <string name="value_none_installed">Κανένα Εγκατεστημένο</string>
-    <string name="value_active">Ενεργό</string>
     <!-- Dialogs -->
     <!-- %1$s = the list or collection name. -->
     <!-- Confirm dialog. %1$s = item name. -->
     <string name="dialog_delete_confirm">Διαγραφή \"%1$s\"?</string>
-    <!-- Shown when a per-game override is deliberately set to empty. -->
-    <string name="value_empty_override">(άδεια παράκαμψη)</string>
-    <!-- Shown in place of an emulator name when a platform has no emulator mapped yet. -->
-    <string name="value_needs_setup">Χρειάζεται ρύθμιση</string>
-    <string name="emulator_platform_setting">Ρύθμιση Πλατφόρμας</string>
-    <!-- %1$s = the emulator name the platform is mapped to. -->
-    <string name="emulator_platform_setting_named">Ρύθμιση Πλατφόρμας (%1$s)</string>
     <string name="rename_error_directory">Αποτυχία μετονομασίας καταλόγου</string>
     <string name="rename_error_generic">Η μετονομασία απέτυχε</string>
     <string name="rename_cannot_resolve_dir">Δεν βρέθηκε ο φάκελος του παιχνιδιού</string>
@@ -342,7 +325,6 @@
     <string name="import_favorites">Δημιουργία συλλογής αγαπημένων</string>
     <string name="import_collections">Μετανάστευση συλλογών</string>
     <string name="import_collection_parents">Μετανάστευση ιεραρχία συλλογής</string>
-    <string name="import_overrides">Μεταναστευτικές παρακάμψεις παιχνιδιών</string>
     <string name="import_ra_ids">Μετανάστευση Αναγνωριστικών RetroAchievements</string>
     <string name="import_recently_played">Μετανάστευση πρόσφατα παίχτηκε</string>
     <string name="import_ordering">Μεταναστευτική παραγγελία</string>
@@ -421,7 +403,6 @@
     <string name="keyboard_title_rename_game">Μετονομασία Παιχνιδιού</string>
     <string name="keyboard_title_rename_app">Μετονομασία Εφαρμογής</string>
     <string name="keyboard_title_rename_folder">Μετονομασία Φακέλου</string>
-    <string name="keyboard_title_rename_platform">Μετονομασία Πλατφόρμας</string>
     <string name="keyboard_title_new_slot">Νέα Υποδοχή</string>
     <string name="keyboard_title_rename_slot">Μετονομασία Υποδοχής</string>
     <string name="keyboard_title_rename_controller">Μετονομασία Ελεγκτή</string>
@@ -468,40 +449,8 @@
     <string name="setting_geo_height">Ύψος</string>
     <string name="setting_geo_hpos">Οριζόντια Θέση</string>
     <string name="setting_geo_vpos">Κατακόρυφη Θέση</string>
-    <!-- Emulator Mapping -->
-    <!-- Setting: maps each platform to an emulator/core. -->
-    <string name="setting_emulator_mapping">Χαρτογράφηση Εξομοιωτή</string>
     <string name="label_reset">RESET</string>
-    <string name="label_show_all">ΕΜΦΑΝΙΣΗ ΌΛΩΝ</string>
-    <string name="label_show_installed">ΕΜΦΑΝΙΣΗ ΕΓΚΑΤΑΣΤΑΣΗΣ</string>
-    <!-- The core is not bundled with the app. -->
-    <string name="value_not_bundled">ΔΕΝ ΑΝΑΛΗΨΕΙ</string>
-    <string name="value_no_overrides">Δεν υπάρχουν αναπροσαρμογές ανά παιχνίδι.</string>
-    <string name="value_no_firmware">Δεν απαιτείται υλικολογισμικό για αυτόν τον πυρήνα.</string>
-    <string name="mapping_action_bios">Αρχεία BIOS</string>
-    <string name="mapping_action_overrides">Παρακάμψεις σε παιχνίδι</string>
-    <string name="mapping_action_reset">Επαναφορά προεπιλογών</string>
-    <!-- %d = number of required BIOS files missing. -->
-    <string name="mapping_required_missing">Λείπει το %d</string>
-    <!-- Distinguishes platforms sharing a display name. %1$s = platform name, %2$s = platform tag. -->
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_mapping">Αντιστοίχιση %s</string>
-    <!-- Screen title. %s = platform name. -->
-    <string name="filter_all">ΟΛΑ</string>
-    <string name="filter_missing">ΔΙΑΦΟΡΑ</string>
-    <string name="filter_unmapped">ΑΠΑΝΤΗΣΗ</string>
-    <string name="filter_mapped">ΧΑΜΗΛΑ</string>
-    <string name="value_unmapped">Ααντιστοιχισμένο</string>
     <string name="label_download">ΛΗΨΗ</string>
-    <string name="bios_required">ΑΠΑΙΤΗΣΗ</string>
-    <string name="bios_optional">ΠΡΟΑΙΡΕΤΙΚΟ</string>
-    <string name="bios_present">Παρόν</string>
-    <string name="bios_missing">Λείπει</string>
-    <!-- %d = number of games with per-game overrides. -->
-    <plurals name="override_game_count">
-        <item quantity="one">%d παιχνίδι</item>
-        <item quantity="other">%d παιχνίδια</item>
-    </plurals>
     <!-- %d = number of items selected. -->
     <string name="bulk_selected">%d Επιλέχθηκε</string>
     <!-- %d = number of items. -->
@@ -515,10 +464,6 @@
         <item quantity="one">Δημιουργήθηκε %d φάκελος συστήματος</item>
         <item quantity="other">Φάκελοι συστήματος %d</item>
     </plurals>
-    <string name="value_no_cores_found">Δεν Βρέθηκαν Πυρήνες</string>
-    <string name="label_clear_override">ΚΑΘΑΡΙΣΜΟΣ</string>
-    <!-- %1$s = platform name. -->
-    <string name="dialog_reset_platform_confirm">Επαναφορά %1$s? Αυτό καθαρίζει την επιλογή εξομοιωτή σας για αυτήν την πλατφόρμα και επαναφέρει την προκαθορισμένη ομαδοποίηση.</string>
     <!-- Save Slots screen -->
     <!-- Screen title. %1$s = game name. -->
     <string name="save_slots_active">Ενεργό</string>

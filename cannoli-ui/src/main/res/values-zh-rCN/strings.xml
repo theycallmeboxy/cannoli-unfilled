@@ -11,8 +11,6 @@
     <string name="label_firmware">固件</string>
     <string name="label_close">关闭</string>
     <string name="label_help">帮助</string>
-    <string name="label_remove">移除快捷方式</string>
-    <string name="label_change_emulator">更换模拟器</string>
     <string name="label_delete">删除</string>
     <string name="label_confirm">确认</string>
     <string name="label_toggle">切换</string>
@@ -44,7 +42,6 @@
     <string name="settings_library">游戏库</string>
     <string name="settings_status_bar">状态栏</string>
     <string name="settings_input">输入</string>
-    <string name="settings_emulation">模拟</string>
     <string name="settings_integrations">集成</string>
     <string name="settings_advanced">高级设置</string>
     <string name="settings_debug">调试</string>
@@ -140,16 +137,9 @@
     <string name="setting_color_accent">强调色</string>
     <string name="setting_color_background">背景</string>
     <string name="setting_color_status_bar">状态栏</string>
-    <!-- Settings row. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="setting_installed_cores">%s 已安装的核心</string>
-    <!-- Screen title. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="title_installed_cores">%s 已安装的核心</string>
-    <string name="installed_cores_none">未找到核心</string>
     <!-- Setting: the app's root storage folder on the SD card. -->
     <string name="setting_sd_root">Cannoli 根目录</string>
     <string name="setting_rom_directory">ROM 目录</string>
-    <!-- Setting: which installed RetroArch app/package to launch games with. -->
-    <string name="setting_ra_package">Retroarch应用包</string>
     <string name="setting_scan_library">扫描模式</string>
     <!-- Scan Mode value: scan the library automatically. -->
     <string name="value_automatically">自动</string>
@@ -317,21 +307,11 @@
     <string name="value_12h">12小时</string>
     <string name="value_24h">24 小时</string>
     <string name="value_not_set">未设置</string>
-    <string name="value_not_installed">未安装</string>
-    <string name="value_none_installed">没有安装</string>
-    <string name="value_active">已启用</string>
     <!-- Dialogs -->
     <!-- %1$s = the list or collection name. -->
     <string name="empty_list">%1$s 为空</string>
     <!-- Confirm dialog. %1$s = item name. -->
     <string name="dialog_delete_confirm">删除\"%1$s\"？</string>
-    <!-- Shown when a per-game override is deliberately set to empty. -->
-    <string name="value_empty_override">(空覆盖)</string>
-    <!-- Shown in place of an emulator name when a platform has no emulator mapped yet. -->
-    <string name="value_needs_setup">需要设置</string>
-    <string name="emulator_platform_setting">平台设置</string>
-    <!-- %1$s = the emulator name the platform is mapped to. -->
-    <string name="emulator_platform_setting_named">平台设置 (%1$s)</string>
     <string name="rename_error_directory">无法重命名目录</string>
     <string name="rename_error_generic">重命名失败</string>
     <string name="rename_cannot_resolve_dir">无法找到游戏文件夹</string>
@@ -346,7 +326,6 @@
     <string name="import_favorites">创建最爱收藏夹</string>
     <string name="import_collections">迁移收藏集</string>
     <string name="import_collection_parents">迁移收藏集结构</string>
-    <string name="import_overrides">迁移游戏参数覆盖</string>
     <string name="import_ra_ids">迁移复古成就ID</string>
     <string name="import_recently_played">迁移最近游玩</string>
     <string name="import_ordering">迁移排序</string>
@@ -430,7 +409,6 @@
     <string name="keyboard_title_rename_game">重命名游戏</string>
     <string name="keyboard_title_rename_app">重命名应用程序</string>
     <string name="keyboard_title_rename_folder">重命名文件夹</string>
-    <string name="keyboard_title_rename_platform">重命名平台</string>
     <string name="keyboard_title_new_slot">新建栏位</string>
     <string name="keyboard_title_rename_slot">重命名栏位</string>
     <string name="keyboard_title_rename_controller">重命名控制器</string>
@@ -481,41 +459,8 @@
     <string name="setting_geo_height">高度</string>
     <string name="setting_geo_hpos">水平位置</string>
     <string name="setting_geo_vpos">垂直位置</string>
-    <!-- Emulator Mapping -->
-    <!-- Setting: maps each platform to an emulator/core. -->
-    <string name="setting_emulator_mapping">模拟器映射</string>
     <string name="label_reset">重置</string>
-    <string name="label_show_all">显示全部</string>
-    <string name="label_show_installed">显示已安装的</string>
-    <!-- The core is not bundled with the app. -->
-    <string name="value_not_bundled">未打包的</string>
-    <string name="value_no_overrides">没有游戏覆盖。</string>
-    <string name="value_no_firmware">此核心不需要固件。</string>
-    <string name="mapping_action_bios">BIOS文件</string>
-    <string name="mapping_action_overrides">游戏覆盖</string>
-    <string name="mapping_action_reset">重置为默认值</string>
-    <!-- %d = number of required BIOS files missing. -->
-    <string name="mapping_required_missing">缺少%d</string>
-    <!-- Distinguishes platforms sharing a display name. %1$s = platform name, %2$s = platform tag. -->
-    <string name="mapping_platform_name_with_tag">%1$s (%2$s)</string>
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_mapping">%s 映射</string>
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_bios">%s BIOS</string>
-    <string name="filter_all">全部</string>
-    <string name="filter_missing">缺失</string>
-    <string name="filter_unmapped">未映射</string>
-    <string name="filter_mapped">已映射</string>
-    <string name="value_unmapped">未映射的</string>
     <string name="label_download">下载</string>
-    <string name="bios_required">必需</string>
-    <string name="bios_optional">可选</string>
-    <string name="bios_present">当前</string>
-    <string name="bios_missing">缺失</string>
-    <!-- %d = number of games with per-game overrides. -->
-    <plurals name="override_game_count">
-        <item quantity="other">%d 游戏</item>
-    </plurals>
     <!-- %d = number of items selected. -->
     <string name="bulk_selected">已选择 %d</string>
     <!-- %d = number of items. -->
@@ -527,10 +472,6 @@
     <plurals name="regenerate_system_folders_result">
         <item quantity="other">已创建 %d 系统文件夹</item>
     </plurals>
-    <string name="value_no_cores_found">未找到核心</string>
-    <string name="label_clear_override">清除</string>
-    <!-- %1$s = platform name. -->
-    <string name="dialog_reset_platform_confirm">重置 %1$s吗？这将清除您对此平台的模拟器选择，并还原捆绑的默认值。</string>
     <!-- Save Slots screen -->
     <!-- Screen title. %1$s = game name. -->
     <string name="save_slots_screen_title">%1$s 栏位</string>

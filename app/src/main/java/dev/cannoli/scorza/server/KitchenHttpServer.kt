@@ -261,9 +261,10 @@ class KitchenHttpServer internal constructor(
     /** Browsing is the one resource rooted in the user's own ROM directory rather than a directory
      *  Cannoli laid out itself, so the canonical tag in the url has to be matched back to the
      *  folder that is really on disk. The other resource dirs are created with canonical names.
-     *  Falling back to the tag keeps uploads and mkdir working for a platform with no folder yet. */
+     *  The walker maps a tag to its system's ROM folder, and to where that folder would go when it
+     *  does not exist yet, which keeps uploads and mkdir working for a platform with no folder. */
     private fun romsTarget(romsRoot: File, segments: List<String>): File {
-        val tagDir = romDirectoryWalker?.resolveTagDir(segments[0]) ?: File(romsRoot, segments[0])
+        val tagDir = romDirectoryWalker?.tagDirFor(segments[0]) ?: File(romsRoot, segments[0])
         val rest = segments.drop(1)
         return if (rest.isEmpty()) tagDir else File(tagDir, rest.joinToString(File.separator))
     }

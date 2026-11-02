@@ -83,9 +83,6 @@ class Importer(
                 announce(Phase.COLLECTION_PARENTS)
                 importCollectionParents(collectionIdsByStem)
 
-                announce(Phase.OVERRIDES)
-                importGameOverrides(romIdsByRelative)
-
                 announce(Phase.RA_IDS)
                 importRaGameIds(romIdsByRelative)
 
@@ -109,7 +106,7 @@ class Importer(
             // importPlatforms()/importRoms() committed to the platforms and roms tables
             // outside the transaction above. Clear them so the countRoms() re-entry guard
             // does not treat this half-finished import as complete and skip the remaining
-            // migration (collections, overrides, recently-played) on the next boot.
+            // migration (collections, recently-played) on the next boot.
             runCatching {
                 conn.transaction {
                     conn.execSQL("DELETE FROM roms")
@@ -127,8 +124,7 @@ class Importer(
         FAVORITES(0.60f, 0.62f, R.string.import_favorites),
         COLLECTIONS(0.62f, 0.72f, R.string.import_collections),
         COLLECTION_PARENTS(0.72f, 0.78f, R.string.import_collection_parents),
-        OVERRIDES(0.78f, 0.85f, R.string.import_overrides),
-        RA_IDS(0.85f, 0.90f, R.string.import_ra_ids),
+        RA_IDS(0.78f, 0.90f, R.string.import_ra_ids),
         RECENTLY_PLAYED(0.90f, 0.95f, R.string.import_recently_played),
         ORDERING(0.95f, 0.97f, R.string.import_ordering),
         ARCHIVE(0.97f, 1.00f, R.string.import_archive),
@@ -265,24 +261,6 @@ class Importer(
                 parentId, order, childId,
             )
         }
-    }
-
-    private fun importGameOverrides(romIdsByRelative: Map<String, Long>) {
-        platformConfig.migrateV1GameOverrides(
-            resolveRomId = { absolutePath -> relativizeRom(File(absolutePath))?.let { romIdsByRelative[it] } },
-            put = { romId, choice ->
-                conn.execute(
-                    """
-                    INSERT OR REPLACE INTO game_overrides (rom_id, source, core_id, app_package)
-                    VALUES (?, ?, ?, ?)
-                    """.trimIndent(),
-                    romId,
-                    choice.source.name,
-                    choice.coreId.takeIf { it.isNotEmpty() },
-                    choice.appPackage,
-                )
-            },
-        )
     }
 
     private fun importRaGameIds(romIdsByRelative: Map<String, Long>) {
@@ -433,8 +411,6 @@ class Importer(
 
     private fun archiveLegacyFiles(backupDir: File) {
         backupDir.mkdirs()
-        // cores.json is deliberately absent: unlike everything below it, no table supersedes
-        // it and PlatformConfig still reads it, so archiving it lost every emulator mapping.
         val candidates = listOf(
             paths.collectionsDir,
             paths.raGameIdsFile,

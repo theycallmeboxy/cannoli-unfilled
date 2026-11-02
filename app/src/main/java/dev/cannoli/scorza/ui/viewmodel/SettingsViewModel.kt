@@ -10,7 +10,6 @@ import androidx.compose.ui.text.font.FontFamily
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.R
-import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.settings.ArtScale
 import dev.cannoli.scorza.settings.BatteryDisplay
 import dev.cannoli.scorza.settings.SettingsRepository
@@ -187,18 +186,10 @@ class SettingsViewModel @Inject constructor(
         Category("display", R.string.settings_display),
         Category("library", R.string.settings_library),
         Category("input", R.string.settings_input),
-        Category("emulation", R.string.settings_emulation),
         Category("integrations", R.string.settings_integrations),
         Category("advanced", R.string.settings_advanced),
         Category("about", R.string.settings_about),
     ) + if (BuildConfig.DEBUG) listOf(Category("debug", R.string.settings_debug)) else emptyList()
-
-    private fun detectInstalledRaPackages(): List<String> {
-        val pm = packageManager ?: return listOf(settings.retroArchPackage)
-        return pm.getInstalledPackages(0)
-            .map { it.packageName }
-            .filter { it.startsWith("com.retroarch") || it.startsWith("dev.cannoli.ricotta") }
-    }
 
     private data class SettingsSnapshot(
         val textSize: TextSize,
@@ -224,7 +215,6 @@ class SettingsViewModel @Inject constructor(
         val showFavorites: Boolean,
         val sdRoot: String,
         val romDirectory: String,
-        val raPackage: String,
         val toolsName: String,
         val portsName: String,
         val artWidth: Int,
@@ -512,13 +502,6 @@ class SettingsViewModel @Inject constructor(
             "experimental_features" -> {
                 settings.experimentalFeatures = !settings.experimentalFeatures
             }
-            "ra_package" -> {
-                val pkgs = detectInstalledRaPackages()
-                if (pkgs.isNotEmpty()) {
-                    val cur = pkgs.indexOf(settings.retroArchPackage).coerceAtLeast(0)
-                    settings.retroArchPackage = pkgs[((cur + direction) % pkgs.size + pkgs.size) % pkgs.size]
-                }
-            }
             "romm_allow_self_signed" -> rommStore.allowSelfSigned = !rommStore.allowSelfSigned
         }
 
@@ -655,7 +638,6 @@ class SettingsViewModel @Inject constructor(
         showFavorites = settings.showFavorites,
         sdRoot = settings.sdCardRoot,
         romDirectory = settings.romDirectory,
-        raPackage = settings.retroArchPackage,
         toolsName = settings.toolsName,
         portsName = settings.portsName,
         artWidth = settings.artWidth,
@@ -692,7 +674,6 @@ class SettingsViewModel @Inject constructor(
         settings.showFavorites = snap.showFavorites
         settings.sdCardRoot = snap.sdRoot
         settings.romDirectory = snap.romDirectory
-        settings.retroArchPackage = snap.raPackage
         settings.toolsName = snap.toolsName
         settings.portsName = snap.portsName
         settings.artWidth = snap.artWidth
@@ -798,18 +779,6 @@ class SettingsViewModel @Inject constructor(
             SettingsItem("controllers", R.string.setting_controllers, isEditable = true),
             SettingsItem("input_tester", R.string.setting_input_tester, isEditable = true)
         )
-        "emulation" -> buildList {
-            add(SettingsItem("core_mapping", R.string.setting_emulator_mapping, isEditable = true))
-            val pkgs = detectInstalledRaPackages()
-            if (pkgs.isNotEmpty() && settings.retroArchPackage !in pkgs) {
-                settings.retroArchPackage = pkgs.first()
-            }
-            add(SettingsItem("ra_package", R.string.setting_ra_package, valueText = if (pkgs.isEmpty()) null else settings.retroArchPackage, valueRes = if (pkgs.isEmpty()) R.string.value_none_installed else null, canCycle = pkgs.size > 1))
-            if (pkgs.isNotEmpty()) {
-                val pkgLabel = InstalledCoreService.getPackageLabel(settings.retroArchPackage)
-                add(SettingsItem("installed_cores", R.string.setting_installed_cores, labelText = context.getString(R.string.setting_installed_cores, pkgLabel), isEditable = true))
-            }
-        }
         "integrations" -> buildList {
             add(SettingsItem("integrations_romm", R.string.settings_romm, isEditable = true))
         }

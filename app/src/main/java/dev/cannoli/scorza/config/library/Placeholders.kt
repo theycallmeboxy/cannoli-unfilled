@@ -12,6 +12,12 @@ object Placeholders {
     /** Filled in at launch for every game, never by a system entry. */
     val BUILT_IN: Set<String> = setOf("rom_path", "package", "rom_extension", "rom_contents", "rom_id")
 
+    /**
+     * The value a system gives for an emulator's libretro core. Before a launch it is checked
+     * against the cores the emulator reports having, when it answers the installed-cores query.
+     */
+    const val CORE = "core"
+
     private val PATTERN = Regex("""\{([A-Za-z0-9_]+)\}""")
 
     /** The placeholder names in [text], in order of first use. */

@@ -21,16 +21,35 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
 - **Tools and Ports:** replaced by user folders (below).
 - **Content modes:** the Collections Only and Five Game Handheld main menus, with the 5GH
   collection setting. The main menu always shows platforms and folders.
-- **Unused strings:** 136 strings for the removed features, in every language.
+- **Emulator Mapping and Settings → Emulation:** the platform list with its emulator and core
+  picker, BIOS status, the per-game overrides list and Reset, the RetroArch package setting, and
+  the Installed Cores screen. A game's "Emulator Override" menu entry is gone too, until "Launch
+  With" replaces it.
+- **Built-in emulator knowledge:** the core catalog (`core_info`), `cores.json`, `platforms.ini`
+  renames, the special-case RetroArch launcher, and the leftover Ricotta names. Renaming a
+  platform from the main menu is gone with `platforms.ini`: a system's name is set in
+  `systems.json`.
+- **Unused strings:** 136 strings for the removed features, plus 50 for Emulator Mapping and the
+  Emulation settings, in every language.
 
 ### Changed
 
 - **App ID:** installs as `io.github.theycallmeboxy.cannoli`, named "Cannoli Unfilled", so it sits
   alongside upstream Cannoli instead of replacing it.
-- **Launch intents:** read from `Config/emulators.json` instead of being built into the app. This
-  includes the RetroArch intent, which is the `retroarch` template. The file is reloaded when you
-  return to Cannoli. The default RetroArch package is `com.retroarch.aarch64`.
-- **Old settings:** a game or platform set to the old "Internal" runner now uses RetroArch.
+- **Platforms and launching:** platforms are the systems in `Config/systems.json`, and their launch
+  intents are the emulators in `Config/emulators.json` (new format; see
+  [docs/config-design.md](docs/config-design.md)). A system gives its name, its folder under
+  `Roms/` (which can differ from its ID), the file types it accepts, whether it's arcade, and the
+  emulators that run it. A game launches with its entry in `Config/overrides.json`, or else its
+  system's first emulator, with the system's values (such as `"core"`) filled into the intent.
+  RetroArch is an emulator entry like any other. The files are reloaded when you return to
+  Cannoli, and bad entries are skipped and listed in `Logs/error.log`.
+- **Empty to start:** new and existing installs start with these files empty, so the main menu
+  shows no platforms until you copy systems and emulators in from the `.template.json` files next
+  to them. Nothing is converted from the old `emulators.json`, `cores.json` or per-game choices.
+- **Core check:** before a launch, an emulator that answers RetroArch's installed-cores query is
+  asked whether it has the game's core; if it says no, a dialog says which core is missing. An
+  emulator that can't answer is never blocked.
 - **Recents:** "Recently Played" is called "Recents" (in English; other languages keep their
   translation for now). Its setting has three values: Show, Games Only (no apps) and Hide.
 - **Default font:** IBM Plex Mono. The old default, M+ 1 Code, is still in the font list, and
@@ -46,7 +65,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   `Art/Folders/`.
 - **Folder editing on the device:** new, rename, delete, move, add apps, and reorder, all saved to
   `folders.json`.
-- **Kitchen config API:** `/api/config` reads and saves `folders.json` and `emulators.json`.
+- **Kitchen config API:** `/api/config` reads and saves `folders.json`. The new config files are
+  added in a later stage.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
 
 ## Building
@@ -64,6 +84,8 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-02 | Systems and emulators come from systems.json and emulators.json; emulator mapping removed |
+| 2026-11-02 | Config model and templates for the new config files |
 | 2026-11-02 | Center layout: centered title, clock at the top left |
 | 2026-11-02 | Recents setting (Show / Games Only / Hide); centered layout; IBM Plex Mono default |
 | 2026-11-02 | Remove content modes; rename Recently Played to Recent; Apps In Recent setting |

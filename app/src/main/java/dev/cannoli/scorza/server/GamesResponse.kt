@@ -164,7 +164,7 @@ object GamesResponse {
             ""
         } else {
             val gameUnit = walker.gameDirectory(romFile) ?: romFile
-            val platformDir = File(romsRoot, platformTag)
+            val platformDir = walker.tagDirFor(platformTag)
             val unitParent = gameUnit.parentFile
             if (unitParent == null || unitParent == platformDir) {
                 ""

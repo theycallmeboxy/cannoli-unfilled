@@ -3,61 +3,13 @@ package dev.cannoli.scorza.ui.screens
 import dev.cannoli.ui.components.KeyboardLayout
 import dev.cannoli.ui.components.KeyboardState
 
-enum class EmulatorMappingStatus { READY, NOT_INSTALLED, NEEDS_SETUP, UNKNOWN }
-data class EmulatorMappingEntry(val tag: String, val platformName: String, val coreDisplayName: String, val runnerLabel: String, val status: EmulatorMappingStatus = EmulatorMappingStatus.READY)
-// Three-valued because a boolean forced "not reported" and "confirmed absent" to share a
-// value, which is how the picker came to label unknowable cores Not Installed.
-enum class CoreAvailability { AVAILABLE, UNAVAILABLE, UNKNOWN }
-// source is the identity; runnerLabel is display only. Matching on the caption is what made a
-// selection vanish whenever the configured RetroArch package changed its label.
-data class EmulatorPickerOption(
-    val coreId: String,
-    val displayName: String,
-    val source: dev.cannoli.scorza.config.EmulatorSource,
-    val runnerLabel: String,
-    val appPackage: String? = null,
-    val availability: CoreAvailability = CoreAvailability.AVAILABLE,
-)
-
-enum class MappingActionKind { BIOS, OVERRIDES, RESET }
-
-sealed interface MappingItem {
-    val isSelectable: Boolean
-    data class SectionHeader(val label: String) : MappingItem { override val isSelectable = false }
-    data class Notice(val text: String) : MappingItem { override val isSelectable = false }
-    data class Divider(val id: Int = 0) : MappingItem { override val isSelectable = false }
-    data class EmulatorOption(val option: EmulatorPickerOption, val isCurrent: Boolean) : MappingItem {
-        override val isSelectable = true
-    }
-    /** Game scope only: selecting this clears the per-game override and follows the platform. */
-    data class PlatformDefault(val label: String, val isCurrent: Boolean) : MappingItem {
-        override val isSelectable = true
-    }
-    data class Action(
-        val kind: MappingActionKind,
-        val label: String,
-        val status: String = "",
-        val statusIsWarning: Boolean = false,
-    ) : MappingItem { override val isSelectable = true }
-}
-
-/** One row of the per-game overrides list. Keyed by rom_id, not by path. */
-data class GameOverrideRow(val romId: Long, val gameName: String, val label: String)
-
-data class FirmwareStatus(val entry: dev.cannoli.scorza.config.FirmwareEntry, val present: Boolean)
 data class ColorEntry(val key: String, @androidx.annotation.StringRes val labelRes: Int, val hex: String, val color: Long)
 
 sealed interface DialogState {
     data object None : DialogState
-    // romId is set only when the emulator that failed came from a per-game override, so
-    // recovery edits the mapping that actually failed instead of the platform-wide one.
-    data class MissingCore(
-        val coreName: String,
-        val packageLabel: String? = null,
-        val platformTag: String? = null,
-        val romId: Long? = null,
-    ) : DialogState
-    data class MissingApp(val appName: String, val packageName: String, val platformTag: String? = null, val romId: Long? = null) : DialogState
+    /** [emulatorName] reported its installed cores and [coreName] was not among them. */
+    data class MissingCore(val coreName: String, val emulatorName: String) : DialogState
+    data class MissingApp(val appName: String, val packageName: String) : DialogState
     data class LaunchError(val message: String) : DialogState
     data class ContextMenu(val gameName: String, val selectedOption: Int = 0, val options: List<String>) : DialogState
     data class BulkContextMenu(val gamePaths: List<String>, val selectedOption: Int = 0, val options: List<String>) : DialogState
@@ -124,7 +76,6 @@ sealed interface DialogState {
     data class LibrarySwitchConfirm(val newRomDirectory: String) : DialogState
     data class IntentAuditResult(val message: String) : DialogState
     data class SystemFoldersRegenerated(val message: String) : DialogState
-    data class PlatformResetConfirm(val tag: String, val platformName: String) : DialogState
     data class QuickMenu(
         val rows: List<dev.cannoli.scorza.ui.quickmenu.QuickMenuRow>,
         val kitchenRunning: Boolean,

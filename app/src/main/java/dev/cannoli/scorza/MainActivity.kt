@@ -36,7 +36,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.cannoli.scorza.boot.BootSequencer
 import dev.cannoli.scorza.boot.BootState
 import dev.cannoli.scorza.boot.StartStorageDependentHolder
-import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.db.CannoliDatabase
 import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.db.RomScanner
@@ -64,7 +64,6 @@ import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
 import dev.cannoli.scorza.ui.viewmodel.InputTesterViewModel
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel
-import dev.cannoli.scorza.romm.sync.RomKeys
 import dev.cannoli.ui.theme.CannoliTheme
 import javax.inject.Inject
 import javax.inject.Provider
@@ -73,7 +72,7 @@ import javax.inject.Provider
 class MainActivity : ComponentActivity(), ActivityActions {
 
     @Inject lateinit var settings: SettingsRepository
-    @Inject lateinit var platformConfig: Provider<PlatformConfig>
+    @Inject lateinit var libraryConfig: Provider<LibraryConfig>
     @Inject lateinit var nav: NavigationController
     @Inject lateinit var router: InputRouter
     @Inject lateinit var onboardingHandler: dev.cannoli.scorza.input.screen.OnboardingInputHandler
@@ -122,10 +121,9 @@ class MainActivity : ComponentActivity(), ActivityActions {
 
     private val isReady: Boolean get() = bootSequencer.state.value is BootState.Ready
 
-    private var coreQueryReceiver: android.content.BroadcastReceiver? = null
     private var pairingUiJob: kotlinx.coroutines.Job? = null
     private var coldStart = true
-    private var reportedEmulatorErrors: List<String> = emptyList()
+    private var reportedConfigErrors: List<String> = emptyList()
 
     private val storagePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -181,8 +179,6 @@ class MainActivity : ComponentActivity(), ActivityActions {
                 dev.cannoli.scorza.navigation.OnboardingPermission.STORAGE -> requestStoragePermission()
             }
         }
-        router.unregisterCoreQueryReceiver = { unregisterCoreQueryReceiver() }
-
         controllerBlacklist.load(this)
         controllerBridge.start(this)
 
@@ -393,7 +389,7 @@ class MainActivity : ComponentActivity(), ActivityActions {
         hideSystemUI()
         settings.reload()
         settingsViewModel.get().load()
-        reportEmulatorConfig()
+        reportLibraryConfig()
         val activeDialogState = nav.dialogState
         if (activeDialogState.value is DialogState.RommConnected && rommStore.token.isNullOrEmpty()) {
             activeDialogState.value = DialogState.None
@@ -421,7 +417,6 @@ class MainActivity : ComponentActivity(), ActivityActions {
         controllerBridge.onDeviceRemoved = null
         controllerBridge.stop(this)
         super.onDestroy()
-        unregisterCoreQueryReceiver()
         settings.shutdown()
         if (isReady) {
             systemListViewModel.get().close()
@@ -595,16 +590,17 @@ class MainActivity : ComponentActivity(), ActivityActions {
         }
     }
 
-    // emulators.json is edited by hand, so pick up a change on every return to the launcher and
-    // say so once when the file has entries that had to be skipped.
-    private fun reportEmulatorConfig() {
-        val config = platformConfig.get()
-        config.reloadEmulatorsIfChanged()
-        val errors = config.emulatorConfigErrors
-        if (errors == reportedEmulatorErrors) return
-        reportedEmulatorErrors = errors
+    // The config files are edited by hand, so pick up a change on every return to the launcher,
+    // ask the emulators again which cores they have, and say so once when entries were skipped.
+    private fun reportLibraryConfig() {
+        val config = libraryConfig.get()
+        config.reloadIfChanged()
+        lifecycleScope.launch { installedCoreService.get().queryAllPackages() }
+        val errors = config.errors
+        if (errors == reportedConfigErrors) return
+        reportedConfigErrors = errors
         if (errors.isNotEmpty()) {
-            osdController.show(resources.getQuantityString(R.plurals.osd_emulators_json_errors, errors.size, errors.size))
+            osdController.show(resources.getQuantityString(R.plurals.osd_config_errors, errors.size, errors.size))
         }
     }
 
@@ -614,13 +610,6 @@ class MainActivity : ComponentActivity(), ActivityActions {
         controller.hide(WindowInsetsCompat.Type.systemBars())
         controller.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-    }
-
-    private fun unregisterCoreQueryReceiver() {
-        coreQueryReceiver?.let {
-            try { unregisterReceiver(it) } catch (_: IllegalArgumentException) {}
-            coreQueryReceiver = null
-        }
     }
 
     override fun finishAffinity() = super.finishAffinity()

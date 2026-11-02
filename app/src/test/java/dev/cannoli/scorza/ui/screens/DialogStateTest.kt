@@ -49,7 +49,7 @@ class DialogStateTest {
     @Test fun `menu delta on non-menu states returns null`() {
         assertNull(DialogState.None.withMenuDelta(1))
         assertNull(DialogState.QuitConfirm.withMenuDelta(1))
-        assertNull(DialogState.MissingCore("x").withMenuDelta(1))
+        assertNull(DialogState.MissingCore("x", "y").withMenuDelta(1))
     }
 
     // ---- backspace via KeyboardController ----

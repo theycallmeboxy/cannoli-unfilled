@@ -149,7 +149,6 @@
     <!-- %1$d = points. -->
     <!-- %1$s = date the achievement was unlocked. -->
     <!-- Advanced setting: adjust the on-screen viewport rectangle. -->
-    <!-- Emulator Mapping -->
     <!-- Setting: maps each platform to an emulator/core. -->
     <!-- The core is not bundled with the app. -->
     <!-- %d = number of required BIOS files missing. -->

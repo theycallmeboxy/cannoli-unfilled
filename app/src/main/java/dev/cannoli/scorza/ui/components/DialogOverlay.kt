@@ -892,14 +892,12 @@ fun DialogOverlay(
 
         is DialogState.MissingCore -> MissingCoreDialog(
             coreName = dialogState.coreName,
-            packageLabel = dialogState.packageLabel,
-            showChangeEmulator = dialogState.platformTag != null,
+            emulatorName = dialogState.emulatorName,
             buttonStyle = buttonStyle,
         )
 
         is DialogState.MissingApp -> MissingAppDialog(
             appName = dialogState.appName,
-            showChangeEmulator = dialogState.platformTag != null,
             buttonStyle = buttonStyle,
         )
 
@@ -933,12 +931,6 @@ fun DialogOverlay(
             message = stringResource(R.string.dialog_quit_confirm),
             buttonStyle = buttonStyle,
             confirmLabel = stringResource(R.string.label_quit),
-        )
-
-        is DialogState.PlatformResetConfirm -> ConfirmOverlay(
-            message = stringResource(R.string.dialog_reset_platform_confirm, dialogState.platformName),
-            buttonStyle = buttonStyle,
-            confirmLabel = stringResource(R.string.label_reset),
         )
 
         is DialogState.RenameResult -> MessageOverlay(

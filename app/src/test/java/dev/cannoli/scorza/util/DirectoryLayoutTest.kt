@@ -84,7 +84,7 @@ class DirectoryLayoutTest {
         File(rom, "NES").mkdirs()
         val assets = androidx.test.core.app.ApplicationProvider
             .getApplicationContext<android.content.Context>().assets
-        val config = dev.cannoli.scorza.config.PlatformConfig({ root }, assets)
+        val config = dev.cannoli.scorza.config.PlatformConfig { dev.cannoli.scorza.config.library.Library() }
         DirectoryLayout.ensure(root, rom, assets, config)
 
         assertTrue(File(rom, "PC").isDirectory)
@@ -96,10 +96,28 @@ class DirectoryLayoutTest {
         val rom = tmp.newFolder("Roms")
         val assets = androidx.test.core.app.ApplicationProvider
             .getApplicationContext<android.content.Context>().assets
-        val config = dev.cannoli.scorza.config.PlatformConfig({ root }, assets)
+        val config = dev.cannoli.scorza.config.PlatformConfig { dev.cannoli.scorza.config.library.Library() }
         DirectoryLayout.ensure(root, rom, assets, config)
 
         assertTrue(File(root, "Art/TOOLS").isDirectory)
         assertTrue(File(root, "Art/PORTS").isDirectory)
+    }
+
+    @Test fun ensure_scaffolds_each_system_rom_folder_on_an_empty_library() {
+        val root = tmp.newFolder("cannoli")
+        val rom = tmp.newFolder("Roms")
+        val assets = androidx.test.core.app.ApplicationProvider
+            .getApplicationContext<android.content.Context>().assets
+        val systems = dev.cannoli.scorza.config.library.LibraryParser.parseSystems(
+            """{ "GBA": { "roms": "Game Boy Advance" }, "NES": {} }"""
+        ).value
+        val config = dev.cannoli.scorza.config.PlatformConfig { dev.cannoli.scorza.config.library.Library(systems = systems) }
+        DirectoryLayout.ensure(root, rom, assets, config)
+
+        assertTrue(File(rom, "Game Boy Advance").isDirectory)
+        assertTrue(File(rom, "NES").isDirectory)
+        assertFalse(File(rom, "GBA").exists())
+        // Art, saves and the rest stay keyed by the system's ID.
+        assertTrue(File(root, "Art/GBA").isDirectory)
     }
 }

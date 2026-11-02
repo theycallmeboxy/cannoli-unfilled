@@ -7,7 +7,7 @@ import android.content.pm.PackageManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.config.LaunchMethod
-import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.settings.SettingsRepository
 import java.io.File
 import java.text.SimpleDateFormat
@@ -19,7 +19,7 @@ import javax.inject.Singleton
 @Singleton
 class IntentAuditor @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val platformConfig: PlatformConfig,
+    private val libraryConfig: LibraryConfig,
     private val settings: SettingsRepository,
 ) {
 
@@ -37,47 +37,48 @@ class IntentAuditor @Inject constructor(
         var totalInstalled = 0
         var totalFailed = 0
 
-        val tags = platformConfig.getAllTags().sorted()
-        for (tag in tags) {
-            val configs = platformConfig.getAppOptions(tag)
-            if (configs.isEmpty()) continue
-            sb.appendLine("$tag (${platformConfig.getDisplayName(tag)})")
-            for (cfg in configs) {
-                val installed = pm.isPackageInstalled(cfg.packageName)
-                val label = if (installed) resolveAppLabel(pm, cfg.packageName) else cfg.packageName
-                sb.appendLine("  ${cfg.packageName}  [${if (installed) "INSTALLED" else "NOT INSTALLED"}]${if (installed && label != cfg.packageName) " ($label)" else ""}")
-                if (!installed) continue
+        // Each emulator in emulators.json, once. Placeholders a system fills, such as {core},
+        // are left as they are: they do not change which activity the intent resolves to.
+        for (emulator in libraryConfig.library.emulators.values) {
+            sb.appendLine("${emulator.name} (${emulator.label})")
+            val cfg = emulator.intent
+            val installed = pm.isPackageInstalled(cfg.packageName)
+            val label = if (installed) resolveAppLabel(pm, cfg.packageName) else cfg.packageName
+            sb.appendLine("  ${cfg.packageName}  [${if (installed) "INSTALLED" else "NOT INSTALLED"}]${if (installed && label != cfg.packageName) " ($label)" else ""}")
+            if (!installed) {
+                sb.appendLine()
+                continue
+            }
 
-                totalInstalled++
-                sb.appendLine("    action:   ${cfg.action}")
-                sb.appendLine("    activity: ${cfg.activity ?: "<none>"}")
-                sb.appendLine("    data:     ${cfg.data}")
-                sb.appendLine("    extras:   ${if (cfg.extras.isEmpty()) "<none>" else cfg.extras.joinToString { "${it.key} (${it.kind})" }}")
-                sb.appendLine("    method:   ${cfg.launchMethod}")
+            totalInstalled++
+            sb.appendLine("    action:   ${cfg.action}")
+            sb.appendLine("    activity: ${cfg.activity ?: "<none>"}")
+            sb.appendLine("    data:     ${cfg.data}")
+            sb.appendLine("    extras:   ${if (cfg.extras.isEmpty()) "<none>" else cfg.extras.joinToString { "${it.key} (${it.kind})" }}")
+            sb.appendLine("    method:   ${cfg.launchMethod}")
 
-                val resolvedIntent = EmulatorIntentBuilder.resolve(context, cfg, sample)
-                val intent = EmulatorIntentBuilder.toAndroidIntent(context, resolvedIntent, cfg)
-                val resolved = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
-                if (resolved != null) {
-                    sb.appendLine("    resolved: ${resolved.activityInfo.packageName}/${resolved.activityInfo.name}")
+            val resolvedIntent = EmulatorIntentBuilder.resolve(context, cfg, sample)
+            val intent = EmulatorIntentBuilder.toAndroidIntent(context, resolvedIntent, cfg)
+            val resolved = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)
+            if (resolved != null) {
+                sb.appendLine("    resolved: ${resolved.activityInfo.packageName}/${resolved.activityInfo.name}")
+            } else {
+                totalFailed++
+                sb.appendLine("    resolved: NO (intent will not launch)")
+                sb.appendLine("    exposed activities:")
+                val exposed = exposedActivities(cfg.packageName)
+                if (exposed.isEmpty()) {
+                    sb.appendLine("      <none discovered>")
                 } else {
-                    totalFailed++
-                    sb.appendLine("    resolved: NO (intent will not launch)")
-                    sb.appendLine("    exposed activities:")
-                    val exposed = exposedActivities(cfg.packageName)
-                    if (exposed.isEmpty()) {
-                        sb.appendLine("      <none discovered>")
-                    } else {
-                        for (line in exposed) sb.appendLine("      - $line")
-                    }
+                    for (line in exposed) sb.appendLine("      - $line")
                 }
+            }
 
-                if (cfg.launchMethod == LaunchMethod.SHELL && hasContentUri(resolvedIntent)) {
-                    val mes = pm.getPackageInfo(cfg.packageName, PackageManager.GET_PERMISSIONS)
-                        .requestedPermissions?.contains(android.Manifest.permission.MANAGE_EXTERNAL_STORAGE) == true
-                    if (!mes) {
-                        sb.appendLine("    warning:  shell launch with content URI but target does not declare MANAGE_EXTERNAL_STORAGE")
-                    }
+            if (cfg.launchMethod == LaunchMethod.SHELL && hasContentUri(resolvedIntent)) {
+                val mes = pm.getPackageInfo(cfg.packageName, PackageManager.GET_PERMISSIONS)
+                    .requestedPermissions?.contains(android.Manifest.permission.MANAGE_EXTERNAL_STORAGE) == true
+                if (!mes) {
+                    sb.appendLine("    warning:  shell launch with content URI but target does not declare MANAGE_EXTERNAL_STORAGE")
                 }
             }
             sb.appendLine()

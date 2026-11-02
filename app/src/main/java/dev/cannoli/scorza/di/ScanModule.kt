@@ -7,10 +7,10 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.cannoli.scorza.config.CannoliPaths
-import dev.cannoli.scorza.config.CoreInfoRepository
 import dev.cannoli.scorza.config.FoldersConfig
 import dev.cannoli.scorza.config.PlatformConfig
-import java.io.File
+import dev.cannoli.scorza.config.library.LibraryConfig
+import java.io.IOException
 import javax.inject.Singleton
 
 @Module
@@ -18,28 +18,18 @@ import javax.inject.Singleton
 object ScanModule {
 
     @Provides @Singleton
-    fun provideCoreInfoRepository(@ApplicationContext context: Context): CoreInfoRepository {
-        val repo = CoreInfoRepository(
-            context.assets,
-            context.filesDir,
-            File(context.applicationInfo.sourceDir).lastModified()
-        )
-        repo.load()
-        return repo
-    }
+    fun provideLibraryConfig(paths: CannoliPathsProvider, @ApplicationContext context: Context): LibraryConfig =
+        LibraryConfig({ CannoliPaths(paths.root).configDir }) { name ->
+            try {
+                context.assets.open(name).use { it.bufferedReader().readText() }
+            } catch (_: IOException) {
+                null
+            }
+        }
 
     @Provides @Singleton
-    fun providePlatformConfig(
-        paths: CannoliPathsProvider,
-        @ApplicationContext context: Context,
-        coreInfo: CoreInfoRepository,
-    ): PlatformConfig {
-        return PlatformConfig(
-            { paths.root }, context.assets, coreInfo,
-            context.getString(dev.cannoli.scorza.R.string.value_empty_override),
-            context.getString(dev.cannoli.scorza.R.string.value_needs_setup),
-        )
-    }
+    fun providePlatformConfig(libraryConfig: LibraryConfig): PlatformConfig =
+        PlatformConfig { libraryConfig.library }
 
     @Provides @Singleton
     fun provideFoldersConfig(paths: CannoliPathsProvider): FoldersConfig =

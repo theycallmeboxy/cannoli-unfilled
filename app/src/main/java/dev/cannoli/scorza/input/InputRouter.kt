@@ -3,7 +3,6 @@ package dev.cannoli.scorza.input
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
-import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.input.screen.ControllerDetailInputHandler
 import dev.cannoli.scorza.input.screen.ControllersInputHandler
 import dev.cannoli.scorza.input.screen.EditButtonsInputHandler
@@ -16,7 +15,6 @@ import dev.cannoli.scorza.input.screen.SettingsInputHandler
 import dev.cannoli.scorza.input.screen.OnboardingInputHandler
 import dev.cannoli.scorza.input.screen.SaveSlotsInputHandler
 import dev.cannoli.scorza.input.screen.SystemListInputHandler
-import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.LaunchManager
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
@@ -50,10 +48,6 @@ class InputRouter @Inject constructor(
     val editButtonsHandler: EditButtonsInputHandler,
     val loggingSettingsHandler: LoggingSettingsInputHandler,
     private val scrollListFactory: ScrollListInputHandler.Factory,
-    private val platformConfig: PlatformConfig,
-    private val gameOverrideStore: dev.cannoli.scorza.db.GameOverrideStore,
-    private val installedCoreService: InstalledCoreService,
-    private val emulatorMappingBuilder: EmulatorMappingBuilder,
     private val launcherActions: LauncherActions,
     private val folderEditor: FolderEditor,
     private val screenInputRegistry: dev.cannoli.scorza.input.runtime.ScreenInputRegistry,
@@ -64,8 +58,6 @@ class InputRouter @Inject constructor(
     private val osdController: dev.cannoli.ui.components.OsdController,
     @IoScope private val ioScope: CoroutineScope,
 ) {
-    var unregisterCoreQueryReceiver: () -> Unit = {}
-
     fun wire(dispatcher: InputDispatcher) {
         gameListHandler.buildContextOptions = dialogHandler::buildGameContextOptions
         saveSlotsHandler.onBackToContextMenu = { dialogHandler.openRommSavesMenu(MENU_SAVE_SLOTS) }
@@ -187,10 +179,6 @@ class InputRouter @Inject constructor(
      * boilerplate so each screen only has to spell out the parts that differ.
      */
     private fun scrollableHandlerFor(screen: LauncherScreen.ScrollableScreen): ScreenInputHandler = when (screen) {
-        is LauncherScreen.EmulatorMapping     -> emulatorMappingHandler()
-        is LauncherScreen.PlatformMapping     -> platformMappingHandler()
-        is LauncherScreen.BiosStatus          -> biosStatusHandler()
-        is LauncherScreen.PlatformOverrides   -> platformOverridesHandler()
         is LauncherScreen.ColorList         -> colorListHandler()
         is LauncherScreen.CollectionPicker  -> collectionPickerHandler()
         is LauncherScreen.ChildPicker       -> childPickerHandler()
@@ -207,7 +195,6 @@ class InputRouter @Inject constructor(
         )
         is LauncherScreen.Credits           -> creditsHandler()
         is LauncherScreen.CreditsSection    -> creditsSectionHandler()
-        is LauncherScreen.InstalledCores    -> installedCoresHandler()
         is LauncherScreen.IconGallery       -> scrollable<LauncherScreen.IconGallery>()
         is LauncherScreen.RommPlatformList      -> rommPlatformListHandler()
         is LauncherScreen.RommGameList          -> rommGameListHandler()
@@ -249,111 +236,6 @@ class InputRouter @Inject constructor(
         )
     }
 
-    private fun emulatorMappingHandler() = scrollable<LauncherScreen.EmulatorMapping>(
-        onConfirm = {
-            val entry = mappings.getOrNull(selectedIndex) ?: return@scrollable
-            nav.push(emulatorMappingBuilder.buildPlatformMapping(entry.tag, entry.platformName, showAll = false, defaultShowAllIfEmpty = true))
-        },
-        onBack = { nav.pop() },
-        onWest = {
-            // Skip filter buckets that are currently empty; All (0) is the always-available fallback.
-            var newFilter = (filter + 1) % 4
-            while (newFilter != 0 && emulatorMappingBuilder.filter(allMappings, newFilter).isEmpty()) {
-                newFilter = (newFilter + 1) % 4
-            }
-            nav.replaceTop(copy(
-                mappings = emulatorMappingBuilder.filter(allMappings, newFilter),
-                filter = newFilter, selectedIndex = 0, scrollTarget = 0
-            ))
-        },
-    )
-
-    private fun platformMappingHandler() = scrollable<LauncherScreen.PlatformMapping>(
-        onConfirm = {
-            val item = selectableItems.getOrNull(selectedIndex) ?: return@scrollable
-            when (item) {
-                is dev.cannoli.scorza.ui.screens.MappingItem.PlatformDefault -> {
-                    val id = romId ?: return@scrollable
-                    gameOverrideStore.clear(id)
-                    nav.pop()
-                    dialogHandler.restoreContextMenu()
-                }
-                is dev.cannoli.scorza.ui.screens.MappingItem.EmulatorOption -> {
-                    val opt = item.option
-                    val choice = dev.cannoli.scorza.config.EmulatorChoice(
-                        source = opt.source,
-                        coreId = opt.coreId,
-                        appPackage = opt.appPackage,
-                    )
-                    val id = romId
-                    if (id != null) {
-                        gameOverrideStore.put(id, choice)
-                        nav.pop()
-                        dialogHandler.restoreContextMenu()
-                    } else {
-                        platformConfig.setPlatformChoice(tag, choice)
-                        nav.replaceTop(emulatorMappingBuilder.rebuild(this))
-                        refreshEmulatorMappingOnStack()
-                    }
-                }
-                is dev.cannoli.scorza.ui.screens.MappingItem.Action -> when (item.kind) {
-                    dev.cannoli.scorza.ui.screens.MappingActionKind.BIOS -> {
-                        nav.push(emulatorMappingBuilder.buildBiosStatus(tag, platformName))
-                    }
-                    dev.cannoli.scorza.ui.screens.MappingActionKind.OVERRIDES -> {
-                        nav.push(LauncherScreen.PlatformOverrides(
-                            tag = tag, platformName = platformName,
-                            overrides = emulatorMappingBuilder.overrideRows(tag),
-                        ))
-                    }
-                    dev.cannoli.scorza.ui.screens.MappingActionKind.RESET -> {
-                        nav.dialogState.value = DialogState.PlatformResetConfirm(tag = tag, platformName = platformName)
-                    }
-                }
-                else -> Unit
-            }
-        },
-        onBack = {
-            val scoped = romId != null
-            nav.pop()
-            if (scoped) dialogHandler.restoreContextMenu()
-        },
-        onNorth = {
-            if (canToggleShowAll) {
-                nav.replaceTop(emulatorMappingBuilder.rebuild(
-                    this, showAll = !showAll, selectedIndex = 0, scrollTarget = 0,
-                ))
-            }
-        },
-    )
-
-    private fun biosStatusHandler() = scrollable<LauncherScreen.BiosStatus>(
-        onBack = { nav.pop() },
-    )
-
-    private fun platformOverridesHandler() = scrollable<LauncherScreen.PlatformOverrides>(
-        onNorth = {
-            val entry = overrides.getOrNull(selectedIndex)
-            if (entry != null) {
-                gameOverrideStore.clear(entry.romId)
-                val refreshed = emulatorMappingBuilder.overrideRows(tag)
-                // The parent screen shows an override count, so it is rebuilt whether or not the
-                // list emptied. Only rebuilding on empty left a stale "N games" behind.
-                val mappingIdx = nav.screenStack.indexOfLast { it is LauncherScreen.PlatformMapping }
-                if (refreshed.isEmpty()) nav.pop()
-                else nav.replaceTop(copy(overrides = refreshed, selectedIndex = selectedIndex.coerceAtMost(refreshed.lastIndex)))
-                if (mappingIdx >= 0) {
-                    val mapping = nav.screenStack[mappingIdx] as LauncherScreen.PlatformMapping
-                    nav.screenStack[mappingIdx] = emulatorMappingBuilder.buildPlatformMapping(
-                        mapping.tag, mapping.platformName, showAll = mapping.showAll,
-                        selectedIndex = mapping.selectedIndex, scrollTarget = mapping.scrollTarget,
-                    )
-                }
-            }
-        },
-        onBack = { nav.pop() },
-    )
-
     private fun colorListHandler() = scrollable<LauncherScreen.ColorList>(
         onConfirm = { colors.getOrNull(selectedIndex)?.let { launcherActions.openColorPicker(it.key) } },
     )
@@ -391,13 +273,6 @@ class InputRouter @Inject constructor(
     )
 
     private fun creditsSectionHandler() = scrollable<LauncherScreen.CreditsSection>()
-
-    private fun installedCoresHandler() = scrollable<LauncherScreen.InstalledCores>(
-        onBack = {
-            unregisterCoreQueryReceiver()
-            nav.pop()
-        },
-    )
 
     private fun rommPlatformListHandler() = scrollable<LauncherScreen.RommPlatformList>(
         onConfirm = {
@@ -605,17 +480,4 @@ class InputRouter @Inject constructor(
             nav.pop()
         },
     )
-
-    private fun refreshEmulatorMappingOnStack() {
-        val idx = nav.screenStack.indexOfLast { it is LauncherScreen.EmulatorMapping }
-        if (idx < 0) return
-        val em = nav.screenStack[idx] as LauncherScreen.EmulatorMapping
-        val all = emulatorMappingBuilder.detailedMappings()
-        val filtered = emulatorMappingBuilder.filter(all, em.filter)
-        nav.screenStack[idx] = em.copy(
-            mappings = filtered,
-            allMappings = all,
-            selectedIndex = em.selectedIndex.coerceAtMost((filtered.size - 1).coerceAtLeast(0)),
-        )
-    }
 }

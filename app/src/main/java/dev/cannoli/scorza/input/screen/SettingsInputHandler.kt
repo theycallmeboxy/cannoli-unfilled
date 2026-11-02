@@ -12,7 +12,6 @@ import dev.cannoli.scorza.input.InputTesterController
 import dev.cannoli.scorza.input.LauncherActions
 import dev.cannoli.scorza.input.PageJump
 import dev.cannoli.scorza.input.ScreenInputHandler
-import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.IntentAuditor
 import dev.cannoli.scorza.navigation.BrowsePurpose
 import dev.cannoli.scorza.navigation.LauncherScreen
@@ -34,14 +33,12 @@ class SettingsInputHandler @Inject constructor(
     @IoScope private val ioScope: CoroutineScope,
     private val settings: SettingsRepository,
     private val platformConfig: PlatformConfig,
-    private val installedCoreService: InstalledCoreService,
     private val setupCoordinator: SetupCoordinator,
     private val inputTesterController: InputTesterController,
     private val intentAuditor: IntentAuditor,
     private val settingsViewModel: SettingsViewModel,
     private val launcherActions: LauncherActions,
     private val activityActions: ActivityActions,
-    private val emulatorMappingBuilder: dev.cannoli.scorza.input.EmulatorMappingBuilder,
     @ApplicationContext private val context: Context,
     private val rommStore: dev.cannoli.scorza.romm.RommConnectionStore,
     private val cannoliPaths: CannoliPathsProvider,
@@ -103,16 +100,14 @@ class SettingsInputHandler @Inject constructor(
                 inputTesterController.enter()
                 nav.push(LauncherScreen.InputTester)
             }
-            "core_mapping" -> openEmulatorMapping()
             "set_default_launcher" -> context.startActivity(
                 Intent(android.provider.Settings.ACTION_HOME_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
-            "installed_cores" -> queryInstalledCores()
             "regenerate_system_folders" -> {
                 val romDir = cannoliPaths.romDir
-                val tags = platformConfig.getAllTags()
+                val folders = platformConfig.romFolders()
                 ioScope.launch {
-                    val created = dev.cannoli.scorza.util.DirectoryLayout.scaffoldRomFolders(romDir, tags)
+                    val created = dev.cannoli.scorza.util.DirectoryLayout.scaffoldRomFolders(romDir, folders)
                     val msg = if (created == 0) {
                         context.getString(dev.cannoli.scorza.R.string.regenerate_system_folders_none)
                     } else {
@@ -191,22 +186,6 @@ class SettingsInputHandler @Inject constructor(
         ))
     }
 
-    private fun openEmulatorMapping() {
-        val initial = emulatorMappingBuilder.detailedMappings()
-        nav.push(LauncherScreen.EmulatorMapping(mappings = initial, allMappings = initial))
-        ioScope.launch {
-            installedCoreService.queryAllPackages()
-            withContext(Dispatchers.Main) {
-                val cm = nav.screenStack.lastOrNull() as? LauncherScreen.EmulatorMapping ?: return@withContext
-                val all = emulatorMappingBuilder.detailedMappings()
-                nav.screenStack[nav.screenStack.lastIndex] = cm.copy(
-                    mappings = emulatorMappingBuilder.filter(all, cm.filter),
-                    allMappings = all
-                )
-            }
-        }
-    }
-
     private fun runIntentAudit() {
         ioScope.launch {
             val message = try {
@@ -217,22 +196,6 @@ class SettingsInputHandler @Inject constructor(
             }
             withContext(Dispatchers.Main) {
                 nav.dialogState.value = DialogState.IntentAuditResult(message)
-            }
-        }
-    }
-
-    private fun queryInstalledCores() {
-        val selectedPkg = settings.retroArchPackage
-        val pkgLabel = InstalledCoreService.getPackageLabel(selectedPkg)
-        nav.push(LauncherScreen.InstalledCores(title = context.getString(dev.cannoli.scorza.R.string.title_installed_cores, pkgLabel)))
-        ioScope.launch {
-            installedCoreService.queryAllPackages()
-            val cores = (installedCoreService.installedCores[selectedPkg] ?: emptySet())
-                .map { coreId -> platformConfig.getCoreDisplayName(coreId) }
-                .sorted()
-            withContext(Dispatchers.Main) {
-                val screen = nav.screenStack.lastOrNull() as? LauncherScreen.InstalledCores ?: return@withContext
-                nav.screenStack[nav.screenStack.lastIndex] = screen.copy(cores = cores, loading = false)
             }
         }
     }

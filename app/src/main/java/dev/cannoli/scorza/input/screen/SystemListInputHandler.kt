@@ -1,7 +1,6 @@
 package dev.cannoli.scorza.input.screen
 
 import dagger.hilt.android.scopes.ActivityScoped
-import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.input.FolderEditor
 import dev.cannoli.scorza.input.LauncherActions
@@ -13,7 +12,6 @@ import dev.cannoli.scorza.input.MENU_REMOVE_FROM_FOLDER
 import dev.cannoli.scorza.input.MENU_ADD_FAVORITE
 import dev.cannoli.scorza.input.MENU_DELETE_GAME
 import dev.cannoli.scorza.input.MENU_DOWNLOAD_ART
-import dev.cannoli.scorza.input.MENU_EMULATOR_OVERRIDE
 import dev.cannoli.scorza.input.MENU_MANAGE_COLLECTIONS
 import dev.cannoli.scorza.input.MENU_REMOVE_FAVORITE
 import dev.cannoli.scorza.input.MENU_RENAME
@@ -34,7 +32,6 @@ class SystemListInputHandler @Inject constructor(
     private val nav: NavigationController,
     private val settings: SettingsRepository,
     private val collectionsRepository: CollectionsRepository,
-    private val platformConfig: PlatformConfig,
     private val systemListViewModel: SystemListViewModel,
     private val gameListViewModel: GameListViewModel,
     private val settingsViewModel: SettingsViewModel,
@@ -203,7 +200,6 @@ class SystemListInputHandler @Inject constructor(
                 add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
                 add(MENU_MANAGE_COLLECTIONS)
                 if (item.item is ListItem.RomItem) {
-                    add(MENU_EMULATOR_OVERRIDE)
                     add(MENU_DELETE_GAME)
                 } else {
                     // An app on the main list is a folders.json entry.
@@ -219,9 +215,10 @@ class SystemListInputHandler @Inject constructor(
             is SystemListViewModel.ListItem.FolderItem -> item.name
             else -> return
         }
+        // A system's name comes from systems.json, so only a folder is renamed here.
         val options = buildList {
-            add(MENU_RENAME)
             if (item is SystemListViewModel.ListItem.FolderItem) {
+                add(MENU_RENAME)
                 add(MENU_ADD_APPS)
                 add(MENU_MOVE_TO_FOLDER)
                 add(MENU_NEW_FOLDER)

@@ -1,7 +1,7 @@
 package dev.cannoli.scorza.launcher
 
 import androidx.test.core.app.ApplicationProvider
-import dev.cannoli.scorza.settings.SettingsRepository
+import dev.cannoli.scorza.config.library.LibraryConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -11,9 +11,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * publishQueryResult is private, so these drive it through the public surface: markInstalled
- * plus a reflective call to the publisher, which is the only way to simulate a query landing
- * without a live RetroArch to broadcast at.
+ * publishQueryResult is private, so these call it reflectively, which is the only way to
+ * simulate a query landing without a live emulator to broadcast at.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
@@ -21,7 +20,7 @@ class InstalledCorePublishTest {
 
     private fun service(): InstalledCoreService {
         val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
-        return InstalledCoreService(ctx, SettingsRepository(ctx))
+        return InstalledCoreService(ctx, LibraryConfig({ ctx.cacheDir }) { null })
     }
 
     private fun publish(
@@ -40,48 +39,31 @@ class InstalledCorePublishTest {
 
     @Test fun `a package that answers zero cores is installed, not unresponsive`() {
         val svc = service()
-        publish(svc, answered = mapOf(RICOTTA to emptySet()))
-        assertTrue(svc.installedCores.containsKey(RICOTTA))
-        assertFalse("answering zero is a real answer", RICOTTA in svc.unresponsivePackages)
+        publish(svc, answered = mapOf(OTHER to emptySet()))
+        assertTrue(svc.installedCores.containsKey(OTHER))
+        assertFalse("answering zero is a real answer", OTHER in svc.unresponsivePackages)
         assertTrue(svc.cacheReady)
     }
 
     @Test fun `a package that never answers is unresponsive`() {
         val svc = service()
-        publish(svc, answered = emptyMap(), silent = setOf(RICOTTA))
-        assertTrue(RICOTTA in svc.unresponsivePackages)
+        publish(svc, answered = emptyMap(), silent = setOf(OTHER))
+        assertTrue(OTHER in svc.unresponsivePackages)
     }
 
     // The blanket union used to keep a deleted core cached forever.
-    @Test fun `a core removed inside retroarch drops out of the cache`() {
+    @Test fun `a core removed inside the emulator drops out of the cache`() {
         val svc = service()
-        publish(svc, answered = mapOf(RICOTTA to setOf("a_libretro", "b_libretro")))
-        publish(svc, answered = mapOf(RICOTTA to setOf("a_libretro")))
-        assertEquals(setOf("a_libretro"), svc.installedCores[RICOTTA])
-    }
-
-    // ...but the union was also protecting a download that landed mid-query, so that must survive.
-    @Test fun `a core marked installed mid query is not clobbered by that query`() {
-        val svc = service()
-        publish(svc, answered = mapOf(RICOTTA to setOf("a_libretro")))
-        svc.markInstalled(RICOTTA, "fresh_libretro")
-        // A query that began before the download publishes a set without the new core.
-        publish(svc, answered = mapOf(RICOTTA to setOf("a_libretro")))
-        assertTrue("a just-downloaded core must survive a stale query", svc.hasCoreInPackage("fresh_libretro", RICOTTA))
+        publish(svc, answered = mapOf(OTHER to setOf("a_libretro", "b_libretro")))
+        publish(svc, answered = mapOf(OTHER to setOf("a_libretro")))
+        assertEquals(setOf("a_libretro"), svc.installedCores[OTHER])
     }
 
     @Test fun `a package that did not answer keeps its cached cores`() {
         val svc = service()
-        publish(svc, answered = mapOf(RICOTTA to setOf("a_libretro")))
-        publish(svc, answered = emptyMap(), silent = setOf(RICOTTA))
-        assertEquals(setOf("a_libretro"), svc.installedCores[RICOTTA])
-    }
-
-    @Test fun `markInstalled clears the unresponsive flag`() {
-        val svc = service()
-        publish(svc, answered = emptyMap(), silent = setOf(RICOTTA))
-        svc.markInstalled(RICOTTA, "a_libretro")
-        assertFalse(RICOTTA in svc.unresponsivePackages)
+        publish(svc, answered = mapOf(OTHER to setOf("a_libretro")))
+        publish(svc, answered = emptyMap(), silent = setOf(OTHER))
+        assertEquals(setOf("a_libretro"), svc.installedCores[OTHER])
     }
 
     @Test fun `a package with no receiver is unsupported, not silent`() {
@@ -113,7 +95,7 @@ class InstalledCorePublishTest {
 
     @Test fun `a package that is not installed is not mistaken for one that reported`() {
         val svc = service()
-        publish(svc, answered = mapOf(RICOTTA to setOf("a_libretro")))
+        publish(svc, answered = mapOf(OTHER to setOf("a_libretro")))
         assertEquals(CoreReporting.NOT_INSTALLED, svc.reportingFor(STOCK))
     }
 
@@ -124,13 +106,39 @@ class InstalledCorePublishTest {
         assertEquals(CoreReporting.NOT_INSTALLED, svc.reportingFor(STOCK))
     }
 
-    @Test fun `canReport is false for every way of not knowing`() {
+    @Test fun `a core the package reported is present`() {
         val svc = service()
-        publish(svc, answered = emptyMap(), silent = setOf(RICOTTA), unsupported = setOf(STOCK))
-        assertFalse("silent", svc.canReport(RICOTTA))
-        assertFalse("no receiver", svc.canReport(STOCK))
-        assertFalse("not installed", svc.canReport("com.retroarch.absent"))
-        assertFalse("never scanned", service().canReport(STOCK))
+        publish(svc, answered = mapOf(STOCK to setOf("mgba_libretro")))
+        assertEquals(CoreStatus.PRESENT, svc.coreStatus(STOCK, "mgba_libretro"))
+    }
+
+    @Test fun `a core missing from a package that answered is missing`() {
+        val svc = service()
+        publish(svc, answered = mapOf(STOCK to setOf("mgba_libretro")))
+        assertEquals(CoreStatus.MISSING, svc.coreStatus(STOCK, "snes9x_libretro"))
+    }
+
+    @Test fun `a package that answered with no cores reports every core missing`() {
+        val svc = service()
+        publish(svc, answered = mapOf(STOCK to emptySet()))
+        assertEquals(CoreStatus.MISSING, svc.coreStatus(STOCK, "mgba_libretro"))
+    }
+
+    @Test fun `core status is unknown for every way of not knowing`() {
+        val svc = service()
+        publish(svc, answered = emptyMap(), silent = setOf(OTHER), unsupported = setOf(STOCK))
+        assertEquals("silent", CoreStatus.UNKNOWN, svc.coreStatus(OTHER, "a_libretro"))
+        assertEquals("no receiver", CoreStatus.UNKNOWN, svc.coreStatus(STOCK, "a_libretro"))
+        assertEquals("not installed", CoreStatus.UNKNOWN, svc.coreStatus("org.example.absent", "a_libretro"))
+        assertEquals("never scanned", CoreStatus.UNKNOWN, service().coreStatus(STOCK, "a_libretro"))
+    }
+
+    // A silent package keeps its cached cores, but a cache is not an answer.
+    @Test fun `a package that stops answering is unknown even with cached cores`() {
+        val svc = service()
+        publish(svc, answered = mapOf(STOCK to setOf("a_libretro")))
+        publish(svc, answered = emptyMap(), silent = setOf(STOCK))
+        assertEquals(CoreStatus.UNKNOWN, svc.coreStatus(STOCK, "b_libretro"))
     }
 
     @Test fun `an unsupported package that gains the receiver stops being unsupported`() {
@@ -141,8 +149,26 @@ class InstalledCorePublishTest {
         assertEquals(CoreReporting.REPORTS, svc.reportingFor(STOCK))
     }
 
+    // Which packages are asked comes from emulators.json, not from a list of known names.
+    @Test fun `the packages asked are the installed emulators from emulators_json`() {
+        val ctx = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val dir = java.io.File(ctx.cacheDir, "core-query-config").apply { deleteRecursively(); mkdirs() }
+        java.io.File(dir, "emulators.json").writeText(
+            """{ "a": { "package": "org.example.installed" }, "b": { "package": "org.example.absent" } }"""
+        )
+        val library = LibraryConfig({ dir }) { null }.also { it.load() }
+        org.robolectric.Shadows.shadowOf(ctx.packageManager).installPackage(
+            android.content.pm.PackageInfo().apply { packageName = "org.example.installed" }
+        )
+        val svc = InstalledCoreService(ctx, library)
+        kotlinx.coroutines.runBlocking { svc.queryAllPackages() }
+        assertEquals(setOf("org.example.installed"), svc.knownPackages)
+        assertEquals(CoreReporting.UNSUPPORTED, svc.reportingFor("org.example.installed"))
+        assertEquals(CoreReporting.NOT_INSTALLED, svc.reportingFor("org.example.absent"))
+    }
+
     private companion object {
-        const val RICOTTA = "dev.cannoli.ricotta.aarch64"
+        const val OTHER = "org.example.emulator"
         const val STOCK = "com.retroarch.aarch64"
     }
 }

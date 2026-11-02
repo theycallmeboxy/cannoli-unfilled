@@ -11,8 +11,6 @@
     <string name="label_firmware">FIRMWARE</string>
     <string name="label_close">SCHLIESSEN</string>
     <string name="label_help">HILFE</string>
-    <string name="label_remove">VERKNÜPFUNG ENTFERNEN</string>
-    <string name="label_change_emulator">EMULATOR ÄNDERN</string>
     <string name="label_delete">LÖSCHEN</string>
     <string name="label_confirm">BESTÄTIGUNG</string>
     <string name="label_toggle">UMSCHALTEN</string>
@@ -44,7 +42,6 @@
     <string name="settings_library">Bibliothek</string>
     <string name="settings_status_bar">Statusleiste</string>
     <string name="settings_input">Input</string>
-    <string name="settings_emulation">Emulation</string>
     <string name="settings_integrations">Integrationen</string>
     <string name="settings_advanced">Erweitert</string>
     <string name="settings_debug">Debug</string>
@@ -139,16 +136,9 @@
     <string name="setting_color_accent">Akzent</string>
     <string name="setting_color_background">Hintergrund</string>
     <string name="setting_color_status_bar">Statusleiste</string>
-    <!-- Settings row. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="setting_installed_cores">%s installierte Cores</string>
-    <!-- Screen title. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="title_installed_cores">%s installierte Cores</string>
-    <string name="installed_cores_none">Keine Cores gefunden</string>
     <!-- Setting: the app's root storage folder on the SD card. -->
     <string name="setting_sd_root">Cannoli Root</string>
     <string name="setting_rom_directory">ROM-Verzeichnis</string>
-    <!-- Setting: which installed RetroArch app/package to launch games with. -->
-    <string name="setting_ra_package">RetroArch-Paket</string>
     <string name="setting_scan_library">Scan-Modus</string>
     <!-- Scan Mode value: scan the library automatically. -->
     <string name="value_automatically">Automatisch</string>
@@ -317,21 +307,11 @@
     <string name="value_12h">12h</string>
     <string name="value_24h">24h</string>
     <string name="value_not_set">Nicht gesetzt</string>
-    <string name="value_not_installed">Nicht installiert</string>
-    <string name="value_none_installed">Keine installiert</string>
-    <string name="value_active">Aktiv</string>
     <!-- Dialogs -->
     <!-- %1$s = the list or collection name. -->
     <string name="empty_list">%1$s ist leer</string>
     <!-- Confirm dialog. %1$s = item name. -->
     <string name="dialog_delete_confirm">\"%1$s \"löschen?</string>
-    <!-- Shown when a per-game override is deliberately set to empty. -->
-    <string name="value_empty_override">(leere Überschreibung)</string>
-    <!-- Shown in place of an emulator name when a platform has no emulator mapped yet. -->
-    <string name="value_needs_setup">Benötigt Einrichtung</string>
-    <string name="emulator_platform_setting">Plattform-Einstellung</string>
-    <!-- %1$s = the emulator name the platform is mapped to. -->
-    <string name="emulator_platform_setting_named">Plattform-Einstellung (%1$s)</string>
     <string name="rename_error_directory">Verzeichnis konnte nicht umbenannt werden</string>
     <string name="rename_error_generic">Umbenennen fehlgeschlagen</string>
     <string name="rename_cannot_resolve_dir">Konnte den Spielordner nicht finden</string>
@@ -346,7 +326,6 @@
     <string name="import_favorites">Favoriten-Sammlung wird erstellt</string>
     <string name="import_collections">Sammlungen migrieren</string>
     <string name="import_collection_parents">Hierarchie der Sammlung migrieren</string>
-    <string name="import_overrides">Überschreibungen des Spiels migrieren</string>
     <string name="import_ra_ids">Migrieren von RetroAchievements IDs</string>
     <string name="import_recently_played">Migriere zuletzt benutzte Spiele</string>
     <string name="import_ordering">Reihenfolge migrieren</string>
@@ -428,7 +407,6 @@
     <string name="keyboard_title_rename_game">Spiel umbenennen</string>
     <string name="keyboard_title_rename_app">App umbenennen</string>
     <string name="keyboard_title_rename_folder">Ordner umbenennen</string>
-    <string name="keyboard_title_rename_platform">Plattform umbenennen</string>
     <string name="keyboard_title_new_slot">Neuer Slot</string>
     <string name="keyboard_title_rename_slot">Slot umbenennen</string>
     <string name="keyboard_title_rename_controller">Controller umbenennen</string>
@@ -479,41 +457,8 @@
     <string name="setting_geo_height">Höhe</string>
     <string name="setting_geo_hpos">Horizontale Position</string>
     <string name="setting_geo_vpos">Vertikale Position</string>
-    <!-- Emulator Mapping -->
-    <!-- Setting: maps each platform to an emulator/core. -->
-    <string name="setting_emulator_mapping">Emulator Mapping</string>
     <string name="label_reset">RESET</string>
-    <string name="label_show_all">ALLE ZEIGEN</string>
-    <string name="label_show_installed">ZEIGEN INSTALLIERT</string>
-    <!-- The core is not bundled with the app. -->
-    <string name="value_not_bundled">NICHT BUNDLED</string>
-    <string name="value_no_overrides">Keine Überschreibungen pro Spiel.</string>
-    <string name="value_no_firmware">Für diesen Kern ist keine Firmware erforderlich.</string>
-    <string name="mapping_action_bios">BIOS-Dateien</string>
-    <string name="mapping_action_overrides">Spiel-Überschreibungen</string>
-    <string name="mapping_action_reset">Auf Standard zurücksetzen</string>
-    <!-- %d = number of required BIOS files missing. -->
-    <string name="mapping_required_missing">%d erforderlich</string>
-    <!-- Distinguishes platforms sharing a display name. %1$s = platform name, %2$s = platform tag. -->
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_mapping">%s Zuordnung</string>
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_bios">%s BIOS</string>
-    <string name="filter_all">ALLE</string>
-    <string name="filter_missing">FEHLERN</string>
-    <string name="filter_unmapped">UNMAPPIERT</string>
-    <string name="filter_mapped">GARANTIERT</string>
-    <string name="value_unmapped">Unzugeordnet</string>
     <string name="label_download">DOWNLOAD</string>
-    <string name="bios_required">ANFRAGE</string>
-    <string name="bios_optional">OPTIONAL</string>
-    <string name="bios_present">Präsent</string>
-    <string name="bios_missing">Fehlend</string>
-    <!-- %d = number of games with per-game overrides. -->
-    <plurals name="override_game_count">
-        <item quantity="one">%d Spiel</item>
-        <item quantity="other">%d Spiele</item>
-    </plurals>
     <!-- %d = number of items selected. -->
     <string name="bulk_selected">%d ausgewählt</string>
     <!-- %d = number of items. -->
@@ -527,10 +472,6 @@
         <item quantity="one">%d Systemordner erstellt</item>
         <item quantity="other">%d Systemordner erstellt</item>
     </plurals>
-    <string name="value_no_cores_found">Keine Kerne gefunden</string>
-    <string name="label_clear_override">LEEREN</string>
-    <!-- %1$s = platform name. -->
-    <string name="dialog_reset_platform_confirm">%1$szurücksetzen? Dies löscht Ihre Emulator-Auswahl für diese Plattform und stellt den gebündelten Standard wieder her.</string>
     <!-- Save Slots screen -->
     <!-- Screen title. %1$s = game name. -->
     <string name="save_slots_screen_title">%1$s Slots</string>

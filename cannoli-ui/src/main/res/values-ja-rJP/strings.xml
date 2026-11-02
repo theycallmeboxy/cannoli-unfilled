@@ -11,8 +11,6 @@
     <string name="label_firmware">FIRWARE</string>
     <string name="label_close">閉じる</string>
     <string name="label_help">ヘルプ</string>
-    <string name="label_remove">ショットカットを削除</string>
-    <string name="label_change_emulator">エミレーターの変更</string>
     <string name="label_delete">削除</string>
     <string name="label_confirm">確認する</string>
     <string name="label_toggle">切り替え</string>
@@ -44,7 +42,6 @@
     <string name="settings_library">ライブラリ</string>
     <string name="settings_status_bar">ステータスバー</string>
     <string name="settings_input">Input</string>
-    <string name="settings_emulation">エミュレーション</string>
     <string name="settings_integrations">統合</string>
     <string name="settings_advanced">高度な設定</string>
     <string name="settings_debug">Debug</string>
@@ -139,16 +136,9 @@
     <string name="setting_color_accent">アクセント：</string>
     <string name="setting_color_background">背景</string>
     <string name="setting_color_status_bar">ステータスバー</string>
-    <!-- Settings row. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="setting_installed_cores">%s インストールされたコア</string>
-    <!-- Screen title. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="title_installed_cores">%s インストールされたコア</string>
-    <string name="installed_cores_none">コアが見つかりません</string>
     <!-- Setting: the app's root storage folder on the SD card. -->
     <string name="setting_sd_root">Cannoliルート</string>
     <string name="setting_rom_directory">ROM ディレクトリ</string>
-    <!-- Setting: which installed RetroArch app/package to launch games with. -->
-    <string name="setting_ra_package">RetroArchパッケージ</string>
     <string name="setting_scan_library">スキャンモード</string>
     <!-- Scan Mode value: scan the library automatically. -->
     <string name="value_automatically">自動</string>
@@ -316,21 +306,11 @@
     <string name="value_12h">12時間</string>
     <string name="value_24h">24時間</string>
     <string name="value_not_set">未設定</string>
-    <string name="value_not_installed">インストールされていない</string>
-    <string name="value_none_installed">インストールされていません</string>
-    <string name="value_active">アクティブ</string>
     <!-- Dialogs -->
     <!-- %1$s = the list or collection name. -->
     <string name="empty_list">%1$s は空です</string>
     <!-- Confirm dialog. %1$s = item name. -->
     <string name="dialog_delete_confirm">「%1$s」を削除しますか？</string>
-    <!-- Shown when a per-game override is deliberately set to empty. -->
-    <string name="value_empty_override">(空の上書き)</string>
-    <!-- Shown in place of an emulator name when a platform has no emulator mapped yet. -->
-    <string name="value_needs_setup">セットアップが必要</string>
-    <string name="emulator_platform_setting">プラットフォーム設定</string>
-    <!-- %1$s = the emulator name the platform is mapped to. -->
-    <string name="emulator_platform_setting_named">プラットフォーム設定 (%1$s)</string>
     <string name="rename_error_directory">ディレクトリ名を変更できませんでした</string>
     <string name="rename_error_generic">名前の変更に失敗しました</string>
     <string name="rename_cannot_resolve_dir">ゲームフォルダが見つかりませんでした</string>
@@ -345,7 +325,6 @@
     <string name="import_favorites">お気に入りコレクションを作成中</string>
     <string name="import_collections">コレクションの移行</string>
     <string name="import_collection_parents">コレクション階層の移行</string>
-    <string name="import_overrides">ゲームオーバーライドを移行中</string>
     <string name="import_ra_ids">RetroAchievements IDの移行</string>
     <string name="import_recently_played">最近再生されたデータの移行</string>
     <string name="import_ordering">順序を移行中</string>
@@ -427,7 +406,6 @@
     <string name="keyboard_title_rename_game">ゲームの名前を変更</string>
     <string name="keyboard_title_rename_app">アプリの名前を変更</string>
     <string name="keyboard_title_rename_folder">フォルダの名前を変更</string>
-    <string name="keyboard_title_rename_platform">プラットフォーム名を変更</string>
     <string name="keyboard_title_new_slot">新しいスロット</string>
     <string name="keyboard_title_rename_slot">スロット名の変更</string>
     <string name="keyboard_title_rename_controller">コントローラーの名前を変更</string>
@@ -478,40 +456,8 @@
     <string name="setting_geo_height">高さ</string>
     <string name="setting_geo_hpos">水平方向の位置</string>
     <string name="setting_geo_vpos">縦の位置</string>
-    <!-- Emulator Mapping -->
-    <!-- Setting: maps each platform to an emulator/core. -->
-    <string name="setting_emulator_mapping">エミュレータのマッピング</string>
     <string name="label_reset">RESET</string>
-    <string name="label_show_all">すべて表示</string>
-    <string name="label_show_installed">インストール済みを表示</string>
-    <!-- The core is not bundled with the app. -->
-    <string name="value_not_bundled">バンドルしていません</string>
-    <string name="value_no_overrides">ゲームごとのオーバーライドはありません。</string>
-    <string name="value_no_firmware">このコアにファームウェアは必要ありません。</string>
-    <string name="mapping_action_bios">BIOS ファイル</string>
-    <string name="mapping_action_overrides">ゲーム毎のオーバーライド</string>
-    <string name="mapping_action_reset">既定にリセット</string>
-    <!-- %d = number of required BIOS files missing. -->
-    <string name="mapping_required_missing">%d は不足しています</string>
-    <!-- Distinguishes platforms sharing a display name. %1$s = platform name, %2$s = platform tag. -->
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_mapping">%s マッピング</string>
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_bios">%s BIOS</string>
-    <string name="filter_all">すべて</string>
-    <string name="filter_missing">不足しています</string>
-    <string name="filter_unmapped">不足しています</string>
-    <string name="filter_mapped">マッピング</string>
-    <string name="value_unmapped">マップされていません</string>
     <string name="label_download">ダウンロード</string>
-    <string name="bios_required">必須</string>
-    <string name="bios_optional">オプション</string>
-    <string name="bios_present">プレゼント</string>
-    <string name="bios_missing">見つかりません</string>
-    <!-- %d = number of games with per-game overrides. -->
-    <plurals name="override_game_count">
-        <item quantity="other">%d ゲーム</item>
-    </plurals>
     <!-- %d = number of items selected. -->
     <string name="bulk_selected">%d Selected</string>
     <!-- %d = number of items. -->
@@ -523,10 +469,6 @@
     <plurals name="regenerate_system_folders_result">
         <item quantity="other">%d システムフォルダを作成しました</item>
     </plurals>
-    <string name="value_no_cores_found">コアが見つかりません</string>
-    <string name="label_clear_override">消去</string>
-    <!-- %1$s = platform name. -->
-    <string name="dialog_reset_platform_confirm">%1$sをリセットしますか? このプラットフォームのエミュレータの選択を解除し、バンドルされたデフォルトを復元します。</string>
     <!-- Save Slots screen -->
     <!-- Screen title. %1$s = game name. -->
     <string name="save_slots_screen_title">%1$s スロット</string>

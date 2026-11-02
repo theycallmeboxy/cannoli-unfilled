@@ -18,21 +18,11 @@ import dev.cannoli.ui.theme.LocalCannoliColors
 @Composable
 fun MissingCoreDialog(
     coreName: String,
-    packageLabel: String? = null,
-    showChangeEmulator: Boolean = false,
+    emulatorName: String,
     buttonStyle: ButtonStyle = ButtonStyle()
 ) {
     OverlayScrim(
-        bottomBar = {
-            if (showChangeEmulator) {
-                BottomBar(
-                    leftItems = listOf(buttonStyle.back to stringResource(R.string.label_close)),
-                    rightItems = listOf(buttonStyle.confirm to stringResource(R.string.label_change_emulator))
-                )
-            } else {
-                LegendPill(button = buttonStyle.back, label = stringResource(R.string.label_close))
-            }
-        }
+        bottomBar = { LegendPill(button = buttonStyle.back, label = stringResource(R.string.label_close)) }
     ) {
         Text(
             text = stringResource(R.string.dialog_title_missing_core),
@@ -42,13 +32,9 @@ fun MissingCoreDialog(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(12.dp))
-        val problem = if (packageLabel != null) {
-            stringResource(R.string.dialog_missing_core_pkg, coreName, packageLabel)
-        } else {
-            stringResource(R.string.dialog_missing_core_plain, coreName)
-        }
         Text(
-            text = problem + "\n" + stringResource(R.string.dialog_missing_core_hint),
+            text = stringResource(R.string.dialog_missing_core_pkg, coreName, emulatorName) + "\n" +
+                stringResource(R.string.dialog_missing_core_install_hint),
             style = MaterialTheme.typography.bodyLarge,
             color = LocalCannoliColors.current.text.copy(alpha = 0.6f),
             textAlign = TextAlign.Center,
@@ -60,26 +46,10 @@ fun MissingCoreDialog(
 @Composable
 fun MissingAppDialog(
     appName: String,
-    showRemove: Boolean = false,
-    showChangeEmulator: Boolean = false,
     buttonStyle: ButtonStyle = ButtonStyle()
 ) {
     OverlayScrim(
-        bottomBar = {
-            val confirmLabel = when {
-                showRemove -> stringResource(R.string.label_remove)
-                showChangeEmulator -> stringResource(R.string.label_change_emulator)
-                else -> null
-            }
-            if (confirmLabel != null) {
-                BottomBar(
-                    leftItems = listOf(buttonStyle.back to stringResource(R.string.label_close)),
-                    rightItems = listOf(buttonStyle.confirm to confirmLabel)
-                )
-            } else {
-                LegendPill(button = buttonStyle.back, label = stringResource(R.string.label_close))
-            }
-        }
+        bottomBar = { LegendPill(button = buttonStyle.back, label = stringResource(R.string.label_close)) }
     ) {
         Text(
             text = stringResource(R.string.dialog_title_missing_app),

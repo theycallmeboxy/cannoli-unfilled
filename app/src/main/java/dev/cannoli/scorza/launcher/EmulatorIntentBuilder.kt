@@ -14,7 +14,7 @@ object EmulatorIntentBuilder {
 
     /**
      * [vars] fills `{name}` placeholders in extra values on top of the built-in ones
-     * (`{rom_path}`, `{package}`). The launcher passes `core` for the platform's chosen core.
+     * (`{rom_path}`, `{package}`). The launcher passes the system's values, such as `core`.
      */
     fun resolve(
         context: Context,
@@ -169,7 +169,6 @@ object EmulatorIntentBuilder {
     private const val ROM_EXTENSION = "{rom_extension}"
     const val VAR_ROM_PATH = "rom_path"
     const val VAR_PACKAGE = "package"
-    const val VAR_CORE = "core"
     private val TAGGED_ID = Regex("""^\[[^]]+]\s*(.+)$""")
 
     private fun fileProviderUri(context: Context, romFile: File): Uri =

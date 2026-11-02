@@ -107,14 +107,6 @@ class KitchenService : Service() {
                         KitchenConfigFile.SaveResult(written, problems)
                     },
                 ),
-                "emulators.json" to KitchenConfigFile(
-                    read = { platformConfig.currentEmulatorsText() },
-                    problems = { platformConfig.emulatorConfigErrors },
-                    save = { text ->
-                        val (written, problems) = platformConfig.replaceEmulatorsText(text)
-                        KitchenConfigFile.SaveResult(written, problems)
-                    },
-                ),
             ),
         )
         try {

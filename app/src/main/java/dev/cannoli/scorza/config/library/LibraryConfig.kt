@@ -29,11 +29,12 @@ class LibraryConfig(
     private val dirProvider: () -> File,
     private val templateSource: (String) -> String?,
 ) {
-    var library: Library = Library()
+    // Read from the UI, the scanner and the launcher while a reload swaps them in.
+    @Volatile var library: Library = Library()
         private set
 
     /** Every problem from the last read: each file's parse errors, then the cross-file ones. */
-    var errors: List<String> = emptyList()
+    @Volatile var errors: List<String> = emptyList()
         private set
 
     private var emulators: Map<String, Emulator> = emptyMap()

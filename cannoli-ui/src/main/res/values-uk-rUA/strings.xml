@@ -11,8 +11,6 @@
     <string name="label_firmware">ПРОШИВКА</string>
     <string name="label_close">ЗАКРИТИ</string>
     <string name="label_help">ДОПОМОГА</string>
-    <string name="label_remove">ВИДАЛИТИ ЯРЛИК</string>
-    <string name="label_change_emulator">ЗМІНИТИ ЕМУАТОР</string>
     <string name="label_delete">ВИДАЛИТИ</string>
     <string name="label_confirm">ПІДТВЕРДИТИ</string>
     <string name="label_toggle">ПЕРЕМКНУТИ</string>
@@ -44,7 +42,6 @@
     <string name="settings_library">Бібліотека</string>
     <string name="settings_status_bar">Панель стану</string>
     <string name="settings_input">Керування</string>
-    <string name="settings_emulation">Емуляція</string>
     <string name="settings_integrations">Інтеграції</string>
     <string name="settings_advanced">Додатково</string>
     <string name="settings_debug">Налагодження</string>
@@ -139,16 +136,9 @@
     <string name="setting_color_accent">Акцент</string>
     <string name="setting_color_background">Фон</string>
     <string name="setting_color_status_bar">Панель стану</string>
-    <!-- Settings row. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="setting_installed_cores">Встановлені ядра %s</string>
-    <!-- Screen title. %s is the emulator app name (e.g. RetroArch). -->
-    <string name="title_installed_cores">Встановлені ядра %s</string>
-    <string name="installed_cores_none">Ядра не знайдено</string>
     <!-- Setting: the app's root storage folder on the SD card. -->
     <string name="setting_sd_root">Коренева папка Cannoli</string>
     <string name="setting_rom_directory">Папка ROM</string>
-    <!-- Setting: which installed RetroArch app/package to launch games with. -->
-    <string name="setting_ra_package">Пакет RetroArch</string>
     <string name="setting_scan_library">Режим сканування</string>
     <!-- Scan Mode value: scan the library automatically. -->
     <string name="value_automatically">Автоматично</string>
@@ -319,21 +309,11 @@
     <string name="value_12h">12г</string>
     <string name="value_24h">24г</string>
     <string name="value_not_set">Не встановлено</string>
-    <string name="value_not_installed">Не встановлено</string>
-    <string name="value_none_installed">Нічого не встановлено</string>
-    <string name="value_active">Активний</string>
     <!-- Dialogs -->
     <!-- %1$s = the list or collection name. -->
     <string name="empty_list">%1$s порожній</string>
     <!-- Confirm dialog. %1$s = item name. -->
     <string name="dialog_delete_confirm">Видалити «%1$s»?</string>
-    <!-- Shown when a per-game override is deliberately set to empty. -->
-    <string name="value_empty_override">(порожнє перевизначення)</string>
-    <!-- Shown in place of an emulator name when a platform has no emulator mapped yet. -->
-    <string name="value_needs_setup">Потребує налаштування</string>
-    <string name="emulator_platform_setting">Налаштування платформи</string>
-    <!-- %1$s = the emulator name the platform is mapped to. -->
-    <string name="emulator_platform_setting_named">Налаштування платформи (%1$s)</string>
     <string name="rename_error_directory">Не вдалося перейменувати папку</string>
     <string name="rename_error_generic">Не вдалося перейменувати</string>
     <string name="rename_cannot_resolve_dir">Не вдалося знайти папку гри</string>
@@ -348,7 +328,6 @@
     <string name="import_favorites">Створення колекції «Улюблені»</string>
     <string name="import_collections">Перенесення колекцій</string>
     <string name="import_collection_parents">Перенесення ієрархії колекцій</string>
-    <string name="import_overrides">Перенесення перевизначень гри</string>
     <string name="import_ra_ids">Перенесення ідентифікаторів RetroAchievements</string>
     <string name="import_recently_played">Перенесення нещодавно зіграного</string>
     <string name="import_ordering">Перенесення порядку сортування</string>
@@ -430,7 +409,6 @@
     <string name="keyboard_title_rename_game">Перейменувати гру</string>
     <string name="keyboard_title_rename_app">Перейменувати застосунок</string>
     <string name="keyboard_title_rename_folder">Перейменувати папку</string>
-    <string name="keyboard_title_rename_platform">Перейменувати платформу</string>
     <string name="keyboard_title_new_slot">Новий слот</string>
     <string name="keyboard_title_rename_slot">Перейменувати слот</string>
     <string name="keyboard_title_rename_controller">Перейменувати контролер</string>
@@ -481,43 +459,8 @@
     <string name="setting_geo_height">Висота</string>
     <string name="setting_geo_hpos">Горизонтальне положення</string>
     <string name="setting_geo_vpos">Вертикальне положення</string>
-    <!-- Emulator Mapping -->
-    <!-- Setting: maps each platform to an emulator/core. -->
-    <string name="setting_emulator_mapping">Прив\'язка емуляторів</string>
     <string name="label_reset">СКИНУТИ</string>
-    <string name="label_show_all">ПОКАЗАТИ ВСІ</string>
-    <string name="label_show_installed">ПОКАЗАТИ ВСТАНОВЛЕНІ</string>
-    <!-- The core is not bundled with the app. -->
-    <string name="value_not_bundled">НЕ ВБУДОВАНО</string>
-    <string name="value_no_overrides">Немає перевизначень для окремих ігор.</string>
-    <string name="value_no_firmware">Для цього ядра прошивка не потрібна.</string>
-    <string name="mapping_action_bios">Файли BIOS</string>
-    <string name="mapping_action_overrides">Перевизначення для окремих ігор</string>
-    <string name="mapping_action_reset">Скинути до типового</string>
-    <!-- %d = number of required BIOS files missing. -->
-    <string name="mapping_required_missing">Відсутньо обов\'язкових: %d</string>
-    <!-- Distinguishes platforms sharing a display name. %1$s = platform name, %2$s = platform tag. -->
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_mapping">Прив\'язка %s</string>
-    <!-- Screen title. %s = platform name. -->
-    <string name="title_platform_bios">BIOS %s</string>
-    <string name="filter_all">УСІ</string>
-    <string name="filter_missing">ВІДСУТНІ</string>
-    <string name="filter_unmapped">НЕ ПРИЗНАЧЕНО</string>
-    <string name="filter_mapped">ПРИЗНАЧЕНО</string>
-    <string name="value_unmapped">Не призначено</string>
     <string name="label_download">ЗАВАНТАЖИТИ</string>
-    <string name="bios_required">ОБОВ\'ЯЗКОВО</string>
-    <string name="bios_optional">НЕОБОВ\'ЯЗКОВО</string>
-    <string name="bios_present">Наявний</string>
-    <string name="bios_missing">Відсутній</string>
-    <!-- %d = number of games with per-game overrides. -->
-    <plurals name="override_game_count">
-        <item quantity="one">%d гра</item>
-        <item quantity="few">%d гри</item>
-        <item quantity="many">%d ігор</item>
-        <item quantity="other">%d гри</item>
-    </plurals>
     <!-- %d = number of items selected. -->
     <string name="bulk_selected">Вибрано: %d</string>
     <!-- %d = number of items. -->
@@ -535,10 +478,6 @@
         <item quantity="many">Створено %d системних папок</item>
         <item quantity="other">Створено %d системної папки</item>
     </plurals>
-    <string name="value_no_cores_found">Ядра не знайдено</string>
-    <string name="label_clear_override">ОЧИСТИТИ</string>
-    <!-- %1$s = platform name. -->
-    <string name="dialog_reset_platform_confirm">Скинути %1$s? Це очистить вибір емулятора для цієї платформи та відновить типовий вбудований варіант.</string>
     <!-- Save Slots screen -->
     <!-- Screen title. %1$s = game name. -->
     <string name="save_slots_screen_title">Слоти %1$s</string>

@@ -15,7 +15,7 @@ import org.robolectric.annotation.Config
 class PlatformConfigParserTest {
 
     private fun parse(json: String): AppConfig =
-        PlatformConfig.parseAppConfigForTest(JSONObject(json))
+        PlatformConfig.parseLaunchConfig(JSONObject(json))
 
     @Test fun `bare package only`() {
         val cfg = parse("""{"package":"com.example"}""")

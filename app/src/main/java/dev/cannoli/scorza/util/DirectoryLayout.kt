@@ -36,7 +36,7 @@ object DirectoryLayout {
 
         val tags = platformConfig.getAllTags()
         if (romDirNeedsScaffold(romDirectory)) {
-            scaffoldRomFolders(romDirectory, tags)
+            scaffoldRomFolders(romDirectory, platformConfig.romFolders())
         }
         seedRomFolderOnce(romDirectory, paths.configState, "PC")
         for (tag in tags) {
@@ -67,10 +67,10 @@ object DirectoryLayout {
     fun romDirNeedsScaffold(romDirectory: File): Boolean =
         romDirectory.listFiles()?.any { it.isDirectory && !it.name.startsWith(".") } != true
 
-    fun scaffoldRomFolders(romDirectory: File, tags: Collection<String>): Int {
+    fun scaffoldRomFolders(romDirectory: File, folders: Collection<String>): Int {
         var created = 0
-        for (tag in tags) {
-            if (File(romDirectory, tag).mkdirs()) created++
+        for (folder in folders) {
+            if (File(romDirectory, folder).mkdirs()) created++
         }
         return created
     }

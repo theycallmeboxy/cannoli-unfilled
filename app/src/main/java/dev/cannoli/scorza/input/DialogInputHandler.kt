@@ -14,7 +14,6 @@ import dev.cannoli.scorza.db.RecentlyPlayedRepository
 import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.di.IoScope
-import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.model.AppType
 import dev.cannoli.scorza.model.CollectionType
 import dev.cannoli.scorza.model.ListItem
@@ -28,7 +27,6 @@ import dev.cannoli.scorza.romm.download.sanitizeFsName
 import dev.cannoli.scorza.romm.sync.RomKeys
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.ColorEntry
-import dev.cannoli.scorza.ui.screens.EmulatorPickerOption
 import dev.cannoli.scorza.ui.screens.DialogState
 import dev.cannoli.scorza.ui.screens.KeyboardHost
 import dev.cannoli.scorza.ui.screens.withMenuDelta
@@ -65,7 +63,6 @@ class DialogInputHandler @Inject constructor(
     private val collectionManager: CollectionsRepository,
     private val recentlyPlayedManager: RecentlyPlayedRepository,
     private val platformResolver: PlatformConfig,
-    private val installedCoreService: InstalledCoreService,
     private val atomicRename: AtomicRename,
     private val scanner: RomScanner,
     private val romDirectoryWalker: RomDirectoryWalker,
@@ -73,14 +70,12 @@ class DialogInputHandler @Inject constructor(
     private val gameListViewModel: GameListViewModel,
     private val systemListViewModel: SystemListViewModel,
     private val romsRepository: RomsRepository,
-    private val gameOverrideStore: dev.cannoli.scorza.db.GameOverrideStore,
     private val appsRepository: AppsRepository,
     private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
     private val launcherActions: LauncherActions,
     private val folderEditor: FolderEditor,
     private val activityActions: ActivityActions,
     private val controllersViewModel: dev.cannoli.scorza.ui.viewmodel.ControllersViewModel,
-    private val emulatorMappingBuilder: EmulatorMappingBuilder,
     private val rommStore: dev.cannoli.scorza.romm.RommConnectionStore,
     private val rommDownloader: dev.cannoli.scorza.romm.download.RommDownloader,
     private val rommBrowseViewModel: dev.cannoli.scorza.ui.viewmodel.RommBrowseViewModel,
@@ -220,7 +215,7 @@ class DialogInputHandler @Inject constructor(
     private var pendingContextReturn: ContextReturn? = null
     var openGuides: ((dev.cannoli.scorza.model.Rom) -> Unit)? = null
 
-    private val gameContextOptions = listOf(MENU_MANAGE_COLLECTIONS, MENU_EMULATOR_OVERRIDE, MENU_RENAME, MENU_DELETE_GAME)
+    private val gameContextOptions = listOf(MENU_MANAGE_COLLECTIONS, MENU_RENAME, MENU_DELETE_GAME)
 
     override fun onUp(): Boolean {
         val ds = nav.dialogState.value
@@ -521,8 +516,7 @@ class DialogInputHandler @Inject constructor(
                     }
                 }
             }
-            is DialogState.MissingApp -> openEmulatorRecovery(ds.platformTag, ds.romId)
-            is DialogState.MissingCore -> openEmulatorRecovery(ds.platformTag, ds.romId)
+            is DialogState.MissingApp, is DialogState.MissingCore -> nav.dialogState.value = DialogState.None
             is DialogState.DeleteFolderConfirm -> {
                 nav.dialogState.value = DialogState.None
                 folderEditor.deleteFolder(ds.path)
@@ -563,7 +557,6 @@ class DialogInputHandler @Inject constructor(
             is DialogState.SystemFoldersRegenerated -> {
                 nav.dialogState.value = DialogState.None
             }
-            is DialogState.PlatformResetConfirm -> onPlatformReset(ds)
             is DialogState.QuickMenu -> {
                 when (ds.rows.getOrNull(ds.selectedIndex)) {
                     dev.cannoli.scorza.ui.quickmenu.QuickMenuRow.ROMM -> {
@@ -852,9 +845,7 @@ class DialogInputHandler @Inject constructor(
 
     private fun doRestore(ds: DialogState.SaveBackupRestoreConfirm) {
         ioScope.launch {
-            val resolveGame = dev.cannoli.scorza.romm.sync.rommResolveGame(platformResolver, romDir()) { key ->
-                romsRepository.romIdForRelativePath(key)?.let { gameOverrideStore.get(it) }
-            }
+            val resolveGame = dev.cannoli.scorza.romm.sync.rommResolveGame(platformResolver, romDir())
             val outcome = saveSyncService.restoreBackupToHead(ds.tag, ds.base, ds.stamp, resolveGame)
             val count = saveSyncService.pendingConflictCount()
             withContext(Dispatchers.Main) {
@@ -964,9 +955,7 @@ class DialogInputHandler @Inject constructor(
         if (!applyingConflicts.compareAndSet(false, true)) return
         val fromSaveSyncMenu = ds.fromSaveSyncMenu
         val rows = ds.rows
-        val resolveGame = dev.cannoli.scorza.romm.sync.rommResolveGame(platformResolver, romDir()) { key ->
-                romsRepository.romIdForRelativePath(key)?.let { gameOverrideStore.get(it) }
-            }
+        val resolveGame = dev.cannoli.scorza.romm.sync.rommResolveGame(platformResolver, romDir())
         nav.dialogState.value = DialogState.ConflictsApplying
         ioScope.launch {
             try {
@@ -1142,9 +1131,6 @@ class DialogInputHandler @Inject constructor(
                 nav.dialogState.value = DialogState.None
             }
             is DialogState.SystemFoldersRegenerated -> {
-                nav.dialogState.value = DialogState.None
-            }
-            is DialogState.PlatformResetConfirm -> {
                 nav.dialogState.value = DialogState.None
             }
             is DialogState.RommDownloads -> {
@@ -1394,13 +1380,9 @@ class DialogInputHandler @Inject constructor(
             } else {
                 when (state.options[state.selectedOption]) {
                     MENU_RENAME -> {
-                        val renameTitle = when (systemListViewModel.getSelectedItem()) {
-                            is SystemListViewModel.ListItem.PlatformItem -> dev.cannoli.ui.R.string.keyboard_title_rename_platform
-                            else -> dev.cannoli.ui.R.string.keyboard_title_rename_folder
-                        }
                         nav.dialogState.value = DialogState.RenameInput(
                             gameName = state.gameName,
-                            titleRes = renameTitle,
+                            titleRes = dev.cannoli.ui.R.string.keyboard_title_rename_folder,
                             keyboard = KeyboardState(text = state.gameName, cursorPos = state.gameName.length),
                         )
                     }
@@ -1509,10 +1491,6 @@ class DialogInputHandler @Inject constructor(
                 gameListViewModel.toggleFavorite { launcherActions.rescanSystemList() }
                 nav.dialogState.value = DialogState.None
             }
-            selected == MENU_EMULATOR_OVERRIDE || selected.startsWith("$MENU_EMULATOR_OVERRIDE\t") -> {
-                if (rom == null) return
-                openEmulatorPicker(rom)
-            }
             selected == MENU_ROMM_SAVES -> {
                 if (rom == null) return
                 openRommSavesMenu()
@@ -1557,7 +1535,7 @@ class DialogInputHandler @Inject constructor(
         val romId = saveSyncService.isSyncableGame(gameKey) ?: return
         val tag = rom.platformTag
         val base = java.text.Normalizer.normalize(rom.path.nameWithoutExtension, java.text.Normalizer.Form.NFC)
-        val emulator = RomKeys.coreDisplayNameFor(rom, platformResolver, gameOverrideStore.get(rom.id))
+        val emulator = RomKeys.emulatorNameFor(platformResolver, tag, gameKey)
         ioScope.launch {
             val slots = runCatching { slotManager.listSlots(gameKey, romId) }.onFailure { e ->
                 ErrorLog.write("save_slots_open: ${e.message}")
@@ -1568,40 +1546,6 @@ class DialogInputHandler @Inject constructor(
                 nav.dialogState.value = DialogState.None
             }
         }
-    }
-
-    private fun openEmulatorPicker(rom: dev.cannoli.scorza.model.Rom) =
-        openGameEmulatorPicker(rom.platformTag, rom.id, rom.displayName)
-
-    private fun openGameEmulatorPicker(tag: String, romId: Long?, displayName: String) {
-        nav.dialogState.value = DialogState.None
-        nav.screenStack.add(emulatorMappingBuilder.buildPlatformMapping(
-            tag = tag, platformName = platformResolver.getDisplayName(tag), showAll = false,
-            defaultShowAllIfEmpty = true, romId = romId, gameName = displayName, selectCurrent = true,
-        ))
-    }
-
-    // A failed launch recovers by editing whichever mapping supplied the emulator that failed:
-    // the per-game override when the launch came from one, the platform mapping otherwise.
-    private fun openEmulatorRecovery(platformTag: String?, romId: Long?) {
-        val tag = platformTag ?: return
-        pendingContextReturn = null
-        if (romId == null) {
-            openPlatformEmulatorPicker(tag)
-            return
-        }
-        val selected = (gameListViewModel.getSelectedItem() as? ListItem.RomItem)?.rom
-        val displayName = selected?.takeIf { it.id == romId }?.displayName
-            ?: platformResolver.getDisplayName(tag)
-        openGameEmulatorPicker(tag, romId, displayName)
-    }
-
-    private fun openPlatformEmulatorPicker(tag: String) {
-        nav.dialogState.value = DialogState.None
-        nav.screenStack.add(emulatorMappingBuilder.buildPlatformMapping(
-            tag = tag, platformName = platformResolver.getDisplayName(tag), showAll = false,
-            defaultShowAllIfEmpty = true, selectCurrent = true,
-        ))
     }
 
     private fun onBulkContextMenuConfirm(state: DialogState.BulkContextMenu) {
@@ -1710,7 +1654,7 @@ class DialogInputHandler @Inject constructor(
                 ?: (systemListViewModel.getSelectedItem() as? SystemListViewModel.ListItem.GameItem)?.item
             if (item is ListItem.SubfolderItem) {
                 val tag = gameListViewModel.state.value.platformTag
-                val dir = File(romDir(), "$tag${File.separator}${item.path}")
+                val dir = File(romDirectoryWalker.tagDirFor(tag), item.path)
                 val prefix = relativeRomPath(dir)
                 if (prefix == null) {
                     nav.dialogState.value = DialogState.None
@@ -1774,23 +1718,6 @@ class DialogInputHandler @Inject constructor(
         restoreContextMenu()
     }
 
-    private fun onPlatformReset(state: DialogState.PlatformResetConfirm) {
-        platformResolver.resetPlatformToDefault(state.tag, context.packageManager)
-        nav.dialogState.value = DialogState.None
-        val mapping = nav.screenStack.lastOrNull() as? LauncherScreen.PlatformMapping ?: return
-        nav.screenStack[nav.screenStack.lastIndex] = emulatorMappingBuilder.buildPlatformMapping(
-            mapping.tag, mapping.platformName, showAll = mapping.showAll,
-            selectedIndex = mapping.selectedIndex, scrollTarget = mapping.scrollTarget,
-        )
-        val mappingIdx = nav.screenStack.indexOfLast { it is LauncherScreen.EmulatorMapping }
-        if (mappingIdx >= 0) {
-            val cm = nav.screenStack[mappingIdx] as LauncherScreen.EmulatorMapping
-            val all = emulatorMappingBuilder.detailedMappings()
-            val filtered = emulatorMappingBuilder.filter(all, cm.filter)
-            nav.screenStack[mappingIdx] = cm.copy(mappings = filtered, allMappings = all, selectedIndex = cm.selectedIndex.coerceAtMost((filtered.size - 1).coerceAtLeast(0)))
-        }
-    }
-
     fun buildGameContextOptions(item: ListItem, glState: GameListViewModel.State): List<String> {
         if (glState.isCollectionsList || item is ListItem.ChildCollectionItem) return listOf(MENU_RENAME, MENU_CHILD_COLLECTIONS, MENU_DELETE)
         if (item is ListItem.SubfolderItem) return listOf(MENU_RENAME, MENU_DELETE)
@@ -1810,23 +1737,7 @@ class DialogInputHandler @Inject constructor(
                 add(MENU_MANAGE_COLLECTIONS)
                 if (app?.artFile != null) add(MENU_DELETE_ART)
             } else {
-                addAll(gameContextOptions.map { menuItem ->
-                    when {
-                        menuItem == MENU_EMULATOR_OVERRIDE && rom != null -> {
-                            // Reads the stored choice directly. Matching it back against a
-                            // generated option list used to blank this row whenever the option
-                            // could no longer be produced.
-                            val desc = gameOverrideStore.get(rom.id)?.let {
-                                platformResolver.describeChoice(
-                                    it, context.packageManager,
-                                    InstalledCoreService.getPackageLabel(settings.retroArchPackage),
-                                )
-                            } ?: context.getString(dev.cannoli.scorza.R.string.emulator_platform_default)
-                            "$MENU_EMULATOR_OVERRIDE\t$desc"
-                        }
-                        else -> menuItem
-                    }
-                })
+                addAll(gameContextOptions)
                 if (rom?.artFile != null) {
                     val idx = indexOf(MENU_DELETE_GAME)
                     if (idx >= 0) add(idx, MENU_DELETE_ART) else add(MENU_DELETE_ART)
@@ -1840,7 +1751,7 @@ class DialogInputHandler @Inject constructor(
                         settings.sdCardRoot, item.rom.platformTag, item.rom.path.nameWithoutExtension
                     ).findGuides().isNotEmpty()
                 ) {
-                    val idx = indexOfFirst { it == MENU_EMULATOR_OVERRIDE || it.startsWith("$MENU_EMULATOR_OVERRIDE\t") }
+                    val idx = indexOfFirst { it == MENU_ROMM_SAVES || it == MENU_RENAME }
                     if (idx >= 0) add(idx, MENU_GUIDES) else add(MENU_GUIDES)
                 }
             }
@@ -2114,12 +2025,8 @@ class DialogInputHandler @Inject constructor(
         }
         if (nav.currentScreen == LauncherScreen.SystemList) {
             val folder = systemListViewModel.getSelectedItem() as? SystemListViewModel.ListItem.FolderItem
-            if (folder != null) {
-                nav.dialogState.value = DialogState.None
-                folderEditor.renameFolder(folder.name, state.currentName)
-            } else {
-                launcherActions.handleSystemListRename(state)
-            }
+            nav.dialogState.value = DialogState.None
+            if (folder != null) folderEditor.renameFolder(folder.name, state.currentName)
             return
         }
         val item = gameListViewModel.getSelectedItem() ?: return
@@ -2148,7 +2055,7 @@ class DialogInputHandler @Inject constructor(
             }
             if (item is ListItem.SubfolderItem) {
                 val tag = gameListViewModel.state.value.platformTag
-                val oldDir = File(romDir(), "$tag${File.separator}${item.path}")
+                val oldDir = File(romDirectoryWalker.tagDirFor(tag), item.path)
                 val newDir = File(oldDir.parentFile, newName)
                 val oldPrefix = relativeRomPath(oldDir)
                 val ok = oldDir.renameTo(newDir)
@@ -2215,10 +2122,6 @@ class DialogInputHandler @Inject constructor(
             }
             selected == MENU_MANAGE_COLLECTIONS -> {
                 openCollectionManager(listOf(path), displayName)
-            }
-            selected == MENU_EMULATOR_OVERRIDE || selected.startsWith("$MENU_EMULATOR_OVERRIDE\t") -> {
-                if (rom == null) return
-                openEmulatorPicker(rom)
             }
             selected == MENU_DELETE || selected == MENU_DELETE_GAME -> {
                 nav.dialogState.value = DialogState.DeleteConfirm(gameName = displayName)

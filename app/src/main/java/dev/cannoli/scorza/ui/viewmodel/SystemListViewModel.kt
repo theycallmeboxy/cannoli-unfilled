@@ -369,7 +369,8 @@ class SystemListViewModel @Inject constructor(
     ) {
         if (!romDirectory.exists()) return
         val tagDirs = romDirectory.listFiles { f -> f.isDirectory && !f.name.startsWith(".") } ?: return
-        val onDisk = tagDirs.map { it.name.uppercase() }
+        // A folder counts when some system in systems.json names it as its ROM folder.
+        val onDisk = tagDirs.mapNotNull { platformConfig.tagForFolder(it.name) }
         val orphaned = if (reconcileOrphans) romsRepository.platformCounts().keys.map { it.uppercase() } else emptyList()
         val known = (onDisk + orphaned).distinct().filter { platformConfig.isKnownTag(it) }
         known.forEachIndexed { i, tag ->
