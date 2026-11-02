@@ -12,6 +12,13 @@
 
 ---
 
+> **This is Cannoli Unfilled**, a launcher-only fork with no built-in emulator. Launch intents
+> and main menu folders are JSON files you can edit. See [FORK.md](FORK.md) for what's
+> different and [CONFIG.md](CONFIG.md) for the config files. The rest of this README is
+> upstream's.
+
+---
+
 # What is Cannoli?
 
 Cannoli is an opinionated retro gaming setup for Android.
