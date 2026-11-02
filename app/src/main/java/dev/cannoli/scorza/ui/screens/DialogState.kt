@@ -107,6 +107,16 @@ sealed interface DialogState {
         override val titleRes: Int get() = dev.cannoli.ui.R.string.keyboard_title_new_folder
         override fun withKeyboard(keyboard: KeyboardState) = copy(keyboard = keyboard)
     }
+    /** Names a new main-menu folder inside [parentPath] (empty is the main menu itself). */
+    data class MenuFolderNameInput(
+        val parentPath: List<String>,
+        override val keyboard: KeyboardState = KeyboardState(),
+    ) : DialogState, KeyboardHost {
+        override val titleRes: Int get() = dev.cannoli.ui.R.string.keyboard_title_new_folder
+        override fun withKeyboard(keyboard: KeyboardState) = copy(keyboard = keyboard)
+    }
+    data class DeleteFolderConfirm(val path: List<String>) : DialogState
+    data class FolderEditError(val message: String) : DialogState
     data class KeyboardHelp(val restore: DialogState, val layout: KeyboardLayout) : DialogState
     data object QuitConfirm : DialogState
     data object RestartRequired : DialogState

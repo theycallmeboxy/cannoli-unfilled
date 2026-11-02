@@ -271,6 +271,7 @@ class SystemListViewModel @Inject constructor(
             }
             if (openFolder == null && contentMode != ContentMode.FIVE_GAME_HANDHELD) {
                 foldersConfig.roots.forEach { reorderableItems.add(folderItem(it)) }
+                foldersConfig.rootApps.forEach { reorderableItems.add(appItem(it)) }
             }
             if (reorderableItems.isNotEmpty()) {
                 val ordered = applyCustomOrder(reorderableItems, romsRepository.knownPlatformTags())
@@ -322,12 +323,26 @@ class SystemListViewModel @Inject constructor(
                     .firstOrNull { p -> p.allTags.any { it.uppercase() == entry.tag } }
                     ?.takeIf { it.gameCount > 0 }
                     ?.let { ListItem.PlatformItem(it) }
-                is FolderEntry.App -> {
-                    val app = appsRepository.forFolderEntry(entry.packageName, entry.name) { appLabel(entry.packageName) }
-                    ListItem.GameItem(dev.cannoli.scorza.model.ListItem.AppItem(app))
-                }
+                is FolderEntry.App -> appItem(entry)
             }
         }.distinct()
+
+    private fun appItem(entry: FolderEntry.App): ListItem.GameItem {
+        val app = appsRepository.forFolderEntry(entry.packageName, entry.name) { appLabel(entry.packageName) }
+        return ListItem.GameItem(dev.cannoli.scorza.model.ListItem.AppItem(app))
+    }
+
+    /** The folders.json key for a row of the folder at [path], for saving a reorder. */
+    private fun folderKey(item: ListItem, path: List<String>): String? = when (item) {
+        is ListItem.FolderItem -> "folder:${item.name}"
+        is ListItem.PlatformItem -> {
+            val placed = foldersConfig.find(path)?.entries.orEmpty()
+                .filterIsInstance<FolderEntry.Platform>().map { it.tag }.toSet()
+            item.platform.allTags.map { it.uppercase() }.firstOrNull { it in placed }?.let { "platform:$it" }
+        }
+        is ListItem.GameItem -> (item.item as? dev.cannoli.scorza.model.ListItem.AppItem)?.let { "app:${it.app.packageName}" }
+        else -> null
+    }
 
     // Art for a folder lives under Art/Folders, nested like the folders themselves:
     // Art/Folders/Nintendo.png for the top-level Nintendo, Art/Folders/Nintendo/Hacks.png inside it.
@@ -433,8 +448,6 @@ class SystemListViewModel @Inject constructor(
         _state.value.items
 
     fun enterReorderMode() {
-        // A folder's order is the order folders.json lists it in.
-        if (folderPath.isNotEmpty()) return
         _state.update { current ->
             val item = current.items.getOrNull(current.selectedIndex) ?: return@update current
             if (!item.isReorderable()) return@update current
@@ -473,7 +486,13 @@ class SystemListViewModel @Inject constructor(
         if (!current.reorderMode) return
         val gameItems = current.items.filterIsInstance<ListItem.GameItem>()
         val collectionItems = current.items.filterIsInstance<ListItem.CollectionItem>()
-        if (gameItems.isNotEmpty()) {
+        val path = folderPath
+        if (path.isNotEmpty()) {
+            val keys = current.items.mapNotNull { folderKey(it, path) }
+            scope.launch(Dispatchers.IO) {
+                foldersConfig.reorder(path, keys)?.let { dev.cannoli.scorza.util.ErrorLog.write("folder reorder: $it") }
+            }
+        } else if (currentFghCollectionId != null) {
             val fghId = currentFghCollectionId
             if (fghId != null) {
                 val refs = gameItems.mapNotNull { gameItem ->
@@ -520,7 +539,10 @@ class SystemListViewModel @Inject constructor(
         is ListItem.PlatformItem -> platform.tag
         is ListItem.CollectionItem -> name
         is ListItem.FolderItem -> FOLDER_TAG_PREFIX + name
-        is ListItem.GameItem -> null
+        // An app listed at the top level of folders.json sits on the main menu among the rest.
+        is ListItem.GameItem -> (item as? dev.cannoli.scorza.model.ListItem.AppItem)
+            ?.takeIf { currentFghCollectionId == null }
+            ?.let { APP_TAG_PREFIX + it.app.packageName }
         else -> null
     }
 
@@ -542,6 +564,7 @@ class SystemListViewModel @Inject constructor(
         // __TOOLS__ and __PORTS__ the same way, which is why every reserved tag starts with __.
         const val FOLDER_TAG_PREFIX = "__FOLDER__/"
         const val FOLDER_ART_DIR = "Folders"
+        const val APP_TAG_PREFIX = "__APP__/"
 
         fun isReservedTag(tag: String): Boolean = tag.startsWith("__")
     }

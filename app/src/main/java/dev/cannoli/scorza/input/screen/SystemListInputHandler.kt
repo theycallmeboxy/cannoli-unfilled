@@ -3,8 +3,13 @@ package dev.cannoli.scorza.input.screen
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.CollectionsRepository
-import dev.cannoli.scorza.di.IoScope
+import dev.cannoli.scorza.input.FolderEditor
 import dev.cannoli.scorza.input.LauncherActions
+import dev.cannoli.scorza.input.MENU_ADD_APPS
+import dev.cannoli.scorza.input.MENU_DELETE
+import dev.cannoli.scorza.input.MENU_MOVE_TO_FOLDER
+import dev.cannoli.scorza.input.MENU_NEW_FOLDER
+import dev.cannoli.scorza.input.MENU_REMOVE_FROM_FOLDER
 import dev.cannoli.scorza.input.MENU_ADD_FAVORITE
 import dev.cannoli.scorza.input.MENU_DELETE_GAME
 import dev.cannoli.scorza.input.MENU_DOWNLOAD_ART
@@ -23,14 +28,11 @@ import dev.cannoli.scorza.ui.screens.DialogState
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @ActivityScoped
 class SystemListInputHandler @Inject constructor(
     private val nav: NavigationController,
-    @IoScope private val ioScope: CoroutineScope,
     private val settings: SettingsRepository,
     private val collectionsRepository: CollectionsRepository,
     private val platformConfig: PlatformConfig,
@@ -38,6 +40,7 @@ class SystemListInputHandler @Inject constructor(
     private val gameListViewModel: GameListViewModel,
     private val settingsViewModel: SettingsViewModel,
     private val launcherActions: LauncherActions,
+    private val folderEditor: FolderEditor,
     private val rommConnectionStore: dev.cannoli.scorza.romm.RommConnectionStore,
 ) : ScreenInputHandler {
 
@@ -122,10 +125,10 @@ class SystemListInputHandler @Inject constructor(
             systemListViewModel.savePosition()
             settingsViewModel.load()
             nav.screenStack.add(LauncherScreen.Settings)
-        } else {
-            if (systemListViewModel.state.value.items.isEmpty()) {
-                launcherActions.openKitchen()
-            }
+        } else if (systemListViewModel.state.value.items.isEmpty() && !systemListViewModel.isInFolder()) {
+            launcherActions.openKitchen()
+        } else if (!systemListViewModel.isReorderMode()) {
+            folderEditor.promptNewFolder()
         }
     }
 
@@ -194,7 +197,15 @@ class SystemListInputHandler @Inject constructor(
     }
 
     private fun onSystemListContextMenu() {
-        val item = systemListViewModel.getSelectedItem() ?: return
+        val item = systemListViewModel.getSelectedItem()
+        if (item == null) {
+            // An empty folder has no row to open a menu on, but can still be filled.
+            val path = systemListViewModel.state.value.folderPath
+            if (path.isNotEmpty()) {
+                nav.dialogState.value = DialogState.ContextMenu(gameName = path.last(), options = listOf(MENU_ADD_APPS, MENU_NEW_FOLDER))
+            }
+            return
+        }
         if (item is SystemListViewModel.ListItem.GameItem) {
             val ref = resolveItemRef(item)
             val isFav = ref?.let { r ->
@@ -205,27 +216,38 @@ class SystemListInputHandler @Inject constructor(
             } == true
             nav.pendingFghItem = item.item
             val menuName = item.displayName
+            val fgh = settings.contentMode == ContentMode.FIVE_GAME_HANDHELD
             val options = buildList {
                 add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
                 add(MENU_MANAGE_COLLECTIONS)
-                // An app comes from folders.json, which is where it is edited or removed.
                 if (item.item is ListItem.RomItem) {
                     add(MENU_EMULATOR_OVERRIDE)
                     add(MENU_DELETE_GAME)
+                } else if (!fgh) {
+                    // An app on the main list is a folders.json entry.
+                    add(MENU_MOVE_TO_FOLDER)
+                    add(MENU_REMOVE_FROM_FOLDER)
                 }
             }
             nav.dialogState.value = DialogState.ContextMenu(gameName = menuName, options = options)
             return
         }
-        // Folders are named in folders.json, so only platforms rename from here.
         val name = when (item) {
             is SystemListViewModel.ListItem.PlatformItem -> item.platform.displayName
+            is SystemListViewModel.ListItem.FolderItem -> item.name
             else -> return
         }
         val options = buildList {
             add(MENU_RENAME)
-            if (item is SystemListViewModel.ListItem.PlatformItem && rommConnectionStore.isConfigured) {
-                add(MENU_DOWNLOAD_ART)
+            if (item is SystemListViewModel.ListItem.FolderItem) {
+                add(MENU_ADD_APPS)
+                add(MENU_MOVE_TO_FOLDER)
+                add(MENU_NEW_FOLDER)
+                add(MENU_DELETE)
+            } else {
+                add(MENU_MOVE_TO_FOLDER)
+                add(MENU_NEW_FOLDER)
+                if (rommConnectionStore.isConfigured) add(MENU_DOWNLOAD_ART)
             }
         }
         nav.dialogState.value = DialogState.ContextMenu(

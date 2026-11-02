@@ -524,6 +524,14 @@
     <string name="device_controller">Controller</string>
     <!-- OSD toast. %1$d = player number, %2$s = controller name. -->
     <string name="osd_controller_connected">P%1$d: %2$s</string>
+    <!-- Folder editing. Main Menu is the top level of the launcher, as a place to move things to. -->
+    <string name="folder_target_main_menu" tools:ignore="MissingTranslation">Main Menu</string>
+    <!-- Title of the folder picker. %1$s = name of the item being moved. -->
+    <string name="folder_picker_title" tools:ignore="MissingTranslation">Move %1$s to</string>
+    <!-- Title of the installed-apps checklist. %1$s = folder name. -->
+    <string name="app_picker_title" tools:ignore="MissingTranslation">Apps in %1$s</string>
+    <!-- %1$s = folder name. Its contents are not deleted. -->
+    <string name="dialog_delete_folder_confirm" tools:ignore="MissingTranslation">Delete %1$s? What it holds moves up a level.</string>
     <!-- OSD toast. %1$d = number of problems found in Config/emulators.json. -->
     <plurals name="osd_emulators_json_errors" tools:ignore="MissingTranslation">
         <item quantity="one">emulators.json has %1$d problem, see Logs/error.log</item>

@@ -177,11 +177,27 @@ class SystemListFoldersTest {
         assertEquals(nested, handhelds.artFile)
     }
 
-    @Test fun `reorder is not offered inside a folder`() {
+    @Test fun `reordering inside a folder writes the new order to folders_json`() {
         val vm = viewModel()
         await { vm.scan(scanDisk = false, onReady = it) }
         await { vm.enterFolder("Nintendo", it) }
+        vm.setSelectedIndex(2)
         vm.enterReorderMode()
-        assertFalse(vm.isReorderMode())
+        assertTrue(vm.isReorderMode())
+        vm.reorderMoveUp()
+        vm.reorderMoveUp()
+        vm.confirmReorder()
+        assertEquals(listOf("app:A Tool", "platform:GBA", "folder:Handhelds"), labels(vm))
+
+        val file = File(tmp.root, "folders.json")
+        val deadline = System.currentTimeMillis() + 5000
+        var order: List<String> = emptyList()
+        while (System.currentTimeMillis() < deadline) {
+            val items = org.json.JSONObject(file.readText()).getJSONArray("folders").getJSONObject(0).getJSONArray("items")
+            order = (0 until items.length()).map { items.getJSONObject(it).keys().next() }
+            if (order.first() == "app") break
+            Thread.sleep(20)
+        }
+        assertEquals(listOf("app", "platform", "folder"), order)
     }
 }

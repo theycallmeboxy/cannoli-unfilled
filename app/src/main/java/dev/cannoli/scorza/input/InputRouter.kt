@@ -55,6 +55,7 @@ class InputRouter @Inject constructor(
     private val installedCoreService: InstalledCoreService,
     private val emulatorMappingBuilder: EmulatorMappingBuilder,
     private val launcherActions: LauncherActions,
+    private val folderEditor: FolderEditor,
     private val screenInputRegistry: dev.cannoli.scorza.input.runtime.ScreenInputRegistry,
     @ApplicationContext private val context: Context,
     private val settings: SettingsRepository,
@@ -193,6 +194,17 @@ class InputRouter @Inject constructor(
         is LauncherScreen.ColorList         -> colorListHandler()
         is LauncherScreen.CollectionPicker  -> collectionPickerHandler()
         is LauncherScreen.ChildPicker       -> childPickerHandler()
+        is LauncherScreen.FolderPicker      -> scrollable<LauncherScreen.FolderPicker>(
+            onConfirm = { folderEditor.confirmMove(this) },
+        )
+        is LauncherScreen.AppPicker         -> scrollable<LauncherScreen.AppPicker>(
+            onConfirm = {
+                val newChecked = if (selectedIndex in checkedIndices) checkedIndices - selectedIndex
+                                 else checkedIndices + selectedIndex
+                nav.replaceTop(copy(checkedIndices = newChecked))
+            },
+            onBack = { folderEditor.confirmAppPicker(this) },
+        )
         is LauncherScreen.Credits           -> creditsHandler()
         is LauncherScreen.CreditsSection    -> creditsSectionHandler()
         is LauncherScreen.InstalledCores    -> installedCoresHandler()

@@ -252,6 +252,34 @@ sealed class LauncherScreen {
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
     }
 
+    /** A place a folder entry can move to. An empty [path] is the main menu. */
+    data class FolderTarget(val path: List<String>, val label: String, val depth: Int)
+
+    data class FolderPicker(
+        val title: String,
+        val entry: dev.cannoli.scorza.config.FolderEntry,
+        val targets: List<FolderTarget>,
+        override val selectedIndex: Int = 0,
+        override val scrollTarget: Int = 0,
+    ) : LauncherScreen(), ScrollableScreen {
+        override val itemCount: Int get() = targets.size
+        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
+    }
+
+    data class AppPicker(
+        val folderPath: List<String>,
+        val title: String,
+        val apps: List<String>,
+        val packages: List<String>,
+        override val selectedIndex: Int = 0,
+        val checkedIndices: Set<Int> = emptySet(),
+        val initialChecked: Set<Int> = emptySet(),
+        override val scrollTarget: Int = 0,
+    ) : LauncherScreen(), ScrollableScreen {
+        override val itemCount: Int get() = apps.size
+        override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
+    }
+
     data class ChildPicker(val parentId: Long, val collectionIds: List<Long>, val displayNames: List<String> = emptyList(), override val selectedIndex: Int = 0, val checkedIndices: Set<Int> = emptySet(), val initialChecked: Set<Int> = emptySet(), override val scrollTarget: Int = 0) : LauncherScreen(), ScrollableScreen {
         override val itemCount: Int get() = collectionIds.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
@@ -1019,6 +1047,73 @@ fun AppNavGraph(
                                 checkState = index in currentScreen.checkedIndices
                             )
                         }
+                    }
+                }
+            }
+            is LauncherScreen.FolderPicker -> {
+                if (inputRouter != null) {
+                    val handler = remember { inputRouter.currentHandler() }
+                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
+                }
+                ListDialogScreen(
+                    backgroundImagePath = appSettings.backgroundImagePath,
+                    backgroundTint = appSettings.backgroundTint,
+                    title = currentScreen.title,
+                    listFontSize = listFontSize,
+                    listLineHeight = listLineHeight,
+                    fullWidth = true,
+                    rightBottomItems = listOf(labels.confirm to stringResource(R.string.label_select)),
+                    buttonStyle = labels
+                ) {
+                    List(
+                        items = currentScreen.targets,
+                        selectedIndex = currentScreen.selectedIndex,
+                        itemHeight = itemHeight,
+                        scrollTarget = currentScreen.scrollTarget,
+                        onListStateChanged = onListStateChanged
+                    ) { _, target, isSelected ->
+                        // Indented by depth so the list reads as the folder tree.
+                        PillRowText(
+                            label = "    ".repeat((target.depth - 1).coerceAtLeast(0)) +
+                                (if (target.depth > 0) "/ " else "") + target.label,
+                            isSelected = isSelected,
+                            fontSize = listFontSize,
+                            lineHeight = listLineHeight,
+                            verticalPadding = listVerticalPadding,
+                        )
+                    }
+                }
+            }
+            is LauncherScreen.AppPicker -> {
+                if (inputRouter != null) {
+                    val handler = remember { inputRouter.currentHandler() }
+                    dev.cannoli.scorza.input.screen.compose.ScreenInput(handler)
+                }
+                ListDialogScreen(
+                    backgroundImagePath = appSettings.backgroundImagePath,
+                    backgroundTint = appSettings.backgroundTint,
+                    title = currentScreen.title,
+                    listFontSize = listFontSize,
+                    listLineHeight = listLineHeight,
+                    fullWidth = true,
+                    rightBottomItems = emptyList(),
+                    buttonStyle = labels
+                ) {
+                    List(
+                        items = currentScreen.apps,
+                        selectedIndex = currentScreen.selectedIndex,
+                        itemHeight = itemHeight,
+                        scrollTarget = currentScreen.scrollTarget,
+                        onListStateChanged = onListStateChanged
+                    ) { index, app, isSelected ->
+                        PillRowText(
+                            label = app,
+                            isSelected = isSelected,
+                            fontSize = listFontSize,
+                            lineHeight = listLineHeight,
+                            verticalPadding = listVerticalPadding,
+                            checkState = index in currentScreen.checkedIndices
+                        )
                     }
                 }
             }

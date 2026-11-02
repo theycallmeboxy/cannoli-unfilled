@@ -102,6 +102,44 @@ class PlatformConfig(
         for (error in emulatorConfigErrors) dev.cannoli.scorza.util.ErrorLog.write(error)
     }
 
+    /** emulators.json as it is on disk, for an editor to start from. */
+    fun currentEmulatorsText(): String {
+        val file = paths.emulatorsJson
+        return if (file.exists()) file.readText() else readBundledDefinitions()
+    }
+
+    /**
+     * Replaces emulators.json with [text] once it parses, then loads it. Returns whether it was
+     * written and the problems found; text that is not JSON is refused and the file left alone.
+     * The previous file is kept as emulators.json.bak.
+     */
+    @Synchronized
+    fun replaceEmulatorsText(text: String): Pair<Boolean, List<String>> {
+        try {
+            parseDefinitions(text, paths.emulatorsJson.name)
+        } catch (e: org.json.JSONException) {
+            return false to listOf("not valid JSON: ${e.message}")
+        }
+        val file = paths.emulatorsJson
+        try {
+            file.parentFile?.mkdirs()
+            if (file.exists()) file.copyTo(File(file.parentFile, "${file.name}.bak"), overwrite = true)
+            val tmp = File(file.parentFile, "${file.name}.tmp")
+            java.io.FileOutputStream(tmp).use { out ->
+                out.write(text.toByteArray())
+                out.fd.sync()
+            }
+            if (!tmp.renameTo(file)) {
+                tmp.delete()
+                return false to listOf("could not save ${file.name}")
+            }
+        } catch (e: java.io.IOException) {
+            return false to listOf("could not save ${file.name}: ${e.message}")
+        }
+        loadEmulatorDefinitions()
+        return true to emulatorConfigErrors
+    }
+
     /** Re-reads emulators.json when it changed on disk since the last read. True if it did. */
     fun reloadEmulatorsIfChanged(): Boolean {
         val file = paths.emulatorsJson
@@ -417,7 +455,7 @@ class PlatformConfig(
 
     // The caption is derived, never stored, so switching the configured RetroArch package
     // updates every label instead of leaving stale ones behind.
-    fun getRunnerLabel(tag: String, coreId: String, raLabel: String = "RetroArch"): String {
+    fun getRunnerLabel(tag: String, raLabel: String = "RetroArch"): String {
         val source = userChoices[tag]?.source ?: EmulatorSource.RetroArch
         return when (source) {
             EmulatorSource.Standalone -> EmulatorSource.Standalone.displayName
@@ -478,7 +516,7 @@ class PlatformConfig(
                 status = EmulatorMappingStatus.NEEDS_SETUP
             )
         } else {
-            val resolvedRunner = getRunnerLabel(tag, coreId, raLabel)
+            val resolvedRunner = getRunnerLabel(tag, raLabel)
             val status = coreStatus(coreId, installedRaCores, unreportablePackages)
             // "Missing" is a confirmed absence: a RetroArch that reported its cores and did not
             // name this one. "Unknown" means no

@@ -23,6 +23,7 @@ class KitchenHttpServer internal constructor(
     internal val appsRepository: dev.cannoli.scorza.db.AppsRepository? = null,
     internal val settingsProvider: () -> SettingsResponse = { SettingsResponse("Tools", "Ports") },
     internal val artThumbnails: ArtThumbnails? = null,
+    internal val configFiles: Map<String, KitchenConfigFile> = emptyMap(),
 ) : NanoHTTPD(port) {
 
     private val socketTimeoutMs = 30_000
@@ -192,6 +193,7 @@ class KitchenHttpServer internal constructor(
                 handleArtwork(artSegments)
             }
             resource == "fs" -> handleFs(method, apiSegments.drop(1), query, session)
+            resource == "config" -> handleConfig(method, apiSegments.drop(1), session)
             resource == "apk" -> handleApk(method, apiSegments.drop(1), session)
             resource in RESOURCE_DIRS -> {
                 val baseDir = RESOURCE_DIRS[resource]!!

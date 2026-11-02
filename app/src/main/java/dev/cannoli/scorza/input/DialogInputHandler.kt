@@ -77,6 +77,7 @@ class DialogInputHandler @Inject constructor(
     private val appsRepository: AppsRepository,
     private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
     private val launcherActions: LauncherActions,
+    private val folderEditor: FolderEditor,
     private val activityActions: ActivityActions,
     private val controllersViewModel: dev.cannoli.scorza.ui.viewmodel.ControllersViewModel,
     private val emulatorMappingBuilder: EmulatorMappingBuilder,
@@ -522,6 +523,11 @@ class DialogInputHandler @Inject constructor(
             }
             is DialogState.MissingApp -> openEmulatorRecovery(ds.platformTag, ds.romId)
             is DialogState.MissingCore -> openEmulatorRecovery(ds.platformTag, ds.romId)
+            is DialogState.DeleteFolderConfirm -> {
+                nav.dialogState.value = DialogState.None
+                folderEditor.deleteFolder(ds.path)
+            }
+            is DialogState.FolderEditError -> nav.dialogState.value = DialogState.None
             is DialogState.DeleteCollectionConfirm -> {
                 val glState = gameListViewModel.state.value
                 val deletingFromParent = glState.isCollection && !glState.isCollectionsList
@@ -1095,6 +1101,8 @@ class DialogInputHandler @Inject constructor(
             is DialogState.DeleteCollectionConfirm -> {
                 restoreContextMenu()
             }
+            is DialogState.DeleteFolderConfirm,
+            is DialogState.FolderEditError -> nav.dialogState.value = DialogState.None
             is DialogState.QuitConfirm -> {
                 nav.dialogState.value = DialogState.None
             }
@@ -1292,7 +1300,8 @@ class DialogInputHandler @Inject constructor(
                 restoreContextMenu()
             }
             is DialogState.NewCollectionInput,
-            is DialogState.NewFolderInput -> {
+            is DialogState.NewFolderInput,
+            is DialogState.MenuFolderNameInput -> {
                 nav.dialogState.value = DialogState.None
             }
             is DialogState.HexColorInput -> {
@@ -1411,6 +1420,20 @@ class DialogInputHandler @Inject constructor(
                             rommArtFetcher.start(listOf(tag))
                         }
                     }
+                    MENU_MOVE_TO_FOLDER -> systemListViewModel.getSelectedItem()?.let {
+                        folderEditor.openMovePicker(it, state.gameName)
+                    }
+                    MENU_ADD_APPS -> {
+                        val folder = systemListViewModel.getSelectedItem() as? SystemListViewModel.ListItem.FolderItem
+                        if (folder != null) {
+                            systemListViewModel.enterFolder(folder.name) { folderEditor.openAppPicker() }
+                        } else {
+                            folderEditor.openAppPicker()
+                        }
+                    }
+                    MENU_NEW_FOLDER -> folderEditor.promptNewFolder()
+                    MENU_DELETE -> (systemListViewModel.getSelectedItem() as? SystemListViewModel.ListItem.FolderItem)
+                        ?.let { folderEditor.confirmDelete(it.name) }
                 }
             }
             return
@@ -1912,6 +1935,10 @@ class DialogInputHandler @Inject constructor(
             is DialogState.NewCollectionInput -> onNewCollectionConfirm(ds)
             is DialogState.CollectionRenameInput -> onCollectionRenameConfirm(ds)
             is DialogState.NewFolderInput -> onNewFolderConfirm(ds)
+            is DialogState.MenuFolderNameInput -> {
+                nav.dialogState.value = DialogState.None
+                if (ds.currentName.isNotBlank()) folderEditor.createFolder(ds.parentPath, ds.currentName)
+            }
             else -> {}
         }
     }
@@ -2094,7 +2121,13 @@ class DialogInputHandler @Inject constructor(
             return
         }
         if (nav.currentScreen == LauncherScreen.SystemList) {
-            launcherActions.handleSystemListRename(state)
+            val folder = systemListViewModel.getSelectedItem() as? SystemListViewModel.ListItem.FolderItem
+            if (folder != null) {
+                nav.dialogState.value = DialogState.None
+                folderEditor.renameFolder(folder.name, state.currentName)
+            } else {
+                launcherActions.handleSystemListRename(state)
+            }
             return
         }
         val item = gameListViewModel.getSelectedItem() ?: return
@@ -2198,6 +2231,10 @@ class DialogInputHandler @Inject constructor(
             selected == MENU_DELETE || selected == MENU_DELETE_GAME -> {
                 nav.dialogState.value = DialogState.DeleteConfirm(gameName = displayName)
             }
+            selected == MENU_MOVE_TO_FOLDER ->
+                folderEditor.openMovePicker(SystemListViewModel.ListItem.GameItem(item), displayName)
+            selected == MENU_REMOVE_FROM_FOLDER ->
+                folderEditor.removeFromFolder(SystemListViewModel.ListItem.GameItem(item))
         }
     }
 

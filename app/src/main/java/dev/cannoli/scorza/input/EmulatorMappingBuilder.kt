@@ -312,7 +312,7 @@ class EmulatorMappingBuilder @Inject constructor(
             ?.takeIf { it.source != EmulatorSource.Standalone }
             ?.coreId?.ifEmpty { null }
             ?: platformConfig.getCoreMapping(tag)
-        val runner = platformConfig.getRunnerLabel(tag, coreId, raLabel)
+        val runner = platformConfig.getRunnerLabel(tag, raLabel)
         val biosDir = CannoliPaths(File(settings.sdCardRoot)).biosFor(tag)
         val firmware = platformConfig.getFirmwareStatus(coreId, biosDir)
             .map { dev.cannoli.scorza.ui.screens.FirmwareStatus(it.first, it.second) }

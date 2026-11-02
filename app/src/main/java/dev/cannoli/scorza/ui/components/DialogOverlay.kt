@@ -911,6 +911,18 @@ fun DialogOverlay(
             confirmLabel = stringResource(R.string.label_delete),
         )
 
+        is DialogState.DeleteFolderConfirm -> ConfirmOverlay(
+            message = stringResource(R.string.dialog_delete_folder_confirm, dialogState.path.last()),
+            buttonStyle = buttonStyle,
+            confirmLabel = stringResource(R.string.label_delete),
+        )
+
+        is DialogState.FolderEditError -> MessageOverlay(
+            message = dialogState.message,
+            buttonStyle = buttonStyle,
+            buttonLabel = stringResource(R.string.label_back),
+        )
+
         is DialogState.DeleteCollectionConfirm -> ConfirmOverlay(
             message = stringResource(R.string.dialog_delete_confirm, dialogState.displayName),
             buttonStyle = buttonStyle,

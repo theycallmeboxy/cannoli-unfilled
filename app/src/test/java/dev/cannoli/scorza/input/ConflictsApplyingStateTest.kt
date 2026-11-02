@@ -50,6 +50,7 @@ class ConflictsApplyingStateTest {
             appsRepository = mockk(relaxed = true),
             artworkLookup = mockk(relaxed = true),
             launcherActions = mockk(relaxed = true),
+            folderEditor = mockk(relaxed = true),
             activityActions = mockk(relaxed = true),
             controllersViewModel = mockk(relaxed = true),
             emulatorMappingBuilder = mockk(relaxed = true),

@@ -273,17 +273,24 @@ fun SystemListScreen(
                 } else {
                     listOf(buttonStyle.confirm to playLabel)
                 }
-            } else if (state.items.isEmpty()) {
+            } else if (state.items.isEmpty() && state.folderPath.isEmpty()) {
                 listOf(buttonStyle.west to stringResource(R.string.label_kitchen))
+            } else if (state.items.isEmpty()) {
+                emptyList()
             } else {
                 listOf(buttonStyle.confirm to stringResource(R.string.label_select))
             }
             val leftItems = buildList {
-                if (mainMenuQuit) add(buttonStyle.back to stringResource(R.string.label_quit))
+                if (state.folderPath.isNotEmpty()) add(buttonStyle.back to stringResource(R.string.label_back))
+                else if (mainMenuQuit) add(buttonStyle.back to stringResource(R.string.label_quit))
                 if (fiveGameHandheld) {
                     add(buttonStyle.west to stringResource(R.string.label_settings))
                 } else {
                     add(buttonStyle.north to stringResource(R.string.label_settings))
+                    // X makes a folder wherever the user is; on an empty main menu it opens Kitchen.
+                    if (state.items.isNotEmpty() || state.folderPath.isNotEmpty()) {
+                        add(buttonStyle.west to stringResource(R.string.label_new))
+                    }
                 }
             }
             BottomBar(
