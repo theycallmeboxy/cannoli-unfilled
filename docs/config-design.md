@@ -28,9 +28,10 @@ it.
 | `Config/directory.json` | The menu tree: folders, apps, shortcuts and systems | `systems.json`, `shortcuts.json` |
 | `Config/overrides.json` | The emulator chosen for single games. Only the device writes it. | `emulators.json` |
 | `Config/emulators.template.json` | An explanation plus every known emulator example | reference only |
+| `Config/systems.template.json` | Every known system, with its default emulators | reference only |
 | `Config/shortcuts.template.json` | An explanation plus custom intent examples | reference only |
 
-Cannoli rewrites the two `.template.json` files on every update and never reads them as config. To
+Cannoli rewrites the `.template.json` files on every update and never reads them as config. To
 use an entry, copy it into the real file.
 
 ## Defaults
@@ -140,6 +141,28 @@ The templates sit next to the real files, ready to copy from.
 
 A system can appear in only one place. If it appears twice, the second is skipped with a warning.
 
+### Systems that aren't placed
+
+A system that's defined in `systems.json` and has games, but isn't in `directory.json`, doesn't
+appear in the normal menu. The directory stays the single source of truth. Cannoli points such
+systems out whenever you're editing, so they're never lost:
+
+- **While editing (reorder mode, or any folder menu):** the end of the list shows a dimmed section
+  headed **Not in the menu**. It lists each unplaced system with its game count, for example
+  `Game Boy Advance · 214 games`. Selecting one opens the folder picker ("Place in…", with
+  Main Menu as the first target) and adds the system there.
+- **In "Add To This Folder":** the checklist that adds apps also lists unplaced systems at the
+  top, with their game counts, so one picker fills a folder with both.
+- **On the main menu itself:** nothing appears, to avoid clutter. The bottom bar's edit hint
+  shows a count when anything is unplaced (for example `EDIT · 3 UNPLACED`), so you know to look.
+
+Two related cases come up in the same section:
+- **ROM folders with no system:** a folder under `Roms/` that holds files but matches no system's
+  `roms`. These are listed by folder name and file count, and selecting one offers to copy a
+  matching system from `systems.template.json` if one exists.
+- **Systems with no games:** these are not listed, since there's nothing to play. They stay
+  quietly defined until their folder fills up.
+
 ## `overrides.json`
 
 ```json
@@ -178,8 +201,9 @@ template.
 - **`shortcuts.template.json`:** a handful of worked examples covering the different ways to pass
   data: an activity with fixed extras, a `VIEW` with a URI, and a custom scheme.
 
-A `systems.template.json` would let you build a working setup by copying alone. Today's
-`platforms.json` already has the names, cores and emulator lists for it. See the open questions.
+- **`systems.template.json`:** every system in today's built-in list, with its name, ROM folder
+  and emulator list, all referring to entries in `emulators.template.json`. Copying a system plus
+  the emulators it names gives a working setup.
 
 ## On the device
 
@@ -196,10 +220,32 @@ A `systems.template.json` would let you build a working setup by copying alone. 
 
 - `folders.json` and `cores.json`. `emulators.json` keeps its name but changes format.
 - The bundled `platforms.json` as live config. It becomes the source for the templates.
-- `EmulatorSource`, the core picker and core info catalog, RetroArch package detection, and the
-  special-case RetroArch launcher.
+- `EmulatorSource`, the core picker and core info catalog, the RetroArch package setting, the
+  special-case RetroArch launcher, and the leftover Ricotta names. The installed-cores query
+  stays (see "Checking launches on the device").
 - Per-game emulator choices in the database, which move to `overrides.json`.
 - The `__FOLDER__/` and `__APP__/` order tags. The order of `items` is the menu order.
+
+## Checking launches on the device
+
+Cannoli checks what it can before a launch fails:
+
+- **Is the app installed?** This is checked for every emulator, shortcut and app. A missing app is
+  marked in the pickers, and launching it shows the existing "app not installed" dialog.
+- **Is the core installed?** RetroArch answers a broadcast,
+  `com.retroarch.QUERY_INSTALLED_CORES`, with the cores it has (RetroArch's
+  `InstalledCoresReceiver`). Upstream Cannoli already has this code (`InstalledCoreService`), so
+  it's kept, but made generic:
+  - It works for any emulator whose package answers the broadcast. Whether a package does is
+    found by asking Android whether it has a receiver for it, so nothing is hard-coded about
+    RetroArch.
+  - The emulator's value for the core comes from the system entry (`"core": "mgba_libretro"`),
+    and that's what's checked.
+  - A system whose default core is missing is marked in the editing views, and "Launch With"
+    marks each missing core.
+  - A package that doesn't answer is treated as unknown, never as missing.
+- **Does the config make sense?** References that don't resolve are reported as described under
+  Errors.
 
 ## Errors
 
@@ -218,13 +264,7 @@ These work as today:
 
 ## Open questions
 
-1. **Systems missing from `directory.json`:** a system that's defined and has games, but isn't in
-   the directory. Should it be hidden, or appear at the end of the main menu? Appearing is
-   friendlier, since defining a system is then enough to see it. Hiding keeps the directory as
-   the single truth.
-2. **`systems.template.json`:** should we ship one? Without it, every system has to be written by
-   hand.
-3. **Existing installs:** should the first run convert today's files and per-game choices into the
+1. **Existing installs:** should the first run convert today's files and per-game choices into the
    new ones, or start empty? The only install so far is the test device.
-4. **System IDs and RomM:** RomM matching uses Cannoli's built-in IDs (`GBA`, `PS`…). A
+2. **System IDs and RomM:** RomM matching uses Cannoli's built-in IDs (`GBA`, `PS`…). A
    made-up ID would simply get no RomM match.
