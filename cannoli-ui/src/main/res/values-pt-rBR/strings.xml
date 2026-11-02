@@ -7,8 +7,6 @@
     <string name="label_play">JOGAR</string>
     <string name="label_launch">LANÇAR</string>
     <string name="label_open">ABRIR</string>
-    <string name="label_save">SALVAR</string>
-    <string name="label_load">CARREGAR</string>
     <string name="label_change">ALTERAR</string>
     <string name="label_firmware">FIRMAR</string>
     <string name="label_choose">ESCOLHA</string>
@@ -21,59 +19,25 @@
     <string name="label_toggle">ALTERNAR</string>
     <string name="label_new">NOVO</string>
     <string name="label_settings">DEFINIÇÕES</string>
-    <string name="label_resume">RETOMAR</string>
     <string name="label_continue">CONTINUAR</string>
     <string name="label_new_folder">NOVO</string>
     <string name="label_parent">PARENTE</string>
-    <string name="label_slot">ESPAÇO</string>
-    <string name="label_disc">DESC</string>
     <string name="label_use_location">USE ESTE LOCAL</string>
     <string name="label_quit">SAIR</string>
     <string name="label_stop">PARAR</string>
     <string name="label_interface">INTERFACE</string>
     <string name="label_credits">CRÉDITOS</string>
-    <string name="label_update">Atualizar</string>
-    <string name="label_logout">ARSENAL</string>
-    <!-- Bottom-bar button opening cached RetroAchievements sets for offline play. RA = RetroAchievements. -->
-    <string name="label_offline_sets">CONFIGURAÇÕES OFFLINE</string>
     <string name="label_hex">EX</string>
     <string name="label_rename">RENOMEAR</string>
-    <string name="label_set">DEFINIR</string>
     <string name="label_clear">Terminado</string>
-    <string name="label_press">PRESSIONE</string>
     <!-- Bottom-bar button; opens Nonna's Kitchen. -->
     <string name="label_kitchen">CRIAR</string>
-    <string name="label_hold_buttons" tools:ignore="TypographyEllipsis">SEGURE UM OU MAIS BOTÕES...</string>
     <string name="label_info">ENTRADA</string>
     <!-- Bottom-bar button. RA = RetroAchievements. -->
     <string name="label_ra_settings">CONFIGURAÇÕES DE RA</string>
-    <string name="label_details">DETALHES</string>
-    <string name="label_all">TODOS</string>
-    <string name="label_unlocked">DESBLOQUEADO</string>
-    <string name="label_locked">BLOQUEADO</string>
-    <string name="label_reset_all">REDEFINIR TODOS</string>
     <string name="label_remap">REMAP</string>
     <string name="label_unmap">UNMAP</string>
-    <string name="label_swap">TROCA</string>
     <string name="label_grant">CONCEDER</string>
-    <!-- In-game menu action: reassign connected controllers to player slots. -->
-    <string name="igm_reassign_players">Reatribuir jogadores</string>
-    <!-- In-game shortcut actions -->
-    <string name="shortcut_action_save_state">Salvar Estado</string>
-    <string name="shortcut_action_load_state">Carregar Estado</string>
-    <string name="shortcut_action_reset_game">Redefinir Jogo</string>
-    <string name="shortcut_action_save_and_quit">Salvar e sair</string>
-    <!-- In-game shortcut action. "(Hold)" means it triggers on a long-press of the shortcut. -->
-    <string name="shortcut_action_save_and_quit_hold">Salvar e sair (Hold)</string>
-    <!-- In-game shortcut action: cycle through the video scaling modes. -->
-    <string name="shortcut_action_cycle_scaling">Redimensionamento de Ciclo</string>
-    <!-- In-game shortcut action: cycle through the shader presets. -->
-    <string name="shortcut_action_cycle_shader">Sombreador de Ciclo</string>
-    <string name="shortcut_action_toggle_ff">Alternar para Avanço Rápido</string>
-    <string name="shortcut_action_hold_ff">Segure a Frente Rápida</string>
-    <string name="shortcut_action_open_guide">Abrir Guia</string>
-    <string name="shortcut_action_open_menu">Abrir Menu no Jogo</string>
-    <string name="shortcut_action_toggle_show_fps">Alternar exibição de FPS</string>
     <string name="settings_title">Confirgurações</string>
     <!-- Settings categories -->
     <string name="settings_general">Gerais</string>
@@ -86,8 +50,6 @@
     <string name="settings_advanced">Avançado</string>
     <string name="settings_debug">Debug</string>
     <string name="settings_about">SOBRE</string>
-    <!-- Setting: which update channel to follow (e.g. stable versus test builds). -->
-    <string name="settings_release_channel">Canal de lançamento</string>
     <!-- Settings items -->
     <string name="setting_colors">Cores</string>
     <string name="setting_art_width">Largura de Arte</string>
@@ -106,8 +68,6 @@
     <string name="setting_kitchen_running">Corrida de cozinha</string>
     <!-- Status-bar indicator toggle for active RomM downloads. -->
     <string name="setting_downloads_running">Downloads</string>
-    <!-- Status-bar indicator toggle: show when an app update is available. -->
-    <string name="setting_updater">Atualização disponível</string>
     <string name="setting_controllers">Controles</string>
     <string name="controllers_connected_now">Conectado agora</string>
     <string name="controllers_saved_mappings">Mapeamentos salvos</string>
@@ -156,13 +116,8 @@
     <string name="binding_axis_pos">Eixo %1$d+</string>
     <!-- Input binding label. %1$d is the joystick axis index; - is the negative direction. -->
     <string name="binding_axis_neg">Eixo %1$d-</string>
-    <string name="setting_shortcuts">Atalhos</string>
-    <!-- Input setting toggle: swap the on-screen positions of the Play and Resume actions. -->
-    <string name="setting_swap_play_resume">Trocar Jogo e Retomar</string>
     <!-- Input setting toggle: controls whether the in-game Quit returns to the main menu. -->
     <string name="setting_main_menu_quit">Sair do Menu Principal</string>
-    <!-- Input toggle: automatically save a state when quitting a game. -->
-    <string name="setting_always_save_on_quit">Salvar Estado ao sair</string>
     <!-- Advanced setting toggle: skip the passcode gate for Nonna's Kitchen. Keep "Kitchen" consistent with the feature name. -->
     <string name="setting_kitchen_code_bypass">Código da cozinha bypass</string>
     <string name="setting_experimental_features">Funcionalidades Experimentais</string>
@@ -177,10 +132,6 @@
     <string name="setting_show_recently_played">Reproduzidas recentemente</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Atalhos</string>
-    <!-- Opens the Tools manager (sideloaded utility apps). -->
-    <string name="setting_manage_tools">Gerenciar Ferramentas</string>
-    <!-- Opens the Ports manager. "Ports" means standalone native game ports. -->
-    <string name="setting_manage_ports">Gerenciar Portas</string>
     <string name="setting_bg_tint">Pintura de fundo</string>
     <!-- Theme color for the title heading text. -->
     <string name="setting_color_title">Título</string>
@@ -206,12 +157,6 @@
     <string name="value_automatically">Automático</string>
     <!-- Scan Mode value: scan the library by hand. "Manual" here is the adverb (by hand), not a game's instruction manual. -->
     <string name="value_manually">Manualmente</string>
-    <!-- RA = RetroAchievements account username. -->
-    <string name="setting_ra_username">Usuário:</string>
-    <!-- RA = RetroAchievements account password. -->
-    <string name="setting_ra_password">Palavra-passe</string>
-    <!-- RA = RetroAchievements. Button to log in. -->
-    <string name="setting_ra_login">Conectar-se</string>
     <!-- RomM -->
     <!-- RomM server address (host/URL). -->
     <string name="setting_romm_host">Servidor</string>
@@ -419,14 +364,6 @@
     <string name="housekeeping_db_subtitle">Migrando dados legados</string>
     <string name="housekeeping_initial_title">Configurando sua biblioteca</string>
     <string name="housekeeping_refresh_title">Atualizando biblioteca</string>
-    <string name="update_download_error_server">O download falhou. O servidor retornou um erro. Tente novamente mais tarde.</string>
-    <string name="update_download_error_network">Download falhou. Verifique sua conexão e tente novamente.</string>
-    <string name="launch_error_resolve_file">Falha ao resolver o arquivo de inicialização</string>
-    <string name="launch_error_extract">Falha ao extrair arquivo</string>
-    <string name="launch_error_generic">Falha ao iniciar o jogo</string>
-    <!-- %1$s = file name. -->
-    <string name="launch_error_update_ricotta">Atualize a RicottaArch para continuar</string>
-    <string name="launch_error_update_cannoli">Atualize o Cannoli para continuar</string>
     <!-- %1$s = core name, %2$s = emulator app. -->
     <string name="dialog_missing_core_pkg">%1$s não está instalado em %2$s.</string>
     <!-- %1$s = core name. -->
@@ -434,8 +371,6 @@
     <string name="dialog_missing_core_hint">Configurar no mapeamento do emulador.</string>
     <!-- %1$s = app name. -->
     <string name="dialog_missing_app">%1$s não está instalado.</string>
-    <!-- %1$s = folder path. -->
-    <string name="dialog_missing_bios_header">Pelo menos um arquivo BIOS é necessário no %1$s:</string>
     <string name="dialog_title_missing_core">Faltando core</string>
     <string name="dialog_title_missing_app">Aplicativo Faltando</string>
     <string name="dialog_title_launch_error">Falha na inicialização</string>
@@ -519,70 +454,6 @@
     <string name="quick_info_kitchen_url">URL da cozinha</string>
     <string name="quick_info_kitchen_off">Cozinha não está funcionando</string>
     <string name="quick_info_offline">Sem rede</string>
-    <!-- RetroAchievements -->
-    <string name="ra_logged_in_as">Sessão iniciada como</string>
-    <!-- RA = RetroAchievements. -->
-    <string name="ra_login_failed">RA: Login falhou</string>
-    <string name="ra_login_invalid">Usuário ou senha inválidos</string>
-    <string name="ra_status_online">Disponível</string>
-    <string name="ra_status_offline">Desconectado</string>
-    <!-- %1$d = achievements awaiting sync. -->
-    <string name="ra_status_offline_pending">Offline • %1$d Sincronização pendente</string>
-    <string name="ra_detect_not_logged_in">Sem sessão iniciada</string>
-    <string name="ra_detect_identifying">Identificando o jogo…</string>
-    <string name="ra_detect_not_recognized">Jogo não reconhecido</string>
-    <string name="ra_detect_no_achievements">Nenhuma conquista publicada</string>
-    <string name="ra_detect_initializing">Inicializando…</string>
-    <string name="ra_detect_mem_failed">Memória init falhou</string>
-    <!-- %d = achievement count. -->
-    <plurals name="ra_detect_active">
-        <item quantity="one">Ativo • Conquista %d</item>
-        <item quantity="other">Ativo • Conquistas %d</item>
-    </plurals>
-    <!-- %d = number of achievements synced. -->
-    <plurals name="ra_sync_done">
-        <item quantity="one">%d Conquistas Sincronizadas</item>
-        <item quantity="other">%d Conquistas Sincronizadas</item>
-    </plurals>
-    <!-- Counts of synced and failed achievements. -->
-    <string name="ra_sync_partial">%1$d Sincronizado, %2$d Falhou</string>
-    <!-- OSD toast. %1$s = save slot name. -->
-    <string name="osd_state_saved">Salvo em %1$s</string>
-    <!-- OSD toast. %1$s = save slot name. -->
-    <string name="osd_state_loaded">%1$s Carregado</string>
-    <!-- OSD toast. %1$s = save slot name. -->
-    <string name="osd_state_deleted">%1$s Excluído</string>
-    <string name="osd_reset">Reset</string>
-    <!-- OSD toast. %1$s = scaling mode name. -->
-    <string name="osd_scaling">Escala: %1$s</string>
-    <!-- OSD toast. %1$s = shader preset name. -->
-    <string name="osd_shader">Sombreador: %1$s</string>
-    <!-- OSD toast. %1$s = mode/item name. -->
-    <string name="osd_switched_to">Alternado para %1$s</string>
-    <!-- OSD toast. %1$s = game name (setting saved per-game). -->
-    <string name="osd_saved_for">Salvo para %1$s</string>
-    <string name="osd_saved_for_game">Salvo para este jogo</string>
-    <!-- OSD toast. %1$s = controller name, %2$s = player slot. -->
-    <string name="osd_controller_connected_named">%1$s conectado a %2$s</string>
-    <string name="osd_buttons_reset">Botões Redefinidos para Padrão</string>
-    <!-- %1$d = disc number (multi-disc games). -->
-    <string name="osd_disc_fallback">Disco %1$d</string>
-    <string name="igm_quit">Encerrar</string>
-    <string name="igm_cheats">Trapaças</string>
-    <string name="title_cheats">Trapaças</string>
-    <string name="label_restore_session">RESTAURAR A ÚLTIMA SESSÃO</string>
-    <!-- Scaling mode: use the size the emulator core reports. -->
-    <string name="scaling_core_reported">Núcleo Reportado</string>
-    <string name="scaling_integer">Inteiro</string>
-    <!-- Scaling mode: integer scaling pushed beyond 1x to fill more of the screen. -->
-    <string name="scaling_integer_overscale">Integer Overscale</string>
-    <!-- Scaling mode: fit the screen while keeping the aspect ratio. -->
-    <string name="scaling_aspect_screen">Tela de Aspecto</string>
-    <string name="scaling_fullscreen">Tela cheia</string>
-    <!-- Indicates a setting applies globally (all games). -->
-    <string name="override_source_global">Global</string>
-    <!-- Indicates a setting applies only to the current game. -->
-    <string name="override_source_game">Esse jogo</string>
     <string name="device_controller">Controlador</string>
     <!-- OSD toast. %1$d = player number, %2$s = controller name. -->
     <string name="osd_controller_connected">P%1$d: %2$s</string>
@@ -590,66 +461,23 @@
     <string name="osd_controller_disconnected_port">P%1$d: %2$s desconectado</string>
     <!-- OSD toast. %1$s = controller name. -->
     <string name="osd_controller_disconnected">%1$s desconectado</string>
-    <!-- RA login OSD. %1$s = username, %2$s = display name, %3$d/%4$d = unlocked/total achievements. -->
-    <string name="ra_login_success">RA: %1$s (%2$s) · %3$d/%4$d desbloqueado</string>
-    <string name="ra_init_failed">RA: Falha na inicialização</string>
-    <string name="ra_load_not_recognized">RA: Jogo não reconhecido</string>
-    <string name="ra_load_no_achievements">RA: Sem conquistas para este jogo</string>
-    <string name="ra_load_offline_pending">RA: Offline (dados do jogo indisponíveis)</string>
     <!-- Credits -->
     <string name="credits_title">Créditos e Licenças</string>
     <!-- Core picker / nav -->
     <string name="no_compatible_cores">Núcleos compatíveis não encontrados</string>
     <string name="no_collections">Sem coleções</string>
     <string name="title_child_collections">Coleções Filhas</string>
-    <string name="title_shortcuts">Atalhos</string>
-    <string name="shortcut_hold_prompt" tools:ignore="TypographyEllipsis">Segure um ou mais botões...</string>
     <!-- Update download -->
     <string name="update_retry">RETENTAR</string>
     <string name="restart_required">Reinicie necessário para aplicar as alterações.</string>
     <!-- IGM screen titles -->
-    <string name="igm_settings">Confirgurações</string>
     <string name="igm_video">Vídeo</string>
     <string name="igm_advanced">Avançado</string>
-    <string name="igm_shader_settings">Configurações de Shader</string>
     <string name="igm_emulator">Emulador</string>
-    <string name="igm_save_changes">Salvar as alterações</string>
     <string name="igm_input">Input</string>
-    <string name="igm_button_mappings">Mapeamentos de botões</string>
-    <string name="igm_left_stick_dpad">Analógico Esquerdo como Direcional</string>
-    <string name="igm_dpad_mode">Modo direcional (BETA)</string>
-    <!-- D-Pad Mode value: 8 directions. -->
-    <string name="value_dpad_8way">8-Via</string>
-    <!-- D-Pad Mode value: 4 directions. -->
-    <string name="value_dpad_4way">4-Caminho</string>
-    <string name="igm_save_and_quit">Salvar e sair</string>
     <string name="title_guide">Guia</string>
     <string name="guide_zoom">ZOOM</string>
-    <!-- IGM info labels -->
-    <string name="info_core">Principal</string>
-    <string name="info_rom">Rascunho</string>
-    <!-- Info label: whether the ROM was extracted from an archive. -->
-    <string name="info_extracted">Extraído</string>
-    <string name="info_save">Guardar</string>
-    <string name="info_renderer">Renderizador</string>
-    <string name="info_game_id">ID do jogo</string>
-    <string name="info_ra_detection">Detecção de Conquista</string>
-    <!-- IGM dialogs -->
-    <!-- %1$s = save slot name. -->
-    <string name="igm_delete_slot">Excluir %1$s?</string>
     <string name="press_button_prompt" tools:ignore="TypographyEllipsis">Pressione qualquer botão...</string>
-    <!-- Achievements -->
-    <!-- %1$d = unlocked count, %2$d = total. -->
-    <string name="ach_title">Conquistas (%1$d/%2$d)</string>
-    <!-- Compact points label. %1$d = points. -->
-    <string name="ach_points_short">%1$dpts</string>
-    <!-- %1$d = points. -->
-    <string name="ach_points">%1$d pontos</string>
-    <string name="ach_unlocked_pending">Desbloqueado \u2022 Sincronização Pendente</string>
-    <!-- %1$s = date the achievement was unlocked. -->
-    <string name="ach_unlocked_date">Desbloqueado %1$s</string>
-    <string name="ach_unlocked">Desbloqueado</string>
-    <string name="ach_locked">Trancado</string>
     <string name="setting_portrait_margin">Margem do retrato</string>
     <!-- Advanced setting: adjust the on-screen viewport rectangle. -->
     <string name="setting_screen_geometry">Geometria de tela</string>
@@ -683,13 +511,6 @@
     <string name="filter_mapped">MAPEADO</string>
     <string name="value_unmapped">Não mapeado</string>
     <string name="label_download">BAIXAR</string>
-    <!-- OSD toast. %1$s = core name. -->
-    <string name="osd_downloading_core">Baixando %1$s</string>
-    <!-- OSD toast. %1$s = core name. -->
-    <string name="osd_core_downloaded">Baixado %1$s</string>
-    <!-- OSD toast. %1$s = core name or error detail. -->
-    <string name="osd_core_download_failed">Download falhou: %1$s</string>
-    <string name="osd_core_download_unknown_error">erro desconhecido</string>
     <string name="bios_required">OBRIGATÓRIO</string>
     <string name="bios_optional">OPCIONAL</string>
     <string name="bios_present">Presente</string>
@@ -706,11 +527,6 @@
         <item quantity="one">Item %d</item>
         <item quantity="other">%d itens</item>
     </plurals>
-    <!-- OSD toast. %d = number of cheats restored. -->
-    <plurals name="osd_cheats_restored">
-        <item quantity="one">trapaça %d restaurada</item>
-        <item quantity="other">Cheats %d restaurados</item>
-    </plurals>
     <string name="regenerate_system_folders_none">Todas as pastas de sistema já estão presentes</string>
     <!-- %d = number of system folders created. -->
     <plurals name="regenerate_system_folders_result">
@@ -721,21 +537,6 @@
     <string name="label_clear_override">Terminado</string>
     <!-- %1$s = platform name. -->
     <string name="dialog_reset_platform_confirm">Redefinir %1$s? Isso limpa a seleção do emulador para esta plataforma e restaura o padrão agrupado.</string>
-    <!-- RA achievement preload. %1$s = game name. -->
-    <string name="ra_preload_progress">Pré-carregando %1$s</string>
-    <string name="ra_preload_none">Nenhuma conquista encontrada para este jogo</string>
-    <string name="ra_preload_failed">Falha ao pré-carregar. Verifique a sua conexão.</string>
-    <!-- %1$d = achievements cached, %2$d = points. -->
-    <plurals name="ra_preload_success">
-        <item quantity="one">Conquista %1$d em cache (%2$d pts) para a jogabilidade offline</item>
-        <item quantity="other">Conquistas %1$d em cache (%2$d pts) para a jogada offline</item>
-    </plurals>
-    <!-- %1$d = games cached, %2$d = total games. -->
-    <string name="ra_offline_sets_title">Conjuntos de Conquistas Offline</string>
-    <string name="ra_offline_sets_empty">Nenhum conjunto de conquistas armazenadas em cache</string>
-    <!-- %1$d = achievement count, %2$s = set name. -->
-    <string name="ra_offline_set_value">Conquistas %1$d - %2$s</string>
-    <string name="label_refresh">ATUALIZAR</string>
     <!-- Save Slots screen -->
     <!-- Screen title. %1$s = game name. -->
     <string name="save_slots_screen_title">%1$s Slots</string>
