@@ -90,7 +90,13 @@ fun SystemListScreen(
     val collectionsLabel = stringResource(R.string.label_collections)
 
     val selectedItem = state.items.getOrNull(state.selectedIndex)
-    val artPath = (selectedItem as? ListItem.GameItem)?.artFile?.absolutePath
+    val artPath = when (selectedItem) {
+        is ListItem.GameItem -> selectedItem.artFile?.absolutePath
+        is ListItem.FolderItem -> selectedItem.artFile?.absolutePath
+        else -> null
+    }
+    // Inside a folder the title is where the user is, root first.
+    val shownTitle = if (state.folderPath.isNotEmpty()) state.folderPath.joinToString(" / ") else title
     val selectedArt by produceState<ImageBitmap?>(null, artPath) {
         value = if (artPath != null) {
             withContext(Dispatchers.IO) {
@@ -136,15 +142,15 @@ fun SystemListScreen(
                 .fillMaxSize()
                 .padding(screenInsets())
         ) {
-            WithoutScreenTitle(active = title.isEmpty()) {
+            WithoutScreenTitle(active = shownTitle.isEmpty()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(bottom = footerReservation())
             ) {
-            if (title.isNotEmpty()) {
+            if (shownTitle.isNotEmpty()) {
                 ScreenTitle(
-                    text = title,
+                    text = shownTitle,
                     fontSize = listFontSize,
                     lineHeight = listLineHeight
                 )
@@ -156,7 +162,11 @@ fun SystemListScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(if (fiveGameHandheld) R.string.empty_fgh_collection else R.string.empty_content),
+                        text = when {
+                            state.folderPath.isNotEmpty() -> stringResource(R.string.empty_list, state.folderPath.last())
+                            fiveGameHandheld -> stringResource(R.string.empty_fgh_collection)
+                            else -> stringResource(R.string.empty_content)
+                        },
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontSize = listFontSize,
                             lineHeight = listLineHeight
@@ -220,7 +230,7 @@ fun SystemListScreen(
                 }
                 }
                 if (showArt) {
-                    val artTopPadding = if (fiveGameHandheld && title.isEmpty()) {
+                    val artTopPadding = if (fiveGameHandheld && shownTitle.isEmpty()) {
                         pillItemHeight(listLineHeight, 4.dp) + 8.dp
                     } else {
                         0.dp

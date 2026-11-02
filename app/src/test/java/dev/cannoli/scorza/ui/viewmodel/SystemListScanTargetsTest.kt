@@ -78,6 +78,7 @@ class SystemListScanTargetsTest {
             romDirectoryWatcher = mockk<RomDirectoryWatcher>(relaxed = true),
             scanScheduler = scheduler,
             foldersConfig = dev.cannoli.scorza.config.FoldersConfig { File(tmp.root, "folders.json") },
+            artworkLookup = mockk(relaxed = true),
             context = mockk(relaxed = true),
         ).also { created.add(it) }
     }

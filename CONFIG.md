@@ -123,5 +123,11 @@ the platforms. A platform placed in any folder no longer appears at the top leve
 
   Either form can take a `name`. Without one, Cannoli uses the app's own label.
 
+Inside a folder, the screen title shows where you are, for example `Nintendo / Hacks`.
+
+Folder artwork goes in `Art/Folders/`, nested the same way as the folders. For example,
+`Art/Folders/Nintendo.png` is the art for a top-level `Nintendo` folder, and
+`Art/Folders/Nintendo/Hacks.png` is the art for `Hacks` inside it.
+
 An install that had Tools or Ports lists from before `folders.json` existed gets one folder
 for each list the first time it runs. Their favorites and play history carry over.

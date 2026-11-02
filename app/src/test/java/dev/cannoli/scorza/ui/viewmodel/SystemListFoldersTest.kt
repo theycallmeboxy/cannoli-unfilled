@@ -59,7 +59,9 @@ class SystemListFoldersTest {
         ] }
     """.trimIndent()
 
-    private fun viewModel(): SystemListViewModel {
+    private fun viewModel(
+        artwork: dev.cannoli.scorza.util.ArtworkLookup = mockk(relaxed = true),
+    ): SystemListViewModel {
         val counts = mapOf("GBA" to 3, "GB" to 2, "SNES" to 5)
         val romsRepository = mockk<RomsRepository>(relaxed = true)
         every { romsRepository.platformCounts() } returns counts
@@ -98,6 +100,7 @@ class SystemListFoldersTest {
             romDirectoryWatcher = mockk(relaxed = true),
             scanScheduler = scheduler,
             foldersConfig = config,
+            artworkLookup = artwork,
             context = mockk(relaxed = true),
         ).also { created.add(it) }
     }
@@ -153,6 +156,25 @@ class SystemListFoldersTest {
         assertFalse(vm.isInFolder())
         assertFalse(vm.exitFolder())
         assertTrue("folder:Nintendo" in labels(vm))
+    }
+
+    @Test fun `folder art is found under Art Folders nested like the folders`() {
+        val root = tmp.newFolder("Cannoli")
+        val top = File(root, "Art/Folders/Nintendo.png").apply { parentFile!!.mkdirs(); writeText("png") }
+        val nested = File(root, "Art/Folders/Nintendo/Handhelds.png").apply { parentFile!!.mkdirs(); writeText("png") }
+        val paths = mockk<CannoliPathsProvider>()
+        every { paths.root } returns root
+        val vm = viewModel(dev.cannoli.scorza.util.ArtworkLookup(paths))
+
+        await { vm.scan(scanDisk = false, onReady = it) }
+        val nintendo = vm.state.value.items.filterIsInstance<SystemListViewModel.ListItem.FolderItem>().single { it.name == "Nintendo" }
+        assertEquals(top, nintendo.artFile)
+        val empty = vm.state.value.items.filterIsInstance<SystemListViewModel.ListItem.FolderItem>().single { it.name == "Empty" }
+        assertEquals(null, empty.artFile)
+
+        await { vm.enterFolder("Nintendo", it) }
+        val handhelds = vm.state.value.items.filterIsInstance<SystemListViewModel.ListItem.FolderItem>().single()
+        assertEquals(nested, handhelds.artFile)
     }
 
     @Test fun `reorder is not offered inside a folder`() {

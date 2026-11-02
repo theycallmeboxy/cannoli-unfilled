@@ -42,6 +42,7 @@ class SystemListViewModel @Inject constructor(
     private val romDirectoryWatcher: RomDirectoryWatcher,
     private val scanScheduler: ScanScheduler,
     private val foldersConfig: FoldersConfig,
+    private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
     @ApplicationContext private val context: Context,
 ) {
     private val romDirectory: File get() = cannoliPaths.romDir
@@ -118,7 +119,7 @@ class SystemListViewModel @Inject constructor(
             }
         }
         /** A folder from folders.json. [count] is how many entries it holds directly. */
-        data class FolderItem(val name: String, val count: Int) : ListItem()
+        data class FolderItem(val name: String, val count: Int, val artFile: java.io.File? = null) : ListItem()
     }
 
     data class State(
@@ -129,6 +130,7 @@ class SystemListViewModel @Inject constructor(
         val isLoading: Boolean = true,
         val reorderMode: Boolean = false,
         val reorderOriginalIndex: Int = -1,
+        /** True when any row can show art, which reserves the art pane beside the list. */
         val hasGameItems: Boolean = false,
         /** The open folder, root first. Empty on the main menu. */
         val folderPath: List<String> = emptyList(),
@@ -268,7 +270,7 @@ class SystemListViewModel @Inject constructor(
                 ContentMode.FIVE_GAME_HANDHELD -> {}
             }
             if (openFolder == null && contentMode != ContentMode.FIVE_GAME_HANDHELD) {
-                foldersConfig.roots.forEach { reorderableItems.add(ListItem.FolderItem(it.name, it.entries.size)) }
+                foldersConfig.roots.forEach { reorderableItems.add(folderItem(it)) }
             }
             if (reorderableItems.isNotEmpty()) {
                 val ordered = applyCustomOrder(reorderableItems, romsRepository.knownPlatformTags())
@@ -304,7 +306,7 @@ class SystemListViewModel @Inject constructor(
                 selectedIndex = safeIndex,
                 scrollTarget = scrollTo,
                 isLoading = false,
-                hasGameItems = items.any { it is ListItem.GameItem },
+                hasGameItems = items.any { it is ListItem.GameItem || (it is ListItem.FolderItem && it.artFile != null) },
                 folderPath = shownPath,
             )
             withContext(Dispatchers.Main) { onReady() }
@@ -315,7 +317,7 @@ class SystemListViewModel @Inject constructor(
     private fun folderItems(node: FolderNode, platforms: List<Platform>): List<ListItem> =
         node.entries.mapNotNull { entry ->
             when (entry) {
-                is FolderEntry.Folder -> ListItem.FolderItem(entry.node.name, entry.node.entries.size)
+                is FolderEntry.Folder -> folderItem(entry.node)
                 is FolderEntry.Platform -> platforms
                     .firstOrNull { p -> p.allTags.any { it.uppercase() == entry.tag } }
                     ?.takeIf { it.gameCount > 0 }
@@ -326,6 +328,14 @@ class SystemListViewModel @Inject constructor(
                 }
             }
         }.distinct()
+
+    // Art for a folder lives under Art/Folders, nested like the folders themselves:
+    // Art/Folders/Nintendo.png for the top-level Nintendo, Art/Folders/Nintendo/Hacks.png inside it.
+    private fun folderItem(node: FolderNode): ListItem.FolderItem {
+        val artTag = (listOf(FOLDER_ART_DIR) + node.path.dropLast(1)).joinToString("/")
+        val art = artworkLookup.findByName(artTag, dev.cannoli.scorza.romm.download.sanitizeFsName(node.name))
+        return ListItem.FolderItem(node.name, node.entries.size, art)
+    }
 
     private fun appLabel(packageName: String): String = try {
         val pm = context.packageManager
@@ -531,6 +541,7 @@ class SystemListViewModel @Inject constructor(
         // Folders share the platforms table's sort order under reserved tags. Older builds used
         // __TOOLS__ and __PORTS__ the same way, which is why every reserved tag starts with __.
         const val FOLDER_TAG_PREFIX = "__FOLDER__/"
+        const val FOLDER_ART_DIR = "Folders"
 
         fun isReservedTag(tag: String): Boolean = tag.startsWith("__")
     }
