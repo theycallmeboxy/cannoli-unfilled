@@ -10,12 +10,17 @@ import javax.inject.Singleton
 
 @Singleton
 class AppFonts @Inject constructor(@ApplicationContext context: Context) {
+    val plexMono: FontFamily
     val mplus1Code: FontFamily
     val bpReplay: FontFamily
+    val plexMonoTypeface: Typeface
     val mplus1CodeTypeface: Typeface
     val bpReplayTypeface: Typeface
 
     init {
+        val plex = Typeface.createFromAsset(context.assets, "fonts/IBMPlexMono-SemiBold.ttf")
+        plexMonoTypeface = plex
+        plexMono = FontFamily(ComposeTypeface(plex))
         val mplus = Typeface.createFromAsset(context.assets, "fonts/MPlus-1c-NerdFont-Bold.ttf")
         mplus1CodeTypeface = mplus
         mplus1Code = FontFamily(ComposeTypeface(mplus))

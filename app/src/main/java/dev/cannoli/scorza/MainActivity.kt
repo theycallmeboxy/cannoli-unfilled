@@ -195,9 +195,9 @@ class MainActivity : ComponentActivity(), ActivityActions {
         setContent {
             val boot by bootSequencer.state.collectAsState()
             val appSettings = if (boot is BootState.Ready) settingsViewModel.get().appSettings.collectAsState().value else null
-            val themeFont = appSettings?.fontFamily ?: appFonts.mplus1Code
+            val themeFont = appSettings?.fontFamily ?: appFonts.plexMono
             dev.cannoli.scorza.i18n.ProvideLocalizedResources(appSettings?.languageTag) {
-            CannoliTheme(fontFamily = themeFont, iconFontFamily = appFonts.mplus1Code) {
+            CannoliTheme(fontFamily = themeFont, iconFontFamily = appFonts.mplus1Code, centeredLists = appSettings?.centeredLists ?: true) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CompositionLocalProvider(
                         LocalViewportInsets provides ViewportInsetsPx(

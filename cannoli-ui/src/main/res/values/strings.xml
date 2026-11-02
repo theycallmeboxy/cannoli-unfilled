@@ -160,8 +160,8 @@
     <string name="setting_regenerate_system_folders">Regenerate System Folders</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_show_recently_played">Recent</string>
-    <string name="setting_show_apps_in_recent" tools:ignore="MissingTranslation">Apps In Recent</string>
+    <string name="setting_show_recently_played">Recents</string>
+    <string name="setting_layout" tools:ignore="MissingTranslation">Layout</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Favorites</string>
     <string name="setting_bg_tint">Background Tint</string>
@@ -351,6 +351,9 @@
     <string name="value_off">Off</string>
     <string name="value_show">Show</string>
     <string name="value_hide">Hide</string>
+    <string name="value_games_only" tools:ignore="MissingTranslation">Games Only</string>
+    <string name="value_center" tools:ignore="MissingTranslation">Center</string>
+    <string name="value_left" tools:ignore="MissingTranslation">Left</string>
     <string name="value_none">None</string>
     <string name="value_cannoli_root">Cannoli Root</string>
     <!-- Content Mode value: the default platform view. -->
@@ -451,7 +454,7 @@
     <!-- System list -->
     <string name="empty_content">No content found. Go add some!</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="label_recently_played">Recent</string>
+    <string name="label_recently_played">Recents</string>
     <string name="label_favorites">Favorites</string>
     <string name="label_collections">Collections</string>
     <!-- Screen title. %1$s = the search query. -->

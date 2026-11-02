@@ -51,7 +51,8 @@ class SettingsViewModel @Inject constructor(
     private var fontOptions: List<FontOption> = buildFontOptions()
 
     private fun buildFontOptions(): List<FontOption> = buildList {
-        add(FontOption("default", "Default", appFonts.mplus1Code, appFonts.mplus1CodeTypeface))
+        add(FontOption("default", "IBM Plex Mono", appFonts.plexMono, appFonts.plexMonoTypeface))
+        add(FontOption("mplus", "M+ 1 Code", appFonts.mplus1Code, appFonts.mplus1CodeTypeface))
         add(FontOption("the_og", "The OG", appFonts.bpReplay, appFonts.bpReplayTypeface))
         val fontsDir = cannoliRoot?.let { java.io.File(it, "Config/Fonts") }
         val exts = setOf("ttf", "otf")
@@ -67,7 +68,7 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun resolveFont(): FontFamily {
-        val chosen = fontOptions.firstOrNull { it.key == settings.font } ?: return appFonts.mplus1Code
+        val chosen = fontOptions.firstOrNull { it.key == settings.font } ?: return appFonts.plexMono
         val sample = dev.cannoli.scorza.i18n.LanguageCatalog.byTag(settings.language)?.coverageSample
         if (sample != null) {
             val typeface = chosen.typeface
@@ -134,6 +135,7 @@ class SettingsViewModel @Inject constructor(
         val mainMenuQuit: Boolean = false,
         val artWidth: Int = 40,
         val artScale: ArtScale = ArtScale.DEFAULT,
+        val centeredLists: Boolean = true,
         val portraitMarginPx: Int = 0,
         val screenGeometryWidth: Int = 100,
         val screenGeometryHeight: Int = 100,
@@ -172,6 +174,7 @@ class SettingsViewModel @Inject constructor(
         mainMenuQuit = settings.mainMenuQuit,
         artWidth = settings.artWidth,
         artScale = settings.artScale,
+        centeredLists = settings.centeredLists,
         portraitMarginPx = settings.portraitMarginPx,
         screenGeometryWidth = settings.screenGeometryWidth,
         screenGeometryHeight = settings.screenGeometryHeight,
@@ -226,6 +229,7 @@ class SettingsViewModel @Inject constructor(
         val portsName: String,
         val artWidth: Int,
         val artScale: ArtScale,
+        val centeredLists: Boolean,
         val portraitMarginPx: Int,
         val screenGeometryWidth: Int,
         val screenGeometryHeight: Int,
@@ -434,6 +438,7 @@ class SettingsViewModel @Inject constructor(
                 val cur = steps.indexOf(settings.artWidth).coerceAtLeast(0)
                 settings.artWidth = steps[((cur + direction) % steps.size + steps.size) % steps.size]
             }
+            "layout" -> settings.centeredLists = !settings.centeredLists
             "art_scale" -> {
                 val entries = ArtScale.entries
                 val cur = entries.indexOf(settings.artScale).coerceAtLeast(0)
@@ -449,8 +454,16 @@ class SettingsViewModel @Inject constructor(
                     else -> next
                 }
             }
-            "show_recently_played" -> settings.showRecentlyPlayed = !settings.showRecentlyPlayed
-            "show_apps_in_recent" -> settings.showAppsInRecent = !settings.showAppsInRecent
+            "recents" -> {
+                // Show, Games Only, Hide, kept in the two flags upstream's settings file already has.
+                val modes = listOf(true to true, true to false, false to settings.showAppsInRecent)
+                val cur = modes.indexOfFirst { (show, apps) ->
+                    show == settings.showRecentlyPlayed && (!show || apps == settings.showAppsInRecent)
+                }.coerceAtLeast(0)
+                val next = modes[((cur + direction) % modes.size + modes.size) % modes.size]
+                settings.showRecentlyPlayed = next.first
+                settings.showAppsInRecent = next.second
+            }
             "show_favorites" -> settings.showFavorites = !settings.showFavorites
             "scan_library" -> settings.scanLibraryAutomatically = !settings.scanLibraryAutomatically
             "show_wifi" -> settings.showWifi = !settings.showWifi
@@ -647,6 +660,7 @@ class SettingsViewModel @Inject constructor(
         portsName = settings.portsName,
         artWidth = settings.artWidth,
         artScale = settings.artScale,
+        centeredLists = settings.centeredLists,
         portraitMarginPx = settings.portraitMarginPx,
         screenGeometryWidth = settings.screenGeometryWidth,
         screenGeometryHeight = settings.screenGeometryHeight,
@@ -683,6 +697,7 @@ class SettingsViewModel @Inject constructor(
         settings.portsName = snap.portsName
         settings.artWidth = snap.artWidth
         settings.artScale = snap.artScale
+        settings.centeredLists = snap.centeredLists
         settings.portraitMarginPx = snap.portraitMarginPx
         settings.screenGeometryWidth = snap.screenGeometryWidth
         settings.screenGeometryHeight = snap.screenGeometryHeight
@@ -717,6 +732,7 @@ class SettingsViewModel @Inject constructor(
             }
             val currentFont = fontOptions.firstOrNull { it.key == settings.font } ?: fontOptions.first()
             add(SettingsItem("font", R.string.setting_font, valueText = currentFont.label))
+            add(SettingsItem("layout", R.string.setting_layout, valueRes = if (settings.centeredLists) R.string.value_center else R.string.value_left))
             add(SettingsItem("text_size", R.string.setting_text_size, valueText = "${settings.textSize.sp}sp"))
             val artScaleRes = when (settings.artScale) {
                 ArtScale.FIT -> R.string.value_fit
@@ -737,10 +753,12 @@ class SettingsViewModel @Inject constructor(
             ))
         }
         "library" -> buildList {
-            add(SettingsItem("show_recently_played", R.string.setting_show_recently_played, valueRes = showHide(settings.showRecentlyPlayed)))
-            if (settings.showRecentlyPlayed) {
-                add(SettingsItem("show_apps_in_recent", R.string.setting_show_apps_in_recent, valueRes = showHide(settings.showAppsInRecent)))
+            val recentsRes = when {
+                !settings.showRecentlyPlayed -> R.string.value_hide
+                settings.showAppsInRecent -> R.string.value_show
+                else -> R.string.value_games_only
             }
+            add(SettingsItem("recents", R.string.setting_show_recently_played, valueRes = recentsRes))
             add(SettingsItem("show_favorites", R.string.setting_show_favorites, valueRes = showHide(settings.showFavorites)))
             val scanRes = if (settings.scanLibraryAutomatically) R.string.value_automatically else R.string.value_manually
             add(SettingsItem("scan_library", R.string.setting_scan_library, valueRes = scanRes))

@@ -31,8 +31,11 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   includes the RetroArch intent, which is the `retroarch` template. The file is reloaded when you
   return to Cannoli. The default RetroArch package is `com.retroarch.aarch64`.
 - **Old settings:** a game or platform set to the old "Internal" runner now uses RetroArch.
-- **Recent:** "Recently Played" is called "Recent" (in English; other languages keep their
-  translation for now).
+- **Recents:** "Recently Played" is called "Recents" (in English; other languages keep their
+  translation for now). Its setting has three values: Show, Games Only (no apps) and Hide.
+- **Default font:** IBM Plex Mono. The old default, M+ 1 Code, is still in the font list, and
+  Cannoli still falls back to it for languages Plex doesn't cover (Chinese, Japanese and Korean).
+- **Layout:** lists are centered by default. Settings → Display → Layout switches back to Left.
 
 ### Added
 
@@ -41,8 +44,6 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   `Art/Folders/`.
 - **Folder editing on the device:** new, rename, delete, move, add apps, and reorder, all saved to
   `folders.json`.
-- **Apps In Recent:** a setting under Library that hides apps from Recent, so it lists only
-  games. Apps keep their history and come back when it's turned on again.
 - **Kitchen config API:** `/api/config` reads and saves `folders.json` and `emulators.json`.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
 
@@ -61,6 +62,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-02 | Recents setting (Show / Games Only / Hide); centered layout; IBM Plex Mono default |
 | 2026-11-02 | Remove content modes; rename Recently Played to Recent; Apps In Recent setting |
 | 2026-11-02 | Add this file |
 | 2026-11-01 | Folder editing on the device; Kitchen config API |

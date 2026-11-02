@@ -6,6 +6,7 @@ import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
@@ -38,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cannoli.ui.theme.LocalCannoliColors
 import dev.cannoli.ui.theme.LocalCannoliIconFont
+import dev.cannoli.ui.theme.LocalCenteredLists
 import dev.cannoli.ui.theme.LocalPillScale
 import dev.cannoli.ui.theme.LocalScaleFactor
 import dev.cannoli.ui.theme.Radius
@@ -127,6 +129,24 @@ fun PillRow(
     verticalPadding: Dp = 8.dp,
     lineHeight: TextUnit = TextUnit.Unspecified,
     modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    if (LocalCenteredLists.current) {
+        // A row that fills the width is unchanged; one sized to its label lands in the middle.
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            PillBox(isSelected, verticalPadding, lineHeight, modifier, content)
+        }
+    } else {
+        PillBox(isSelected, verticalPadding, lineHeight, modifier, content)
+    }
+}
+
+@Composable
+private fun PillBox(
+    isSelected: Boolean,
+    verticalPadding: Dp,
+    lineHeight: TextUnit,
+    modifier: Modifier,
     content: @Composable () -> Unit
 ) {
     val colors = LocalCannoliColors.current
@@ -253,9 +273,11 @@ fun PillRowKeyValue(
     val valueColor = if (isSelected) colors.highlightText else colors.accent
     val borderColor = if (isSelected) colors.highlightText.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.3f)
 
+    val centered = LocalCenteredLists.current
     PillRow(isSelected = isSelected, verticalPadding = verticalPadding, lineHeight = lineHeight, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (checkState != null) {
@@ -263,7 +285,7 @@ fun PillRowKeyValue(
             }
             Row(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1f, fill = !centered)
                     .horizontalScroll(scrollState),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -338,14 +360,16 @@ fun PillRowInfo(
     val scrollState = rememberScrollState()
     MarqueeEffect(scrollState, isSelected, key = label to isSelected)
 
+    val centered = LocalCenteredLists.current
     PillRow(isSelected = isSelected, verticalPadding = verticalPadding, lineHeight = lineHeight, modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = if (centered) Arrangement.Center else Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1f, fill = !centered)
                     .horizontalScroll(scrollState),
                 verticalAlignment = Alignment.CenterVertically
             ) {

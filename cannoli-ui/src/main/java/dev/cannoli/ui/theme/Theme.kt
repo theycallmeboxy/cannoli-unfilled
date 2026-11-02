@@ -21,11 +21,13 @@ private val CannoliColorScheme = darkColorScheme(
 fun CannoliTheme(
     fontFamily: FontFamily = FontFamily.Default,
     iconFontFamily: FontFamily = fontFamily,
+    centeredLists: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalCannoliFont provides fontFamily,
         LocalCannoliIconFont provides iconFontFamily,
+        LocalCenteredLists provides centeredLists,
     ) {
         MaterialTheme(
             colorScheme = CannoliColorScheme,

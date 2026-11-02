@@ -13,6 +13,7 @@ val CREDITS_INSPIRATION: List<CreditEntry> = listOf(
 )
 
 val CREDITS_FONTS: List<CreditEntry> = listOf(
+    CreditEntry("IBM Plex", "OFL"),
     CreditEntry("M+ Fonts Project", "OFL"),
     CreditEntry("BPreplay", "OFL"),
     CreditEntry("Nerd Fonts", "OFL"),

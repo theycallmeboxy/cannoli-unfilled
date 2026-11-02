@@ -261,7 +261,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = jsonRead { optBoolean(KEY_SHOW_RECENTLY_PLAYED, true) }
         set(value) = jsonWrite { put(KEY_SHOW_RECENTLY_PLAYED, value) }
 
-    /** Whether Recent lists apps opened from Cannoli alongside games. */
+    /** Whether Recents lists apps opened from Cannoli alongside games. */
     var showAppsInRecent: Boolean
         get() = jsonRead { optBoolean(KEY_SHOW_APPS_IN_RECENT, true) }
         set(value) = jsonWrite { put(KEY_SHOW_APPS_IN_RECENT, value) }
@@ -281,6 +281,11 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     var portsName: String
         get() = jsonRead { optString(KEY_PORTS_NAME, "Ports").ifEmpty { "Ports" } }
         set(value) = jsonWrite { if (value == "Ports") remove(KEY_PORTS_NAME) else put(KEY_PORTS_NAME, value) }
+
+    /** Center layout (the default): list rows sit in the middle of the screen. Off: against the left edge. */
+    var centeredLists: Boolean
+        get() = jsonRead { optBoolean(KEY_CENTERED_LISTS, true) }
+        set(value) = jsonWrite { put(KEY_CENTERED_LISTS, value) }
 
     var artWidth: Int
         get() = jsonRead { optInt(KEY_ART_WIDTH, 40) }
@@ -425,6 +430,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_SHOW_PORTS = "show_ports"
         private const val KEY_SHOW_RECENTLY_PLAYED = "show_recently_played"
         private const val KEY_SHOW_APPS_IN_RECENT = "show_apps_in_recent"
+        private const val KEY_CENTERED_LISTS = "centered_lists"
         private const val KEY_SHOW_FAVORITES = "show_favorites"
         private const val KEY_SCAN_LIBRARY_AUTOMATICALLY = "scan_library_automatically"
         private const val KEY_TOOLS_NAME = "tools_name"

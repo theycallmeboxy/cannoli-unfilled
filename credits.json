@@ -5,6 +5,7 @@
     {"name":  "Abraham McCampbell", "detail":  "Cannoli Logo"}
   ],
   "fonts": [
+    { "name": "IBM Plex", "what": "IBM Plex Mono", "license": "OFL" },
     { "name": "M+ Fonts Project", "what": "M PLUS 1 Code", "license": "OFL" },
     { "name": "BPreplay", "what": "BPreplay Unhinted", "license": "OFL" },
     { "name": "Nerd Fonts", "what": "NerdSymbols", "license": "OFL" }
