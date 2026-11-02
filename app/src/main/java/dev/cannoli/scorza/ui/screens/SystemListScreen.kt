@@ -70,7 +70,6 @@ fun SystemListScreen(
     mainMenuQuit: Boolean = false,
     artWidth: Int = 40,
     artScale: ArtScale = ArtScale.FIT,
-    fiveGameHandheld: Boolean = false,
     buttonStyle: ButtonStyle = ButtonStyle(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -164,7 +163,6 @@ fun SystemListScreen(
                     Text(
                         text = when {
                             state.folderPath.isNotEmpty() -> stringResource(R.string.empty_list, state.folderPath.last())
-                            fiveGameHandheld -> stringResource(R.string.empty_fgh_collection)
                             else -> stringResource(R.string.empty_content)
                         },
                         style = MaterialTheme.typography.bodyLarge.copy(
@@ -195,7 +193,6 @@ fun SystemListScreen(
                             is ListItem.FavoritesItem -> "favorites"
                             is ListItem.CollectionsFolder -> "collections"
                             is ListItem.PlatformItem -> item.platform.tag
-                            is ListItem.CollectionItem -> "col:${item.id}"
                             is ListItem.GameItem -> "game:${item.recentKey}"
                             is ListItem.FolderItem -> "folder:${item.name}"
                         }
@@ -206,11 +203,10 @@ fun SystemListScreen(
                         is ListItem.FavoritesItem -> favoritesLabel
                         is ListItem.CollectionsFolder -> collectionsLabel
                         is ListItem.PlatformItem -> item.platform.displayName
-                        is ListItem.CollectionItem -> item.name
                         is ListItem.GameItem -> item.displayName
                         is ListItem.FolderItem -> item.name
                     }
-                    val showReorder = state.reorderMode && isSelected && (item is ListItem.PlatformItem || item is ListItem.FolderItem || item is ListItem.CollectionItem || item is ListItem.GameItem)
+                    val showReorder = state.reorderMode && isSelected && (item is ListItem.PlatformItem || item is ListItem.FolderItem || item is ListItem.GameItem)
                     val tagSuffix = (item as? ListItem.GameItem)
                         ?.takeIf { it.displayName in duplicateGameNames }
                         ?.let { gi ->
@@ -230,16 +226,11 @@ fun SystemListScreen(
                 }
                 }
                 if (showArt) {
-                    val artTopPadding = if (fiveGameHandheld && shownTitle.isEmpty()) {
-                        pillItemHeight(listLineHeight, 4.dp) + 8.dp
-                    } else {
-                        0.dp
-                    }
                     Box(
                         modifier = Modifier
                             .fillMaxHeight()
                             .fillMaxWidth()
-                            .padding(start = 16.dp, top = artTopPadding),
+                            .padding(start = 16.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         val art = selectedArt ?: return@Box
@@ -265,15 +256,7 @@ fun SystemListScreen(
             }
             }
 
-            val selectedGameItem = selectedItem as? ListItem.GameItem
-            val playLabel = if (selectedGameItem != null) stringResource(R.string.label_play) else stringResource(R.string.label_select)
-            val rightItems = if (fiveGameHandheld) {
-                if (state.items.isEmpty()) {
-                    emptyList()
-                } else {
-                    listOf(buttonStyle.confirm to playLabel)
-                }
-            } else if (state.items.isEmpty() && state.folderPath.isEmpty()) {
+            val rightItems = if (state.items.isEmpty() && state.folderPath.isEmpty()) {
                 listOf(buttonStyle.west to stringResource(R.string.label_kitchen))
             } else if (state.items.isEmpty()) {
                 emptyList()
@@ -283,14 +266,10 @@ fun SystemListScreen(
             val leftItems = buildList {
                 if (state.folderPath.isNotEmpty()) add(buttonStyle.back to stringResource(R.string.label_back))
                 else if (mainMenuQuit) add(buttonStyle.back to stringResource(R.string.label_quit))
-                if (fiveGameHandheld) {
-                    add(buttonStyle.west to stringResource(R.string.label_settings))
-                } else {
-                    add(buttonStyle.north to stringResource(R.string.label_settings))
-                    // X makes a folder wherever the user is; on an empty main menu it opens Kitchen.
-                    if (state.items.isNotEmpty() || state.folderPath.isNotEmpty()) {
-                        add(buttonStyle.west to stringResource(R.string.label_new))
-                    }
+                add(buttonStyle.north to stringResource(R.string.label_settings))
+                // X makes a folder wherever the user is; on an empty main menu it opens Kitchen.
+                if (state.items.isNotEmpty() || state.folderPath.isNotEmpty()) {
+                    add(buttonStyle.west to stringResource(R.string.label_new))
                 }
             }
             BottomBar(

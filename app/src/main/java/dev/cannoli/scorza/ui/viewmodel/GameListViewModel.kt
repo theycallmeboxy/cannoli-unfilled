@@ -105,7 +105,6 @@ class GameListViewModel @Inject constructor(
     private val resources: android.content.res.Resources get() = context.resources
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
-    @Volatile var showFavoriteStars: Boolean = true
 
     data class State(
         val platformTag: String = "",

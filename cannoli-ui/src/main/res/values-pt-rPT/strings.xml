@@ -9,7 +9,6 @@
     <string name="label_open">ABRIR</string>
     <string name="label_change">ALTERAR</string>
     <string name="label_firmware">FIRMAR</string>
-    <string name="label_choose">ESCOLHER</string>
     <string name="label_close">FECHAR</string>
     <string name="label_help">AJUDA</string>
     <string name="label_remove">REMOVER ATALHO</string>
@@ -126,9 +125,7 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">Regenerar Pastas do Sistema</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">Modo de Conteúdo</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">Coleção 5GH</string>
     <string name="setting_show_recently_played">Jogados Recentemente</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Favoritos</string>
@@ -309,11 +306,8 @@
     <string name="value_show">Mostrar</string>
     <string name="value_hide">Ocultar</string>
     <string name="value_none">Nenhum</string>
-    <string name="value_selected">Selecionado</string>
     <string name="value_cannoli_root">Raiz do Cannoli</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">Predefinido</string>
-    <string name="value_collections">Apenas Coleções</string>
     <string name="value_fit">Ajustar</string>
     <string name="value_original">Original</string>
     <string name="value_fit_width">Ajustar Largura</string>
@@ -401,7 +395,6 @@
     <!-- System list -->
     <string name="empty_content">Nenhum conteúdo encontrado. Adicione alguns!</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">A sua coleção 5GH está vazia. Vá preenchê-la!</string>
     <string name="label_recently_played">Jogados Recentemente</string>
     <string name="label_favorites">Favoritos</string>
     <string name="label_collections">Coleções</string>

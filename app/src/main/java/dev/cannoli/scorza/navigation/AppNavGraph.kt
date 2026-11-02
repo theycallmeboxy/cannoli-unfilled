@@ -580,7 +580,6 @@ fun AppNavGraph(
                     mainMenuQuit = appSettings.mainMenuQuit,
                     artWidth = appSettings.artWidth,
                     artScale = appSettings.artScale,
-                    fiveGameHandheld = appSettings.contentMode == dev.cannoli.scorza.settings.ContentMode.FIVE_GAME_HANDHELD,
                     buttonStyle = labels,
                 )
             }

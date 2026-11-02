@@ -16,8 +16,6 @@ import dev.cannoli.scorza.input.ScreenInputHandler
 import dev.cannoli.scorza.model.ListItem
 import dev.cannoli.scorza.model.recentKey
 import dev.cannoli.scorza.navigation.NavigationController
-import dev.cannoli.scorza.settings.ContentMode
-import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.input.PageJump
 import dev.cannoli.scorza.ui.screens.DialogState
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
@@ -29,7 +27,6 @@ import javax.inject.Inject
 class GameListInputHandler @Inject constructor(
     private val nav: NavigationController,
     @IoScope private val ioScope: CoroutineScope,
-    private val settings: SettingsRepository,
     private val gameListViewModel: GameListViewModel,
     private val launcherActions: LauncherActions,
 ) : ScreenInputHandler {
@@ -107,8 +104,7 @@ class GameListInputHandler @Inject constructor(
                 if (!gameListViewModel.exitSubfolder()) {
                     if (gameListViewModel.exitChildCollection()) {
                         // navigated back to parent collection
-                    } else if (settings.contentMode == ContentMode.PLATFORMS
-                        && glState.isCollection && glState.collectionId != null
+                    } else if (glState.isCollection && glState.collectionId != null
                         && !glState.isFavorites) {
                         gameListViewModel.loadCollectionsList(restoreIndex = true)
                     } else {

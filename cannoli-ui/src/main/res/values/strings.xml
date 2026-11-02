@@ -8,7 +8,6 @@
     <string name="label_open">OPEN</string>
     <string name="label_change">CHANGE</string>
     <string name="label_firmware">FIRMWARE</string>
-    <string name="label_choose">CHOOSE</string>
     <string name="label_close">CLOSE</string>
     <string name="label_help">HELP</string>
     <string name="label_remove">REMOVE SHORTCUT</string>
@@ -160,10 +159,9 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">Regenerate System Folders</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">Content Mode</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">5GH Collection</string>
-    <string name="setting_show_recently_played">Recently Played</string>
+    <string name="setting_show_recently_played">Recent</string>
+    <string name="setting_show_apps_in_recent" tools:ignore="MissingTranslation">Apps In Recent</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Favorites</string>
     <string name="setting_bg_tint">Background Tint</string>
@@ -354,12 +352,8 @@
     <string name="value_show">Show</string>
     <string name="value_hide">Hide</string>
     <string name="value_none">None</string>
-    <string name="value_selected">Selected</string>
     <string name="value_cannoli_root">Cannoli Root</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">Default</string>
-    <string name="value_collections">Collections Only</string>
-    <string name="value_five_game_handheld" translatable="false">Five Game Handheld</string>
     <string name="value_fit">Fit</string>
     <string name="value_original">Original</string>
     <string name="value_fit_width">Fit Width</string>
@@ -457,8 +451,7 @@
     <!-- System list -->
     <string name="empty_content">No content found. Go add some!</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">Your 5GH collection is empty. Go fill it!</string>
-    <string name="label_recently_played">Recently Played</string>
+    <string name="label_recently_played">Recent</string>
     <string name="label_favorites">Favorites</string>
     <string name="label_collections">Collections</string>
     <!-- Screen title. %1$s = the search query. -->

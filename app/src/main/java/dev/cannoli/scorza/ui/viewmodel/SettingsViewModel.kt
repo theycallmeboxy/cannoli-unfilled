@@ -10,12 +10,9 @@ import androidx.compose.ui.text.font.FontFamily
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.R
-import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.launcher.InstalledCoreService
-import dev.cannoli.scorza.model.CollectionType
 import dev.cannoli.scorza.settings.ArtScale
 import dev.cannoli.scorza.settings.BatteryDisplay
-import dev.cannoli.scorza.settings.ContentMode
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.settings.TextSize
 import dev.cannoli.scorza.settings.TimeFormat
@@ -38,7 +35,6 @@ class SettingsViewModel @Inject constructor(
     private var cannoliRoot: java.io.File? = null
     private var packageManager: PackageManager? = null
     private var appPackageName: String? = null
-    private var collectionsRepository: CollectionsRepository? = null
 
     val isTelevision: Boolean
         get() = dev.cannoli.scorza.util.DeviceType.isTv(context)
@@ -138,9 +134,6 @@ class SettingsViewModel @Inject constructor(
         val mainMenuQuit: Boolean = false,
         val artWidth: Int = 40,
         val artScale: ArtScale = ArtScale.DEFAULT,
-        val contentMode: ContentMode = ContentMode.PLATFORMS,
-        val fghCollectionId: Long? = null,
-        val fghCollectionDisplayName: String? = null,
         val portraitMarginPx: Int = 0,
         val screenGeometryWidth: Int = 100,
         val screenGeometryHeight: Int = 100,
@@ -179,11 +172,6 @@ class SettingsViewModel @Inject constructor(
         mainMenuQuit = settings.mainMenuQuit,
         artWidth = settings.artWidth,
         artScale = settings.artScale,
-        contentMode = settings.contentMode,
-        fghCollectionId = settings.fghCollectionId,
-        fghCollectionDisplayName = settings.fghCollectionId?.let { id ->
-            collectionsRepository?.byId(id)?.displayName
-        },
         portraitMarginPx = settings.portraitMarginPx,
         screenGeometryWidth = settings.screenGeometryWidth,
         screenGeometryHeight = settings.screenGeometryHeight,
@@ -229,9 +217,8 @@ class SettingsViewModel @Inject constructor(
         val showClock: Boolean,
         val batteryDisplay: BatteryDisplay,
         val showRecentlyPlayed: Boolean,
+        val showAppsInRecent: Boolean,
         val showFavorites: Boolean,
-        val contentMode: ContentMode,
-        val fghCollectionId: Long?,
         val sdRoot: String,
         val romDirectory: String,
         val raPackage: String,
@@ -265,11 +252,10 @@ class SettingsViewModel @Inject constructor(
         _appSettings.value = readAppSettings()
     }
 
-    fun reinitialize(root: java.io.File, pm: PackageManager, pkgName: String, cr: CollectionsRepository? = null) {
+    fun reinitialize(root: java.io.File, pm: PackageManager, pkgName: String) {
         cannoliRoot = root
         packageManager = pm
         appPackageName = pkgName
-        if (cr != null) collectionsRepository = cr
         fontOptions = buildFontOptions()
         if (isTelevision && !settings.batteryDisplaySet) settings.batteryDisplay = BatteryDisplay.HIDE
         load()
@@ -377,17 +363,6 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun fghPickerInitialIndex(): Int {
-        val ids = fghCollections().map { it.id }
-        val cur = settings.fghCollectionId ?: return 0
-        return ids.indexOf(cur).coerceAtLeast(0)
-    }
-
-    fun selectFghCollectionId(id: Long?) {
-        settings.fghCollectionId = id
-        _appSettings.value = readAppSettings()
-    }
-
     /** Drops back to the category list outright, however deep the user was. The active category
      *  outlives the screen, so without this a flow that ends elsewhere leaves settings reopening
      *  inside whichever sub-list it was abandoned in. */
@@ -474,20 +449,8 @@ class SettingsViewModel @Inject constructor(
                     else -> next
                 }
             }
-            "content_mode" -> {
-                val entries = ContentMode.entries
-                val cur = entries.indexOf(settings.contentMode).coerceAtLeast(0)
-                settings.contentMode = entries[((cur + direction) % entries.size + entries.size) % entries.size]
-            }
-            "fgh_collection" -> {
-                val ids = fghCollections().map { it.id }
-                if (ids.isNotEmpty()) {
-                    val cur = ids.indexOf(settings.fghCollectionId).coerceAtLeast(0)
-                    val next = ((cur + direction) % ids.size + ids.size) % ids.size
-                    settings.fghCollectionId = ids[next]
-                }
-            }
             "show_recently_played" -> settings.showRecentlyPlayed = !settings.showRecentlyPlayed
+            "show_apps_in_recent" -> settings.showAppsInRecent = !settings.showAppsInRecent
             "show_favorites" -> settings.showFavorites = !settings.showFavorites
             "scan_library" -> settings.scanLibraryAutomatically = !settings.scanLibraryAutomatically
             "show_wifi" -> settings.showWifi = !settings.showWifi
@@ -675,9 +638,8 @@ class SettingsViewModel @Inject constructor(
         showClock = settings.showClock,
         batteryDisplay = settings.batteryDisplay,
         showRecentlyPlayed = settings.showRecentlyPlayed,
+        showAppsInRecent = settings.showAppsInRecent,
         showFavorites = settings.showFavorites,
-        contentMode = settings.contentMode,
-        fghCollectionId = settings.fghCollectionId,
         sdRoot = settings.sdCardRoot,
         romDirectory = settings.romDirectory,
         raPackage = settings.retroArchPackage,
@@ -712,9 +674,8 @@ class SettingsViewModel @Inject constructor(
         settings.showClock = snap.showClock
         settings.batteryDisplay = snap.batteryDisplay
         settings.showRecentlyPlayed = snap.showRecentlyPlayed
+        settings.showAppsInRecent = snap.showAppsInRecent
         settings.showFavorites = snap.showFavorites
-        settings.contentMode = snap.contentMode
-        settings.fghCollectionId = snap.fghCollectionId
         settings.sdCardRoot = snap.sdRoot
         settings.romDirectory = snap.romDirectory
         settings.retroArchPackage = snap.raPackage
@@ -727,11 +688,6 @@ class SettingsViewModel @Inject constructor(
         settings.screenGeometryHeight = snap.screenGeometryHeight
         settings.screenGeometryX = snap.screenGeometryX
         settings.screenGeometryY = snap.screenGeometryY
-    }
-
-    private fun fghCollections(): List<CollectionsRepository.CollectionRow> {
-        val cr = collectionsRepository ?: return emptyList()
-        return cr.all().filter { it.type == CollectionType.STANDARD }
     }
 
     private fun onOff(value: Boolean) = if (value) R.string.value_on else R.string.value_off
@@ -781,53 +737,16 @@ class SettingsViewModel @Inject constructor(
             ))
         }
         "library" -> buildList {
-            val contentModeRes = when (settings.contentMode) {
-                ContentMode.PLATFORMS -> R.string.value_platforms
-                ContentMode.COLLECTIONS -> R.string.value_collections
-                ContentMode.FIVE_GAME_HANDHELD -> R.string.value_five_game_handheld
+            add(SettingsItem("show_recently_played", R.string.setting_show_recently_played, valueRes = showHide(settings.showRecentlyPlayed)))
+            if (settings.showRecentlyPlayed) {
+                add(SettingsItem("show_apps_in_recent", R.string.setting_show_apps_in_recent, valueRes = showHide(settings.showAppsInRecent)))
             }
-            add(SettingsItem("content_mode", R.string.setting_content_mode, valueRes = contentModeRes))
-            if (settings.contentMode == ContentMode.FIVE_GAME_HANDHELD) {
-                val rows = fghCollections()
-                val curId = settings.fghCollectionId
-                val effective = rows.firstOrNull { it.id == curId } ?: rows.firstOrNull()
-                if (effective != null && effective.id != curId) {
-                    settings.fghCollectionId = effective.id
-                }
-                add(SettingsItem(
-                    "fgh_collection",
-                    R.string.setting_fgh_collection,
-                    valueText = effective?.displayName,
-                    valueRes = if (effective == null) R.string.value_none else null,
-                    isEditable = rows.isNotEmpty(),
-                    canCycle = rows.isNotEmpty()
-                ))
-            }
-            if (settings.contentMode != ContentMode.FIVE_GAME_HANDHELD) {
-                add(SettingsItem("show_recently_played", R.string.setting_show_recently_played, valueRes = showHide(settings.showRecentlyPlayed)))
-                add(SettingsItem("show_favorites", R.string.setting_show_favorites, valueRes = showHide(settings.showFavorites)))
-            }
-            if (settings.contentMode == ContentMode.PLATFORMS) {
-            }
+            add(SettingsItem("show_favorites", R.string.setting_show_favorites, valueRes = showHide(settings.showFavorites)))
             val scanRes = if (settings.scanLibraryAutomatically) R.string.value_automatically else R.string.value_manually
             add(SettingsItem("scan_library", R.string.setting_scan_library, valueRes = scanRes))
             add(SettingsItem("sd_root", R.string.setting_sd_root, valueText = settings.sdCardRoot, isEditable = true))
             val romDir = settings.romDirectory
             add(SettingsItem("rom_directory", R.string.setting_rom_directory, valueText = romDir.ifEmpty { null }, valueRes = if (romDir.isEmpty()) R.string.value_cannoli_root else null, isEditable = true, canCycle = false))
-        }
-        "fgh_collection_picker" -> buildList {
-            val rows = fghCollections()
-            val curId = settings.fghCollectionId
-            for (row in rows) {
-                add(SettingsItem(
-                    key = "fgh_pick:${row.id}",
-                    labelRes = R.string.setting_fgh_collection,
-                    labelText = row.displayName,
-                    valueRes = if (row.id == curId) R.string.value_selected else null,
-                    isEditable = true,
-                    canCycle = false
-                ))
-            }
         }
         "colors" -> listOf(
             SettingsItem("color_background", R.string.setting_color_background, valueText = settings.colorBackground.uppercase(), isEditable = true, swatchColor = hexToColor(settings.colorBackground)),

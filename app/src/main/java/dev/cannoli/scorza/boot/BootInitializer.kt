@@ -7,7 +7,6 @@ import dev.cannoli.scorza.R
 import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.CannoliDatabase
-import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.db.ScanScheduler
 import dev.cannoli.scorza.db.importer.ImportProgress
 import dev.cannoli.scorza.db.importer.ImportResult
@@ -18,10 +17,8 @@ import dev.cannoli.scorza.input.LauncherActions
 import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
-import dev.cannoli.scorza.settings.ContentMode
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.setup.SetupCoordinator
-import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
 import dev.cannoli.scorza.util.KitchenLog
 import dev.cannoli.scorza.util.ScanLog
@@ -50,9 +47,7 @@ class BootInitializer @Inject constructor(
     private val cannoliPaths: CannoliPathsProvider,
     @IoScope private val ioScope: CoroutineScope,
     private val installedCoreService: InstalledCoreService,
-    private val gameListViewModel: GameListViewModel,
     private val settingsViewModel: SettingsViewModel,
-    private val collectionsRepository: CollectionsRepository,
     private val nav: NavigationController,
     private val launcherActions: LauncherActions,
     private val setupCoordinator: SetupCoordinator,
@@ -117,8 +112,7 @@ class BootInitializer @Inject constructor(
         }
 
         withContext(Dispatchers.Main) {
-            gameListViewModel.showFavoriteStars = settings.contentMode != ContentMode.FIVE_GAME_HANDHELD
-            settingsViewModel.reinitialize(root, context.packageManager, context.packageName, collectionsRepository)
+            settingsViewModel.reinitialize(root, context.packageManager, context.packageName)
 
             nav.screenStack.clear()
             nav.screenStack.add(LauncherScreen.SystemList)

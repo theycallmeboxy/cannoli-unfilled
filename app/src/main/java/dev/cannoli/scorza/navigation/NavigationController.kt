@@ -24,7 +24,8 @@ class NavigationController @Inject constructor() {
     var selectHeld = false
     var selectDown = false
     var capsBeforeSymbols = false
-    var pendingFghItem: dev.cannoli.scorza.model.ListItem? = null
+    // A game or app row on the main list whose context menu is open.
+    var pendingMainListItem: dev.cannoli.scorza.model.ListItem? = null
 
     fun push(screen: LauncherScreen) { screenStack.add(screen) }
 

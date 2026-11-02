@@ -1,16 +1,29 @@
 package dev.cannoli.scorza.db
 
-class RecentlyPlayedRepository(private val db: CannoliDatabase) {
+/** Games and apps by when they were last opened. [includeApps] is read on every query, so turning
+ *  apps off in Recent hides them at once without forgetting when they were used. */
+class RecentlyPlayedRepository(
+    private val db: CannoliDatabase,
+    private val includeApps: () -> Boolean = { true },
+) {
     data class Entry(val ref: LibraryRef, val lastPlayedAt: Long)
 
     fun recent(limit: Int = 10): List<Entry> = db.queryAll(
-        """
-        SELECT 'rom' AS kind, id, last_played_at FROM roms WHERE last_played_at IS NOT NULL
-        UNION ALL
-        SELECT 'app' AS kind, id, last_played_at FROM apps WHERE last_played_at IS NOT NULL
-        ORDER BY last_played_at DESC
-        LIMIT ?
-        """.trimIndent(),
+        if (includeApps()) {
+            """
+            SELECT 'rom' AS kind, id, last_played_at FROM roms WHERE last_played_at IS NOT NULL
+            UNION ALL
+            SELECT 'app' AS kind, id, last_played_at FROM apps WHERE last_played_at IS NOT NULL
+            ORDER BY last_played_at DESC
+            LIMIT ?
+            """.trimIndent()
+        } else {
+            """
+            SELECT 'rom' AS kind, id, last_played_at FROM roms WHERE last_played_at IS NOT NULL
+            ORDER BY last_played_at DESC
+            LIMIT ?
+            """.trimIndent()
+        },
         limit.toLong(),
     ) { stmt ->
         val ref: LibraryRef = if (stmt.getText(0) == "rom") LibraryRef.Rom(stmt.getLong(1))
@@ -35,10 +48,14 @@ class RecentlyPlayedRepository(private val db: CannoliDatabase) {
     }
 
     fun hasAny(): Boolean = db.queryOne(
-        """
-        SELECT 1 WHERE EXISTS(SELECT 1 FROM roms WHERE last_played_at IS NOT NULL)
-            OR EXISTS(SELECT 1 FROM apps WHERE last_played_at IS NOT NULL)
-        LIMIT 1
-        """.trimIndent(),
+        if (includeApps()) {
+            """
+            SELECT 1 WHERE EXISTS(SELECT 1 FROM roms WHERE last_played_at IS NOT NULL)
+                OR EXISTS(SELECT 1 FROM apps WHERE last_played_at IS NOT NULL)
+            LIMIT 1
+            """.trimIndent()
+        } else {
+            "SELECT 1 WHERE EXISTS(SELECT 1 FROM roms WHERE last_played_at IS NOT NULL) LIMIT 1"
+        },
     ) { true } ?: false
 }

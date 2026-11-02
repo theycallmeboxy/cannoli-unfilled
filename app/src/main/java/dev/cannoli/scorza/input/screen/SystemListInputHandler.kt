@@ -22,7 +22,6 @@ import dev.cannoli.scorza.input.ScreenInputHandler
 import dev.cannoli.scorza.model.ListItem
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
-import dev.cannoli.scorza.settings.ContentMode
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.DialogState
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
@@ -83,8 +82,6 @@ class SystemListInputHandler @Inject constructor(
             systemListViewModel.cancelReorder(
                 showRecentlyPlayed = settings.showRecentlyPlayed,
                 showFavorites = settings.showFavorites,
-                contentMode = settings.contentMode,
-                fghCollectionId = launcherActions.validateFghCollection(),
             )
         } else if (systemListViewModel.isInFolder()) {
             if (nav.navigating) return
@@ -112,20 +109,13 @@ class SystemListInputHandler @Inject constructor(
     }
 
     override fun onNorth() {
-        val fgh = launcherActions.validateFghCollection() != null
-        if (!fgh) {
-            systemListViewModel.savePosition()
-            settingsViewModel.load()
-            nav.screenStack.add(LauncherScreen.Settings)
-        }
+        systemListViewModel.savePosition()
+        settingsViewModel.load()
+        nav.screenStack.add(LauncherScreen.Settings)
     }
 
     override fun onWest() {
-        if (settings.contentMode == ContentMode.FIVE_GAME_HANDHELD) {
-            systemListViewModel.savePosition()
-            settingsViewModel.load()
-            nav.screenStack.add(LauncherScreen.Settings)
-        } else if (systemListViewModel.state.value.items.isEmpty() && !systemListViewModel.isInFolder()) {
+        if (systemListViewModel.state.value.items.isEmpty() && !systemListViewModel.isInFolder()) {
             launcherActions.openKitchen()
         } else if (!systemListViewModel.isReorderMode()) {
             folderEditor.promptNewFolder()
@@ -170,13 +160,6 @@ class SystemListInputHandler @Inject constructor(
                     nav.navigating = false
                 }
             }
-            is SystemListViewModel.ListItem.CollectionItem -> {
-                nav.navigating = true
-                gameListViewModel.loadCollectionById(item.id) {
-                    nav.screenStack.add(LauncherScreen.GameList)
-                    nav.navigating = false
-                }
-            }
             is SystemListViewModel.ListItem.GameItem -> {
                 val recentKey = item.recentKey
                 val errorDialog = launcherActions.launchSelected(item.item)
@@ -214,16 +197,15 @@ class SystemListInputHandler @Inject constructor(
                     is dev.cannoli.scorza.db.LibraryRef.App -> collectionsRepository.isAppFavorited(r.id)
                 }
             } == true
-            nav.pendingFghItem = item.item
+            nav.pendingMainListItem = item.item
             val menuName = item.displayName
-            val fgh = settings.contentMode == ContentMode.FIVE_GAME_HANDHELD
             val options = buildList {
                 add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
                 add(MENU_MANAGE_COLLECTIONS)
                 if (item.item is ListItem.RomItem) {
                     add(MENU_EMULATOR_OVERRIDE)
                     add(MENU_DELETE_GAME)
-                } else if (!fgh) {
+                } else {
                     // An app on the main list is a folders.json entry.
                     add(MENU_MOVE_TO_FOLDER)
                     add(MENU_REMOVE_FROM_FOLDER)

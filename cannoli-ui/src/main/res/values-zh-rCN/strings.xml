@@ -9,7 +9,6 @@
     <string name="label_open">打开</string>
     <string name="label_change">更改</string>
     <string name="label_firmware">固件</string>
-    <string name="label_choose">选择</string>
     <string name="label_close">关闭</string>
     <string name="label_help">帮助</string>
     <string name="label_remove">移除快捷方式</string>
@@ -127,9 +126,7 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">重新生成系统文件夹</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">内容模式</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">5GH 收藏集</string>
     <string name="setting_show_recently_played">最近玩过的</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">最爱的</string>
@@ -309,11 +306,8 @@
     <string name="value_show">显示</string>
     <string name="value_hide">隐藏</string>
     <string name="value_none">无</string>
-    <string name="value_selected">选中的</string>
     <string name="value_cannoli_root">Cannoli 根目录</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">默认</string>
-    <string name="value_collections">仅收藏集</string>
     <string name="value_fit">适合的</string>
     <string name="value_original">原始</string>
     <string name="value_fit_width">适应宽度</string>
@@ -403,7 +397,6 @@
     <!-- System list -->
     <string name="empty_content">未找到任何内容。请添加一些！</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">您的5GH 收藏是空的。请添加后再试！</string>
     <string name="label_recently_played">最近玩过的</string>
     <string name="label_favorites">最爱的</string>
     <string name="label_collections">收藏集</string>

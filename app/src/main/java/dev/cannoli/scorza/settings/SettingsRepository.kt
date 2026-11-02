@@ -261,6 +261,11 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = jsonRead { optBoolean(KEY_SHOW_RECENTLY_PLAYED, true) }
         set(value) = jsonWrite { put(KEY_SHOW_RECENTLY_PLAYED, value) }
 
+    /** Whether Recent lists apps opened from Cannoli alongside games. */
+    var showAppsInRecent: Boolean
+        get() = jsonRead { optBoolean(KEY_SHOW_APPS_IN_RECENT, true) }
+        set(value) = jsonWrite { put(KEY_SHOW_APPS_IN_RECENT, value) }
+
     var showFavorites: Boolean
         get() = jsonRead { optBoolean(KEY_SHOW_FAVORITES, true) }
         set(value) = jsonWrite { put(KEY_SHOW_FAVORITES, value) }
@@ -276,14 +281,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     var portsName: String
         get() = jsonRead { optString(KEY_PORTS_NAME, "Ports").ifEmpty { "Ports" } }
         set(value) = jsonWrite { if (value == "Ports") remove(KEY_PORTS_NAME) else put(KEY_PORTS_NAME, value) }
-
-    var contentMode: ContentMode
-        get() = ContentMode.fromString(jsonRead { if (has(KEY_CONTENT_MODE)) optString(KEY_CONTENT_MODE) else null })
-        set(value) = jsonWrite { put(KEY_CONTENT_MODE, value.name) }
-
-    var fghCollectionId: Long?
-        get() = jsonRead { if (has(KEY_FGH_COLLECTION)) optLong(KEY_FGH_COLLECTION).takeIf { it > 0 } else null }
-        set(value) = jsonWrite { if (value == null) remove(KEY_FGH_COLLECTION) else put(KEY_FGH_COLLECTION, value) }
 
     var artWidth: Int
         get() = jsonRead { optInt(KEY_ART_WIDTH, 40) }
@@ -427,6 +424,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_SHOW_TOOLS = "show_tools"
         private const val KEY_SHOW_PORTS = "show_ports"
         private const val KEY_SHOW_RECENTLY_PLAYED = "show_recently_played"
+        private const val KEY_SHOW_APPS_IN_RECENT = "show_apps_in_recent"
         private const val KEY_SHOW_FAVORITES = "show_favorites"
         private const val KEY_SCAN_LIBRARY_AUTOMATICALLY = "scan_library_automatically"
         private const val KEY_TOOLS_NAME = "tools_name"
@@ -434,7 +432,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_RA_USERNAME = "ra_username"
         private const val KEY_RA_TOKEN = "ra_token"
         private const val KEY_RA_PASSWORD = "ra_password"
-        private const val KEY_CONTENT_MODE = "content_mode"
         private const val KEY_LOGGING_ROM_SCAN = "logging_rom_scan"
         private const val KEY_LOGGING_INPUT = "logging_input"
         private const val KEY_LOGGING_SESSION = "logging_session"
@@ -446,7 +443,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_SCREEN_GEOMETRY_HEIGHT = "screen_geometry_height"
         private const val KEY_SCREEN_GEOMETRY_X = "screen_geometry_x"
         private const val KEY_SCREEN_GEOMETRY_Y = "screen_geometry_y"
-        private const val KEY_FGH_COLLECTION = "fgh_collection"
         private const val KEY_ROMM_DEVICE_ID = "romm_device_id"
         private const val KEY_ROMM_DEVICE_NAME = "romm_device_name"
         private const val KEY_ROMM_DEVICE_CLIENT_VERSION = "romm_device_client_version"
@@ -495,11 +491,3 @@ enum class BatteryDisplay {
     }
 }
 
-
-enum class ContentMode {
-    PLATFORMS, COLLECTIONS, FIVE_GAME_HANDHELD;
-    companion object {
-        fun fromString(value: String?): ContentMode =
-            entries.firstOrNull { it.name == value } ?: PLATFORMS
-    }
-}

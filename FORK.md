@@ -19,6 +19,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   download service that went with it.
 - **Updater:** the app no longer checks for or installs upstream releases.
 - **Tools and Ports:** replaced by user folders (below).
+- **Content modes:** the Collections Only and Five Game Handheld main menus, with the 5GH
+  collection setting. The main menu always shows platforms and folders.
 - **Unused strings:** 136 strings for the removed features, in every language.
 
 ### Changed
@@ -29,6 +31,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   includes the RetroArch intent, which is the `retroarch` template. The file is reloaded when you
   return to Cannoli. The default RetroArch package is `com.retroarch.aarch64`.
 - **Old settings:** a game or platform set to the old "Internal" runner now uses RetroArch.
+- **Recent:** "Recently Played" is called "Recent" (in English; other languages keep their
+  translation for now).
 
 ### Added
 
@@ -37,6 +41,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   `Art/Folders/`.
 - **Folder editing on the device:** new, rename, delete, move, add apps, and reorder, all saved to
   `folders.json`.
+- **Apps In Recent:** a setting under Library that hides apps from Recent, so it lists only
+  games. Apps keep their history and come back when it's turned on again.
 - **Kitchen config API:** `/api/config` reads and saves `folders.json` and `emulators.json`.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
 
@@ -51,23 +57,26 @@ from upstream (missing translations, permissions); none are from this fork.
 
 ## Changelog
 
-Newest first. Each entry is one commit on `unfilled`.
+Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
-| Commit | Change |
+| Date | Change |
 | --- | --- |
-| `01c08196` | Folder editing on the device; Kitchen config API |
-| `8c41bdb7` | Drop strings left unused by the removals |
-| `7f8514a9` | Drop the updater; install under the fork's own app ID |
-| `2e0ab83d` | Folder path as the screen title; folder art |
-| `ff23acec` | Launch intents in `emulators.json`; Tools/Ports become nested folders |
-| `9a5fe01d` | Remove the built-in runner, RetroAchievements, Ricotta and Delfino |
-| `f1f19b74` | Build container with JDK 21 and the Android SDK |
+| 2026-11-02 | Remove content modes; rename Recently Played to Recent; Apps In Recent setting |
+| 2026-11-02 | Add this file |
+| 2026-11-01 | Folder editing on the device; Kitchen config API |
+| 2026-11-01 | Drop strings left unused by the removals |
+| 2026-11-01 | Drop the updater; install under the fork's own app ID |
+| 2026-11-01 | Folder path as the screen title; folder art |
+| 2026-11-01 | Launch intents in `emulators.json`; Tools/Ports become nested folders |
+| 2026-11-01 | Remove the built-in runner, RetroAchievements, Ricotta and Delfino |
+| 2026-11-01 | Build container with JDK 21 and the Android SDK |
 
 The fork starts from upstream commit `7755e376`.
 
 ## Status and to-do
 
-- [ ] **Test on a device:** nothing has been tried on hardware yet. Check RetroArch and standalone
+- [ ] **Test on a device:** the app installs and opens on a Pocket Block (Android 12); nothing
+      has been launched from it yet. Check RetroArch and standalone
       launches, editing and breaking `emulators.json`, nested folders, and Tools/Ports carrying
       over with their favorites.
 - [ ] **Kitchen page for config files:** needs a fork of CannoliHQ/kitchen, bun in the build

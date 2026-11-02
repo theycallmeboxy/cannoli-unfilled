@@ -88,11 +88,6 @@ class SettingsInputHandler @Inject constructor(
                     host = rommStore.host, username = rommStore.username, version = rommStore.serverVersion)
             }
             "status_bar" -> settingsViewModel.enterSubCategory("status_bar", dev.cannoli.scorza.R.string.settings_status_bar)
-            "fgh_collection" -> settingsViewModel.enterSubCategory(
-                "fgh_collection_picker",
-                dev.cannoli.scorza.R.string.setting_fgh_collection,
-                settingsViewModel.fghPickerInitialIndex()
-            )
             "sd_root" -> pushDirectoryBrowser(BrowsePurpose.SD_ROOT, settings.sdCardRoot)
             "rom_directory" -> {
                 val startPath = settings.romDirectory.ifEmpty { settings.sdCardRoot }
@@ -141,13 +136,6 @@ class SettingsInputHandler @Inject constructor(
             null -> {}
             else -> {
                 when {
-                    key.startsWith("fgh_pick:") -> {
-                        val id = key.removePrefix("fgh_pick:").toLongOrNull()
-                        settingsViewModel.selectFghCollectionId(id)
-                        settingsViewModel.save()
-                        settingsViewModel.exitSubList()
-                        launcherActions.rescanSystemList()
-                    }
                     key.startsWith("color_") -> {
                         val entries = settingsViewModel.getColorEntries()
                         val idx = entries.indexOfFirst { it.key == key }.coerceAtLeast(0)

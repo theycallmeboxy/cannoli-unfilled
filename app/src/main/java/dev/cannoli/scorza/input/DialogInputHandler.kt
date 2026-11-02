@@ -540,21 +540,14 @@ class DialogInputHandler @Inject constructor(
                         gameListViewModel.reload()
                         launcherActions.rescanSystemList()
                     } else {
-                        if (settings.contentMode == dev.cannoli.scorza.settings.ContentMode.COLLECTIONS) {
+                        val remaining = collectionManager.topLevel()
+                        if (remaining.isEmpty()) {
                             withContext(Dispatchers.Main) {
                                 nav.screenStack.removeAt(nav.screenStack.lastIndex)
                                 launcherActions.rescanSystemList()
                             }
                         } else {
-                            val remaining = collectionManager.topLevel()
-                            if (remaining.isEmpty()) {
-                                withContext(Dispatchers.Main) {
-                                    nav.screenStack.removeAt(nav.screenStack.lastIndex)
-                                    launcherActions.rescanSystemList()
-                                }
-                            } else {
-                                gameListViewModel.loadCollectionsList(restoreIndex = true)
-                            }
+                            gameListViewModel.loadCollectionsList(restoreIndex = true)
                         }
                     }
                 }
@@ -1394,16 +1387,15 @@ class DialogInputHandler @Inject constructor(
 
     private fun onContextMenuConfirm(state: DialogState.ContextMenu) {
         if (nav.currentScreen == LauncherScreen.SystemList) {
-            val fghItem = nav.pendingFghItem
-            if (fghItem != null) {
-                nav.pendingFghItem = null
-                onFghContextMenuConfirm(fghItem, state)
+            val listItem = nav.pendingMainListItem
+            if (listItem != null) {
+                nav.pendingMainListItem = null
+                onMainListItemMenuConfirm(listItem, state)
             } else {
                 when (state.options[state.selectedOption]) {
                     MENU_RENAME -> {
                         val renameTitle = when (systemListViewModel.getSelectedItem()) {
                             is SystemListViewModel.ListItem.PlatformItem -> dev.cannoli.ui.R.string.keyboard_title_rename_platform
-                            is SystemListViewModel.ListItem.CollectionItem -> dev.cannoli.ui.R.string.keyboard_title_rename_collection
                             else -> dev.cannoli.ui.R.string.keyboard_title_rename_folder
                         }
                         nav.dialogState.value = DialogState.RenameInput(
@@ -2201,7 +2193,7 @@ class DialogInputHandler @Inject constructor(
         }
     }
 
-    private fun onFghContextMenuConfirm(item: ListItem, state: DialogState.ContextMenu) {
+    private fun onMainListItemMenuConfirm(item: ListItem, state: DialogState.ContextMenu) {
         val selected = state.options[state.selectedOption]
         val path = item.recentKey() ?: return
         val displayName = when (item) {

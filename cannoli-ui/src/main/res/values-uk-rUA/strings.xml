@@ -9,7 +9,6 @@
     <string name="label_open">ВІДКРИТИ</string>
     <string name="label_change">ЗМІНИТИ</string>
     <string name="label_firmware">ПРОШИВКА</string>
-    <string name="label_choose">ВИБРАТИ</string>
     <string name="label_close">ЗАКРИТИ</string>
     <string name="label_help">ДОПОМОГА</string>
     <string name="label_remove">ВИДАЛИТИ ЯРЛИК</string>
@@ -126,9 +125,7 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">Відновити системні папки</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">Режим вмісту</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">Колекція 5GH</string>
     <string name="setting_show_recently_played">Недавно грані</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Улюблені</string>
@@ -311,11 +308,8 @@
     <string name="value_show">Показати</string>
     <string name="value_hide">Приховати</string>
     <string name="value_none">Немає</string>
-    <string name="value_selected">Вибрано</string>
     <string name="value_cannoli_root">Коренева папка Cannoli</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">За замовчуванням</string>
-    <string name="value_collections">Лише колекції</string>
     <string name="value_fit">Вписати</string>
     <string name="value_original">Оригінал</string>
     <string name="value_fit_width">За шириною</string>
@@ -403,7 +397,6 @@
     <!-- System list -->
     <string name="empty_content">Вміст не знайдено. Додайте щось!</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">Ваша колекція 5GH порожня. Наповніть її!</string>
     <string name="label_recently_played">Недавно зіграні</string>
     <string name="label_favorites">Улюблені</string>
     <string name="label_collections">Колекції</string>

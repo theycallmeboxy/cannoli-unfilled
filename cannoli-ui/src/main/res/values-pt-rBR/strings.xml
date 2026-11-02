@@ -9,7 +9,6 @@
     <string name="label_open">ABRIR</string>
     <string name="label_change">ALTERAR</string>
     <string name="label_firmware">FIRMAR</string>
-    <string name="label_choose">ESCOLHA</string>
     <string name="label_close">FECHAR</string>
     <string name="label_help">AJUDA</string>
     <string name="label_remove">REMOVER LOJA</string>
@@ -126,9 +125,7 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">Regerar Pastas do Sistema</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">Modo de Conteúdo</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">Coleção 5GH</string>
     <string name="setting_show_recently_played">Reproduzidas recentemente</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Atalhos</string>
@@ -309,11 +306,8 @@
     <string name="value_show">Apresentar</string>
     <string name="value_hide">Esconder</string>
     <string name="value_none">Nenhuma</string>
-    <string name="value_selected">Selecionado</string>
     <string name="value_cannoli_root">Raiz Cannoli</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">Padrão</string>
-    <string name="value_collections">Coleções Apenas</string>
     <string name="value_fit">Ajustar</string>
     <string name="value_original">Original</string>
     <string name="value_fit_width">Fit Width</string>
@@ -400,7 +394,6 @@
     <!-- System list -->
     <string name="empty_content">Nenhum conteúdo encontrado. Vá adicionar alguns!</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">Sua coleção 5GH está vazia. Vá preenchê-la.</string>
     <string name="label_recently_played">Reproduzidas recentemente</string>
     <string name="label_favorites">Atalhos</string>
     <string name="label_collections">Coleções</string>

@@ -7,14 +7,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.AppsRepository
-import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.db.LibraryRef
 import dev.cannoli.scorza.db.RecentlyPlayedRepository
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.di.IoScope
 import dev.cannoli.scorza.launcher.LaunchManager
 import dev.cannoli.scorza.model.AppType
-import dev.cannoli.scorza.model.CollectionType
 import dev.cannoli.scorza.model.ListItem
 import dev.cannoli.scorza.model.Rom
 import dev.cannoli.scorza.romm.sync.PreLaunchOutcome
@@ -23,7 +21,6 @@ import dev.cannoli.scorza.romm.sync.SaveSyncService
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
 import dev.cannoli.scorza.server.KitchenManager
-import dev.cannoli.scorza.settings.ContentMode
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.ui.screens.DialogState
@@ -47,7 +44,6 @@ class LauncherActions @Inject constructor(
     @ApplicationContext private val context: Context,
     @IoScope private val ioScope: CoroutineScope,
     private val settings: SettingsRepository,
-    private val collectionsRepository: CollectionsRepository,
     private val recentlyPlayedRepository: RecentlyPlayedRepository,
     private val romsRepository: RomsRepository,
     private val appsRepository: AppsRepository,
@@ -99,13 +95,9 @@ class LauncherActions @Inject constructor(
         onProgress: ((String, Int, Int) -> Unit)? = null,
         onComplete: (() -> Unit)? = null,
     ) {
-        val fghId = validateFghCollection()
-        gameListViewModel.showFavoriteStars = settings.contentMode != ContentMode.FIVE_GAME_HANDHELD
         systemListViewModel.scan(
             showRecentlyPlayed = settings.showRecentlyPlayed,
             showFavorites = settings.showFavorites,
-            contentMode = settings.contentMode,
-            fghCollectionId = fghId,
             scanDisk = scanDisk,
             reconcileOrphans = reconcileOrphans,
             onProgress = onProgress,
@@ -143,16 +135,6 @@ class LauncherActions @Inject constructor(
         if (nav.currentScreen is LauncherScreen.GameList) {
             gameListViewModel.reload()
         }
-    }
-
-    fun validateFghCollection(): Long? {
-        if (settings.contentMode != ContentMode.FIVE_GAME_HANDHELD) return null
-        val all = collectionsRepository.all().filter { it.type == CollectionType.STANDARD }
-        val current = settings.fghCollectionId
-        if (current != null && all.any { it.id == current }) return current
-        val fallback = all.firstOrNull()?.id
-        settings.fghCollectionId = fallback
-        return fallback
     }
 
     fun invalidateAllLibraryCaches() {
@@ -278,13 +260,6 @@ class LauncherActions @Inject constructor(
             is SystemListViewModel.ListItem.PlatformItem -> {
                 ioScope.launch {
                     platformConfig.setDisplayName(item.platform.tag, newName)
-                    rescanSystemList()
-                }
-            }
-            is SystemListViewModel.ListItem.CollectionItem -> {
-                ioScope.launch {
-                    val id = collectionsRepository.all().firstOrNull { it.displayName == item.name }?.id
-                    if (id != null) collectionsRepository.rename(id, newName)
                     rescanSystemList()
                 }
             }

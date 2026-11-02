@@ -106,8 +106,7 @@ fun SettingsScreen(
             val selectedItem = state.items.getOrNull(state.selectedIndex)
             val isColorItem = selectedItem?.key?.startsWith("color_") == true
             val isEditableItem = selectedItem?.isEditable == true
-            val isFghCollection = selectedItem?.key == "fgh_collection"
-            val showChange = selectedItem?.canCycle != false && selectedItem?.disabled != true && (!isEditableItem || isFghCollection)
+            val showChange = selectedItem?.canCycle != false && selectedItem?.disabled != true && !isEditableItem
             val leftItems = if (showChange) {
                 listOf(buttonStyle.back to stringResource(R.string.label_back), DPAD_HORIZONTAL to stringResource(R.string.label_change))
             } else {
@@ -119,11 +118,8 @@ fun SettingsScreen(
                 && selectedItem.valueText == null
                 && selectedItem.valueRes == null
                 && selectedItem.swatchColor == null
-                && !isFghCollection
             val rightItems = if (isColorItem) {
                 listOf(buttonStyle.confirm to stringResource(R.string.label_select))
-            } else if (isFghCollection) {
-                listOf(buttonStyle.confirm to stringResource(R.string.label_choose))
             } else if (state.activeCategory == "screen_geometry") {
                 listOf(buttonStyle.north to stringResource(R.string.label_reset))
             } else if (showClear) {

@@ -14,6 +14,7 @@ import dev.cannoli.scorza.db.RecentlyPlayedRepository
 import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.db.RommLinkRepository
 import dev.cannoli.scorza.romm.sync.SaveSyncStore
+import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.util.ArcadeTitleLookup
 import dev.cannoli.scorza.util.ArtworkLookup
@@ -69,8 +70,8 @@ object DatabaseModule {
         CollectionsRepository(db)
 
     @Provides @Singleton
-    fun provideRecentlyPlayedRepository(db: CannoliDatabase): RecentlyPlayedRepository =
-        RecentlyPlayedRepository(db)
+    fun provideRecentlyPlayedRepository(db: CannoliDatabase, settings: SettingsRepository): RecentlyPlayedRepository =
+        RecentlyPlayedRepository(db) { settings.showAppsInRecent }
 
     @Provides @Singleton
     fun provideRommLinkRepository(

@@ -9,7 +9,6 @@
     <string name="label_open">開く</string>
     <string name="label_change">変更</string>
     <string name="label_firmware">FIRWARE</string>
-    <string name="label_choose">選択</string>
     <string name="label_close">閉じる</string>
     <string name="label_help">ヘルプ</string>
     <string name="label_remove">ショットカットを削除</string>
@@ -126,9 +125,7 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">システムフォルダを再生成</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">コンテンツモード</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">5GHコレクション</string>
     <string name="setting_show_recently_played">最近プレイした曲</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">お気に入り</string>
@@ -308,11 +305,8 @@
     <string name="value_show">表示</string>
     <string name="value_hide">非表示</string>
     <string name="value_none">なし</string>
-    <string name="value_selected">選択済み</string>
     <string name="value_cannoli_root">Cannoliルート</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">デフォルト</string>
-    <string name="value_collections">コレクションのみ</string>
     <string name="value_fit">合わせる</string>
     <string name="value_original">オリジナル</string>
     <string name="value_fit_width">Fit Width</string>
@@ -400,7 +394,6 @@
     <!-- System list -->
     <string name="empty_content">コンテンツが見つかりませんでした。追加してください！</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">5GHのコレクションは空です。いっぱいにしましょう！</string>
     <string name="label_recently_played">最近プレイした曲</string>
     <string name="label_favorites">お気に入り</string>
     <string name="label_collections">コレクション</string>

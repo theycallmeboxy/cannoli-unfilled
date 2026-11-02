@@ -2,7 +2,6 @@ package dev.cannoli.scorza.input.screen
 
 import dev.cannoli.scorza.input.LauncherActions
 import dev.cannoli.scorza.navigation.NavigationController
-import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
 import io.mockk.every
 import io.mockk.mockk
@@ -28,7 +27,6 @@ class GameListSelectReleaseTest {
         handler = GameListInputHandler(
             nav = nav,
             ioScope = mockk(relaxed = true),
-            settings = mockk<SettingsRepository>(relaxed = true),
             gameListViewModel = glvm,
             launcherActions = mockk<LauncherActions>(relaxed = true),
         )

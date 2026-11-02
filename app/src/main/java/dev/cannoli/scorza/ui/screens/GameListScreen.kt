@@ -132,7 +132,7 @@ fun GameListScreen(
     }
 
     val inFavoritesCollection = state.isCollection && state.isFavorites
-    val showFavoriteStars = viewModel.showFavoriteStars && !inFavoritesCollection
+    val showFavoriteStars = !inFavoritesCollection
     val favoriteRomIds = state.favoriteRomIds
     val favoriteAppIds = state.favoriteAppIds
     val showPlatformInSuffix = state.isCollection || state.platformTag == "recently_played"

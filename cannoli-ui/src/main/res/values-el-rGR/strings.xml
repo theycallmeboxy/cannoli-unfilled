@@ -9,7 +9,6 @@
     <string name="label_open">ΑΝΟΙΓΜΑ</string>
     <string name="label_change">ΑΛΛΑΓΗ</string>
     <string name="label_firmware">ΠΡΟΣΑΡΜΟΓΗ</string>
-    <string name="label_choose">ΕΠΙΛΕΞΤΕ</string>
     <string name="label_close">ΚΛΕΙΣΤΕ</string>
     <string name="label_help">ΒΟΗΘΕΙΑ</string>
     <string name="label_remove">ΑΦΑΙΡΕΣΗ ΣΥΝΤΟΜΗΣ</string>
@@ -126,9 +125,7 @@
     <!-- Advanced action: recreate the standard platform/system folders. -->
     <string name="setting_regenerate_system_folders">Αναδημιουργία Φακέλων Συστήματος</string>
     <!-- Library setting: which content layout to show (platforms, collections only, or Five Game Handheld). -->
-    <string name="setting_content_mode">Λειτουργία Περιεχομένου</string>
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
-    <string name="setting_fgh_collection">Συλλογή 5GH</string>
     <string name="setting_show_recently_played">Πρόσφατα Παίχτηκαν</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Αγαπημένα</string>
@@ -306,11 +303,8 @@
     <string name="value_show">Εμφάνιση</string>
     <string name="value_hide">Απόκρυψη</string>
     <string name="value_none">Κανένα</string>
-    <string name="value_selected">Επιλεγμένο</string>
     <string name="value_cannoli_root">Ρίζα Κανόλι</string>
     <!-- Content Mode value: the default platform view. -->
-    <string name="value_platforms">Προεπιλογή</string>
-    <string name="value_collections">Μόνο Συλλογές</string>
     <string name="value_fit">Προσαρμογή</string>
     <string name="value_original">Αρχικό</string>
     <string name="value_fit_width">Fit Width</string>
@@ -394,7 +388,6 @@
     <!-- System list -->
     <string name="empty_content">Δεν βρέθηκε περιεχόμενο. Πηγαίνετε να προσθέσετε κάτι!</string>
     <!-- 5GH = Five Game Handheld; keep "5GH" as-is. -->
-    <string name="empty_fgh_collection">Η συλλογή 5GH σας είναι άδεια. Πηγαίνετε να την γεμίσετε!</string>
     <string name="label_recently_played">Πρόσφατα Παίχτηκαν</string>
     <string name="label_favorites">Αγαπημένα</string>
     <string name="label_collections">Συλλογές</string>
