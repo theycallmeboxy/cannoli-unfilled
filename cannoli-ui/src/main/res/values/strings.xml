@@ -391,6 +391,8 @@
     <string name="launch_error_bad_game_file">Could not read a game ID from %1$s</string>
     <!-- %1$s = system name. -->
     <string name="launch_error_no_emulator" tools:ignore="MissingTranslation">%1$s has no emulator. Add one from emulators.json to its entry in systems.json.</string>
+    <!-- %1$s = the shortcut's name, which a favorite or recently played entry still points at. -->
+    <string name="launch_error_no_shortcut" tools:ignore="MissingTranslation">The shortcut %1$s is no longer in shortcuts.json.</string>
     <!-- %1$s = core name, %2$s = emulator app. -->
     <string name="dialog_missing_core_pkg">%1$s isn\'t installed in %2$s.</string>
     <string name="dialog_missing_core_install_hint" tools:ignore="MissingTranslation">Install it in that emulator, or list another emulator for the system in systems.json.</string>
@@ -501,8 +503,28 @@
     <string name="folder_target_main_menu" tools:ignore="MissingTranslation">Main Menu</string>
     <!-- Title of the folder picker. %1$s = name of the item being moved. -->
     <string name="folder_picker_title" tools:ignore="MissingTranslation">Move %1$s to</string>
-    <!-- Title of the installed-apps checklist. %1$s = folder name. -->
-    <string name="app_picker_title" tools:ignore="MissingTranslation">Apps in %1$s</string>
+    <!-- Title of the folder picker that places a system the menu doesn't show yet. %1$s = system name. -->
+    <string name="place_picker_title" tools:ignore="MissingTranslation">Place %1$s in…</string>
+    <!-- Title of the checklist of systems and installed apps to add to a folder. %1$s = folder name. -->
+    <string name="folder_fill_title" tools:ignore="MissingTranslation">Add to %1$s</string>
+    <!-- Heading of the dimmed list, while editing the menu, of systems and ROM folders the menu doesn't show. -->
+    <string name="unplaced_heading" tools:ignore="MissingTranslation">Not in the menu</string>
+    <!-- A system with games that isn't on the menu. %1$s = system name, %2$d = number of games. -->
+    <plurals name="unplaced_system_games" tools:ignore="MissingTranslation">
+        <item quantity="one">%1$s · %2$d game</item>
+        <item quantity="other">%1$s · %2$d games</item>
+    </plurals>
+    <!-- A folder under Roms that no system uses. %1$s = folder name, %2$d = number of files in it. -->
+    <plurals name="unplaced_rom_folder_files" tools:ignore="MissingTranslation">
+        <item quantity="one">Roms/%1$s · %2$d file</item>
+        <item quantity="other">Roms/%1$s · %2$d files</item>
+    </plurals>
+    <!-- Main menu bottom bar, beside the button that opens the edit menu. %1$d = systems and ROM folders not on the menu. -->
+    <string name="label_edit_unplaced" tools:ignore="MissingTranslation">EDIT · %1$d UNPLACED</string>
+    <!-- %1$s = system name from systems.template.json, %2$s = ROM folder name. -->
+    <string name="dialog_adopt_rom_folder" tools:ignore="MissingTranslation">Add %1$s for Roms/%2$s? It and its emulators are copied from the templates into systems.json and emulators.json.</string>
+    <!-- %1$s = ROM folder name. -->
+    <string name="dialog_no_template_for_folder" tools:ignore="MissingTranslation">No system in systems.template.json uses Roms/%1$s. Add one to systems.json to show these games.</string>
     <!-- %1$s = folder name. Its contents are not deleted. -->
     <string name="dialog_delete_folder_confirm" tools:ignore="MissingTranslation">Delete %1$s? What it holds moves up a level.</string>
     <!-- OSD toast. %1$d = number of problems found in the config files (emulators.json, systems.json...). -->

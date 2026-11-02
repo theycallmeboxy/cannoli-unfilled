@@ -62,6 +62,17 @@ sealed interface DirectoryItem {
 }
 
 /**
+ * What names an item among its siblings, such as `system:GBA` or `folder:Nintendo`: its kind and
+ * the value directory.json gives it. [DirectoryEditor] finds items in the file by this key.
+ */
+val DirectoryItem.key: String get() = when (this) {
+    is DirectoryItem.Folder -> "folder:$name"
+    is DirectoryItem.SystemItem -> "system:$id"
+    is DirectoryItem.ShortcutItem -> "shortcut:$name"
+    is DirectoryItem.AppItem -> "app:$packageName"
+}
+
+/**
  * What a game launches with: the emulator, the system's choice that picked it, and [vars] to
  * pass to EmulatorIntentBuilder.resolve, which fills the built-in placeholders itself.
  */
@@ -95,6 +106,26 @@ data class Library(
             }
         }
         walk(directory)
+    }
+
+    /** The items of the folder at [path], or null when no folder has that path. Empty is the main menu. */
+    fun itemsAt(path: List<String>): List<DirectoryItem>? {
+        var items = directory
+        for (name in path) {
+            items = items.filterIsInstance<DirectoryItem.Folder>().firstOrNull { it.name == name }?.items ?: return null
+        }
+        return items
+    }
+
+    /** Every folder path, depth first, for a "move to" picker. */
+    fun folderPaths(): List<List<String>> = buildList {
+        fun walk(items: List<DirectoryItem>, path: List<String>) {
+            for (item in items) if (item is DirectoryItem.Folder) {
+                add(path + item.name)
+                walk(item.items, path + item.name)
+            }
+        }
+        walk(directory, emptyList())
     }
 
     /** The choice for [romPath] (under Roms/): its override when one still matches, else the default. */

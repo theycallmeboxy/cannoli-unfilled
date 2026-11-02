@@ -11,7 +11,20 @@ sealed interface DialogState {
     data class MissingCore(val coreName: String, val emulatorName: String) : DialogState
     data class MissingApp(val appName: String, val packageName: String) : DialogState
     data class LaunchError(val message: String) : DialogState
-    data class ContextMenu(val gameName: String, val selectedOption: Int = 0, val options: List<String>) : DialogState
+    /**
+     * [unplaced] rows follow [options] under a dimmed "Not in the menu" heading, which the cursor
+     * skips; [selectedOption] counts on from the options into them.
+     */
+    data class ContextMenu(
+        val gameName: String,
+        val selectedOption: Int = 0,
+        val options: List<String>,
+        val unplaced: List<dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.Unplaced> = emptyList(),
+    ) : DialogState {
+        /** The unplaced row under the cursor, or null while it is on an option. */
+        val selectedUnplaced: dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.Unplaced?
+            get() = unplaced.getOrNull(selectedOption - options.size)
+    }
     data class BulkContextMenu(val gamePaths: List<String>, val selectedOption: Int = 0, val options: List<String>) : DialogState
     data class DeleteConfirm(val gameName: String, val bulkPaths: List<String>? = null) : DialogState
     data class RenameInput(
@@ -69,6 +82,8 @@ sealed interface DialogState {
     }
     data class DeleteFolderConfirm(val path: List<String>) : DialogState
     data class FolderEditError(val message: String) : DialogState
+    /** Offers to copy [systemName] from systems.template.json for the unclaimed ROM folder [folder]. */
+    data class AdoptRomFolderConfirm(val folder: String, val systemName: String) : DialogState
     data class KeyboardHelp(val restore: DialogState, val layout: KeyboardLayout) : DialogState
     data object QuitConfirm : DialogState
     data object RestartRequired : DialogState
@@ -169,8 +184,9 @@ interface KeyboardHost {
 
 fun DialogState.withMenuDelta(delta: Int): DialogState? = when (this) {
     is DialogState.ContextMenu -> {
-        if (options.isEmpty()) null
-        else copy(selectedOption = (selectedOption + delta).mod(options.size))
+        val size = options.size + unplaced.size
+        if (size == 0) null
+        else copy(selectedOption = (selectedOption + delta).mod(size))
     }
     is DialogState.BulkContextMenu -> {
         if (options.isEmpty()) null

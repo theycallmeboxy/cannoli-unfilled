@@ -7,8 +7,8 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.cannoli.scorza.config.CannoliPaths
-import dev.cannoli.scorza.config.FoldersConfig
 import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.DirectoryEditor
 import dev.cannoli.scorza.config.library.LibraryConfig
 import java.io.IOException
 import javax.inject.Singleton
@@ -32,6 +32,5 @@ object ScanModule {
         PlatformConfig { libraryConfig.library }
 
     @Provides @Singleton
-    fun provideFoldersConfig(paths: CannoliPathsProvider): FoldersConfig =
-        FoldersConfig { CannoliPaths(paths.root).foldersJson }
+    fun provideDirectoryEditor(libraryConfig: LibraryConfig): DirectoryEditor = DirectoryEditor(libraryConfig)
 }

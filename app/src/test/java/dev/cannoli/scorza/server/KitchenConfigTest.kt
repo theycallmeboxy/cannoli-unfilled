@@ -16,7 +16,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Base64
 
-/** Kitchen reads and replaces folders.json and emulators.json through /api/config. */
+/** Kitchen reads and replaces the config files it is given through /api/config. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [34])
 class KitchenConfigTest {
@@ -47,7 +47,7 @@ class KitchenConfigTest {
                 }
             },
         )
-        val s = KitchenHttpServer(dir, assets, port = port, pin = PIN, configFiles = mapOf("folders.json" to file))
+        val s = KitchenHttpServer(dir, assets, port = port, pin = PIN, configFiles = mapOf("directory.json" to file))
         s.startServer()
         repeat(50) {
             try {
@@ -75,7 +75,7 @@ class KitchenConfigTest {
 
     @Test fun `get returns the text and its problems`() {
         start()
-        val (code, body) = call("GET", "/api/config/folders.json")
+        val (code, body) = call("GET", "/api/config/directory.json")
         assertEquals(200, code)
         val json = JSONObject(body)
         assertEquals("{}", json.getString("text"))
@@ -84,15 +84,15 @@ class KitchenConfigTest {
 
     @Test fun `put saves valid text and refuses the rest with 422`() {
         start()
-        val (ok, okBody) = call("PUT", "/api/config/folders.json", """{"folders":[]}""")
+        val (ok, okBody) = call("PUT", "/api/config/directory.json", """{"items":[]}""")
         assertEquals(200, ok)
         assertTrue(JSONObject(okBody).getBoolean("saved"))
-        assertEquals("""{"folders":[]}""", saved)
+        assertEquals("""{"items":[]}""", saved)
 
-        val (bad, badBody) = call("PUT", "/api/config/folders.json", "nope")
+        val (bad, badBody) = call("PUT", "/api/config/directory.json", "nope")
         assertEquals(422, bad)
         assertFalse(JSONObject(badBody).getBoolean("saved"))
-        assertEquals("""{"folders":[]}""", saved)
+        assertEquals("""{"items":[]}""", saved)
     }
 
     @Test fun `only listed files are reachable`() {
@@ -101,7 +101,7 @@ class KitchenConfigTest {
         assertEquals(404, call("GET", "/api/config/../cannoli.db").first)
         val (code, body) = call("GET", "/api/config")
         assertEquals(200, code)
-        assertEquals("folders.json", JSONObject(body).getJSONArray("files").getString(0))
+        assertEquals("directory.json", JSONObject(body).getJSONArray("files").getString(0))
     }
 
     private companion object {

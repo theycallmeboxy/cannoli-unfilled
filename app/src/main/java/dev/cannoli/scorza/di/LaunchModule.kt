@@ -27,9 +27,9 @@ object LaunchModule {
         launchState: LaunchState,
         paths: CannoliPathsProvider,
         installedCoreService: InstalledCoreService,
-        foldersConfig: dev.cannoli.scorza.config.FoldersConfig,
+        libraryConfig: dev.cannoli.scorza.config.library.LibraryConfig,
     ): LaunchManager = LaunchManager(
         context, settings, platformConfig, apkLauncher, launchState, { paths.romDir },
-        installedCoreService, foldersConfig,
+        installedCoreService, { libraryConfig.library.shortcuts },
     )
 }

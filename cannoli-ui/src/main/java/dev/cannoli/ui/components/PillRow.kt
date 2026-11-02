@@ -187,14 +187,20 @@ fun PillRowText(
     verticalPadding: Dp,
     showReorderIcon: Boolean = false,
     checkState: Boolean? = null,
-    tagSuffix: String? = null
+    tagSuffix: String? = null,
+    /** Faded text for a row that is shown for information, such as a heading. */
+    dimmed: Boolean = false,
 ) {
     val colors = LocalCannoliColors.current
     val baseStyle = MaterialTheme.typography.bodyLarge
     val textStyle = remember(baseStyle, fontSize, lineHeight) {
         baseStyle.copy(fontSize = fontSize, lineHeight = lineHeight)
     }
-    val textColor = if (isSelected) colors.highlightText else colors.text
+    val textColor = when {
+        isSelected -> colors.highlightText
+        dimmed -> colors.text.copy(alpha = 0.5f)
+        else -> colors.text
+    }
 
     val scrollState = rememberScrollState()
     MarqueeEffect(scrollState, isSelected, key = label to isSelected)

@@ -74,6 +74,7 @@ class SystemListScanTargetsTest {
 
         val scheduler = mockk<ScanScheduler>(relaxed = true)
         every { scheduler.results } returns MutableSharedFlow()
+        val library = dev.cannoli.scorza.config.library.LibraryConfig({ File(tmp.root, "Config") }) { null }
 
         return SystemListViewModel(
             romsRepository = romsRepository,
@@ -85,7 +86,8 @@ class SystemListScanTargetsTest {
             cannoliPaths = paths,
             romDirectoryWatcher = mockk<RomDirectoryWatcher>(relaxed = true),
             scanScheduler = scheduler,
-            foldersConfig = dev.cannoli.scorza.config.FoldersConfig { File(tmp.root, "folders.json") },
+            libraryConfig = library,
+            directoryEditor = dev.cannoli.scorza.config.library.DirectoryEditor(library),
             artworkLookup = mockk(relaxed = true),
             context = mockk(relaxed = true),
         ).also { created.add(it) }

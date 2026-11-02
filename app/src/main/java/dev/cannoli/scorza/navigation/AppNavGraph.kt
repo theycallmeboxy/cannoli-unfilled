@@ -198,12 +198,17 @@ sealed class LauncherScreen {
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
     }
 
-    /** A place a folder entry can move to. An empty [path] is the main menu. */
+    /** A place a directory item can move to. An empty [path] is the main menu. */
     data class FolderTarget(val path: List<String>, val label: String, val depth: Int)
 
+    /**
+     * Picks where the directory.json item [key] goes. [from] is the folder it is in now, or null
+     * for one the directory doesn't hold yet, such as an unplaced system.
+     */
     data class FolderPicker(
         val title: String,
-        val entry: dev.cannoli.scorza.config.FolderEntry,
+        val key: String,
+        val from: List<String>?,
         val targets: List<FolderTarget>,
         override val selectedIndex: Int = 0,
         override val scrollTarget: Int = 0,
@@ -212,17 +217,22 @@ sealed class LauncherScreen {
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
     }
 
+    /**
+     * "Add To This Folder": [systems] not on the menu yet, then the installed [apps]. Indices in
+     * [checkedIndices] count the systems first.
+     */
     data class AppPicker(
         val folderPath: List<String>,
         val title: String,
         val apps: List<String>,
         val packages: List<String>,
+        val systems: List<dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.Unplaced.System> = emptyList(),
         override val selectedIndex: Int = 0,
         val checkedIndices: Set<Int> = emptySet(),
         val initialChecked: Set<Int> = emptySet(),
         override val scrollTarget: Int = 0,
     ) : LauncherScreen(), ScrollableScreen {
-        override val itemCount: Int get() = apps.size
+        override val itemCount: Int get() = systems.size + apps.size
         override fun withScroll(selectedIndex: Int, scrollTarget: Int) = copy(selectedIndex = selectedIndex, scrollTarget = scrollTarget)
     }
 
@@ -737,14 +747,16 @@ fun AppNavGraph(
                     buttonStyle = labels
                 ) {
                     List(
-                        items = currentScreen.apps,
+                        items = currentScreen.systems + currentScreen.apps,
                         selectedIndex = currentScreen.selectedIndex,
                         itemHeight = itemHeight,
                         scrollTarget = currentScreen.scrollTarget,
                         onListStateChanged = onListStateChanged
-                    ) { index, app, isSelected ->
+                    ) { index, row, isSelected ->
                         PillRowText(
-                            label = app,
+                            label = if (row is dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.Unplaced) {
+                                dev.cannoli.scorza.ui.screens.unplacedLabel(row)
+                            } else row.toString(),
                             isSelected = isSelected,
                             fontSize = listFontSize,
                             lineHeight = listLineHeight,

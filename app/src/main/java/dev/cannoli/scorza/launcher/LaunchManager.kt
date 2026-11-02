@@ -7,6 +7,7 @@ import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.config.library.Placeholders
 import dev.cannoli.scorza.model.App
 import dev.cannoli.scorza.model.Rom
+import dev.cannoli.scorza.model.shortcutName
 import dev.cannoli.scorza.romm.sync.RomKeys
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.DialogState
@@ -20,7 +21,7 @@ class LaunchManager(
     private val launchState: LaunchState,
     private val romDir: () -> File,
     private val installedCoreService: InstalledCoreService? = null,
-    private val foldersConfig: dev.cannoli.scorza.config.FoldersConfig? = null,
+    private val shortcuts: () -> Map<String, dev.cannoli.scorza.config.library.Shortcut> = { emptyMap() },
 ) {
     init {
         apkLauncher.debugLog = ::debugLog
@@ -59,8 +60,12 @@ class LaunchManager(
         debugLog("launchApp entered: ${app.type} / ${app.packageName}")
         if (launchState.launching) return null
         launchState.launching = true
-        val custom = foldersConfig?.intentFor(app.packageName)
-        return launchResultDialog(if (custom != null) apkLauncher.launchConfigured(custom) else apkLauncher.launch(app.packageName))
+        // A shortcut row launches its intent from shortcuts.json; one removed from the file since
+        // it was favorited or played has nothing left to launch.
+        val shortcutName = app.shortcutName ?: return launchResultDialog(apkLauncher.launch(app.packageName))
+        val shortcut = shortcuts()[shortcutName]
+            ?: return errorAndReset(DialogState.LaunchError(context.getString(R.string.launch_error_no_shortcut, shortcutName)))
+        return launchResultDialog(apkLauncher.launchShortcut(shortcut.intent))
     }
 
     private fun errorAndReset(dialog: DialogState): DialogState {

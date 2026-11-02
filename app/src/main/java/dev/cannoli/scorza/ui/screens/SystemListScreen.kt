@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -41,6 +42,7 @@ import dev.cannoli.scorza.settings.ArtScale
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.ListItem
 import dev.cannoli.ui.ButtonStyle
+import dev.cannoli.ui.START_GLYPH
 import dev.cannoli.ui.components.BottomBar
 import dev.cannoli.ui.components.ConfirmOverlay
 import dev.cannoli.ui.components.List
@@ -195,6 +197,8 @@ fun SystemListScreen(
                             is ListItem.PlatformItem -> item.platform.tag
                             is ListItem.GameItem -> "game:${item.recentKey}"
                             is ListItem.FolderItem -> "folder:${item.name}"
+                            is ListItem.UnplacedHeader -> "unplaced"
+                            is ListItem.UnplacedRow -> "unplaced:${item.entry}"
                         }
                     }
                 ) { _, item, isSelected ->
@@ -205,6 +209,8 @@ fun SystemListScreen(
                         is ListItem.PlatformItem -> item.platform.displayName
                         is ListItem.GameItem -> item.displayName
                         is ListItem.FolderItem -> item.name
+                        is ListItem.UnplacedHeader -> stringResource(R.string.unplaced_heading)
+                        is ListItem.UnplacedRow -> unplacedLabel(item.entry)
                     }
                     val showReorder = state.reorderMode && isSelected && (item is ListItem.PlatformItem || item is ListItem.FolderItem || item is ListItem.GameItem)
                     val tagSuffix = (item as? ListItem.GameItem)
@@ -222,6 +228,7 @@ fun SystemListScreen(
                         verticalPadding = listVerticalPadding,
                         showReorderIcon = showReorder,
                         tagSuffix = tagSuffix,
+                        dimmed = item is ListItem.UnplacedHeader || item is ListItem.UnplacedRow,
                     )
                 }
                 }
@@ -271,6 +278,11 @@ fun SystemListScreen(
                 if (state.items.isNotEmpty() || state.folderPath.isNotEmpty()) {
                     add(buttonStyle.west to stringResource(R.string.label_new))
                 }
+                // The main menu never lists what the directory leaves out; the hint says how much
+                // there is, and the edit menu lists it.
+                if (state.folderPath.isEmpty() && state.unplaced.isNotEmpty() && !state.reorderMode) {
+                    add(START_GLYPH to stringResource(R.string.label_edit_unplaced, state.unplaced.size))
+                }
             }
             BottomBar(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -281,4 +293,13 @@ fun SystemListScreen(
         }
     }
 
+}
+
+/** "Game Boy Advance · 214 games", or "Roms/Foo · 12 files" for a folder no system claims. */
+@Composable
+fun unplacedLabel(entry: SystemListViewModel.Unplaced): String = when (entry) {
+    is SystemListViewModel.Unplaced.System ->
+        pluralStringResource(R.plurals.unplaced_system_games, entry.games, entry.name, entry.games)
+    is SystemListViewModel.Unplaced.RomFolder ->
+        pluralStringResource(R.plurals.unplaced_rom_folder_files, entry.files, entry.folder, entry.files)
 }

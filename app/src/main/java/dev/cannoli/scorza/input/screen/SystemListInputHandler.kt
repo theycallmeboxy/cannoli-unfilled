@@ -4,7 +4,7 @@ import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.input.FolderEditor
 import dev.cannoli.scorza.input.LauncherActions
-import dev.cannoli.scorza.input.MENU_ADD_APPS
+import dev.cannoli.scorza.input.MENU_ADD_TO_FOLDER
 import dev.cannoli.scorza.input.MENU_DELETE
 import dev.cannoli.scorza.input.MENU_MOVE_TO_FOLDER
 import dev.cannoli.scorza.input.MENU_NEW_FOLDER
@@ -29,6 +29,7 @@ import javax.inject.Inject
 
 @ActivityScoped
 class SystemListInputHandler @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
     private val nav: NavigationController,
     private val settings: SettingsRepository,
     private val collectionsRepository: CollectionsRepository,
@@ -178,12 +179,17 @@ class SystemListInputHandler @Inject constructor(
 
     private fun onSystemListContextMenu() {
         val item = systemListViewModel.getSelectedItem()
+        // Every edit menu here ends with what the menu doesn't show, ready to be placed.
+        val unplaced = systemListViewModel.state.value.unplaced
         if (item == null) {
-            // An empty folder has no row to open a menu on, but can still be filled.
+            // An empty folder, or an empty main menu, has no row to open a menu on, but can
+            // still be filled.
             val path = systemListViewModel.state.value.folderPath
-            if (path.isNotEmpty()) {
-                nav.dialogState.value = DialogState.ContextMenu(gameName = path.last(), options = listOf(MENU_ADD_APPS, MENU_NEW_FOLDER))
-            }
+            nav.dialogState.value = DialogState.ContextMenu(
+                gameName = path.lastOrNull() ?: context.getString(dev.cannoli.ui.R.string.folder_target_main_menu),
+                options = listOf(MENU_ADD_TO_FOLDER, MENU_NEW_FOLDER),
+                unplaced = unplaced,
+            )
             return
         }
         if (item is SystemListViewModel.ListItem.GameItem) {
@@ -202,12 +208,12 @@ class SystemListInputHandler @Inject constructor(
                 if (item.item is ListItem.RomItem) {
                     add(MENU_DELETE_GAME)
                 } else {
-                    // An app on the main list is a folders.json entry.
+                    // An app or shortcut on the main list is a directory.json entry.
                     add(MENU_MOVE_TO_FOLDER)
                     add(MENU_REMOVE_FROM_FOLDER)
                 }
             }
-            nav.dialogState.value = DialogState.ContextMenu(gameName = menuName, options = options)
+            nav.dialogState.value = DialogState.ContextMenu(gameName = menuName, options = options, unplaced = unplaced)
             return
         }
         val name = when (item) {
@@ -219,19 +225,22 @@ class SystemListInputHandler @Inject constructor(
         val options = buildList {
             if (item is SystemListViewModel.ListItem.FolderItem) {
                 add(MENU_RENAME)
-                add(MENU_ADD_APPS)
+                add(MENU_ADD_TO_FOLDER)
                 add(MENU_MOVE_TO_FOLDER)
                 add(MENU_NEW_FOLDER)
                 add(MENU_DELETE)
             } else {
+                // Taking a system out leaves it under "Not in the menu" until it is placed again.
                 add(MENU_MOVE_TO_FOLDER)
+                add(MENU_REMOVE_FROM_FOLDER)
                 add(MENU_NEW_FOLDER)
                 if (rommConnectionStore.isConfigured) add(MENU_DOWNLOAD_ART)
             }
         }
         nav.dialogState.value = DialogState.ContextMenu(
             gameName = name,
-            options = options
+            options = options,
+            unplaced = unplaced,
         )
     }
 

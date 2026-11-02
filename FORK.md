@@ -46,7 +46,13 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   Cannoli, and bad entries are skipped and listed in `Logs/error.log`.
 - **Empty to start:** new and existing installs start with these files empty, so the main menu
   shows no platforms until you copy systems and emulators in from the `.template.json` files next
-  to them. Nothing is converted from the old `emulators.json`, `cores.json` or per-game choices.
+  to them. Nothing is converted from the old `emulators.json`, `cores.json`, `folders.json` or
+  per-game choices.
+- **Main menu order:** the menu is `Config/directory.json`, in the order it lists things. Recents,
+  Favorites and Collections stay at the top; after them come the directory's folders, systems,
+  shortcuts and apps. Platforms are no longer sorted by name or kept in the database, and
+  reordering with SELECT rewrites the order in `directory.json`, on the main menu and in folders.
+  A system shows only where the directory places it, and only once it has games.
 - **Core check:** before a launch, an emulator that answers RetroArch's installed-cores query is
   asked whether it has the game's core; if it says no, a dialog says which core is missing. An
   emulator that can't answer is never blocked.
@@ -60,13 +66,22 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
 
 ### Added
 
-- **Folders:** `Config/folders.json` holds folders of platforms, apps and other folders, nested
-  as deep as you like. Folders show their path as the screen title and can have art in
+- **Folders:** `Config/directory.json` holds folders of systems, shortcuts, apps and other folders,
+  nested as deep as you like. Folders show their path as the screen title and can have art in
   `Art/Folders/`.
-- **Folder editing on the device:** new, rename, delete, move, add apps, and reorder, all saved to
-  `folders.json`.
-- **Kitchen config API:** `/api/config` reads and saves `folders.json`. The new config files are
-  added in a later stage.
+- **Shortcuts:** an entry from `Config/shortcuts.json` placed in the directory opens its own
+  intent, such as a Kodi add-on, like an app. Shortcuts can be favorites and show in Recents.
+- **Folder editing on the device:** new, rename, delete, move, remove, "Add To This Folder" and
+  reorder, all saved to `directory.json` (the previous file is kept as `directory.json.bak`).
+  Systems can be moved and removed like folders and apps.
+- **Not in the menu:** a system with games that the directory doesn't place, or a folder under
+  `Roms/` with files that no system uses, isn't shown on the menu. While editing, it's listed,
+  dimmed, at the end: in reorder mode, and in every edit menu (START), where picking a system
+  places it in a folder you choose. Picking such a ROM folder offers to copy its system, and the
+  emulators that system uses, from the templates. "Add To This Folder" lists these systems above
+  the apps. The main menu's bottom bar shows how many there are.
+- **Kitchen config API:** `/api/config` serves the files it is given. It lists none for now: the
+  new config files are added in a later stage.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
 
 ## Building
@@ -84,6 +99,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-02 | Menu and folders come from directory.json; shortcuts; unplaced systems while editing |
 | 2026-11-02 | Systems and emulators come from systems.json and emulators.json; emulator mapping removed |
 | 2026-11-02 | Config model and templates for the new config files |
 | 2026-11-02 | Center layout: centered title, clock at the top left |
@@ -104,8 +120,8 @@ The fork starts from upstream commit `7755e376`.
 
 - [ ] **Test on a device:** the app installs and opens on a Pocket Block (Android 12); nothing
       has been launched from it yet. Check RetroArch and standalone
-      launches, editing and breaking `emulators.json`, nested folders, and Tools/Ports carrying
-      over with their favorites.
+      launches, editing and breaking `emulators.json`, nested folders, shortcuts, and placing
+      systems from "Not in the menu".
 - [ ] **Kitchen page for config files:** needs a fork of CannoliHQ/kitchen, bun in the build
       container, and `release.yml` pointed at the fork. For now, use Kitchen's Files tool.
 - [ ] **Local builds include no Kitchen web assets:** only CI adds them.

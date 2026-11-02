@@ -41,13 +41,13 @@ class AppsRepository(
     )
 
     /**
-     * The row for an app listed in folders.json, created on first sight. Apps are identified by
-     * package alone: a package that older builds listed under both Tools and Ports keeps its
-     * oldest row, so its favorites and play history carry over. [displayName], when given, is
-     * written through so a rename in folders.json shows up; a new row without one takes
-     * [fallbackName].
+     * The row for an app or shortcut listed in directory.json, created on first sight. Apps are
+     * identified by package alone (a shortcut by its SHORTCUT_PACKAGE_PREFIX name): a package that
+     * older builds listed under both Tools and Ports keeps its oldest row, so its favorites and
+     * play history carry over. [displayName], when given, is written through so a rename in the
+     * config shows up; a new row without one takes [fallbackName].
      */
-    fun forFolderEntry(packageName: String, displayName: String?, fallbackName: () -> String): App {
+    fun forDirectoryEntry(packageName: String, displayName: String?, fallbackName: () -> String): App {
         val existing = db.queryOne(
             "SELECT $COLUMNS FROM apps WHERE package_name = ? ORDER BY id LIMIT 1",
             packageName, mapper = ::rowToApp,

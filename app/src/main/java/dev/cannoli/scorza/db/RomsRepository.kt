@@ -113,12 +113,6 @@ class RomsRepository(
         )
     }
 
-    fun setPlatformOrder(orderedTags: List<String>) = db.transaction { conn ->
-        orderedTags.forEachIndexed { index, tag ->
-            conn.execute("UPDATE platforms SET sort_order = ? WHERE tag = ?", index.toLong(), tag)
-        }
-    }
-
     fun allRomsForPlatform(platformTag: String): List<Rom> = romsForPlatform(platformTag.uppercase())
 
     private fun romsForPlatform(platformTag: String): List<Rom> = db.queryAll(

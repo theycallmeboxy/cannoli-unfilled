@@ -1,6 +1,8 @@
 package dev.cannoli.scorza.config.library
 
 import dev.cannoli.scorza.util.ErrorLog
+import org.json.JSONException
+import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -99,6 +101,29 @@ class LibraryConfig(
         revalidate()
         return true to parsed.errors + crossErrors
     }
+
+    /**
+     * Changes [file] through its JSON: [change] edits the document in place and returns null, or
+     * returns why it refused and nothing is written. Working on the JSON rather than the parsed
+     * entries keeps comment keys and entries this build skipped. Returns null once written, else
+     * the reason it was not.
+     */
+    @Synchronized
+    fun edit(file: LibraryFile, change: (JSONObject) -> String?): String? {
+        val json = try {
+            JSONObject(currentText(file))
+        } catch (_: JSONException) {
+            return "${file.fileName} is not valid JSON, so it was left alone"
+        } catch (e: IOException) {
+            return "${file.fileName}: unreadable (${e.message})"
+        }
+        change(json)?.let { return it }
+        val (written, problems) = replaceText(file, json.toString(2) + "\n")
+        return if (written) null else problems.firstOrNull() ?: "Could not save ${file.fileName}"
+    }
+
+    /** The text of the bundled template [name], such as systems.template.json. */
+    fun templateText(name: String): String? = templateSource("$TEMPLATE_ASSET_DIR/$name")
 
     private fun fileFor(file: LibraryFile) = File(dirProvider(), file.fileName)
 

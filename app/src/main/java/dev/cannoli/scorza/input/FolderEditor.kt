@@ -5,8 +5,12 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
-import dev.cannoli.scorza.config.FolderEntry
-import dev.cannoli.scorza.config.FoldersConfig
+import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.DirectoryEditor
+import dev.cannoli.scorza.config.library.DirectoryItem
+import dev.cannoli.scorza.config.library.LibraryConfig
+import dev.cannoli.scorza.config.library.key
+import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.di.IoScope
 import dev.cannoli.scorza.launcher.ApkLauncher
 import dev.cannoli.scorza.navigation.LauncherScreen
@@ -20,16 +24,19 @@ import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
- * The main menu's folder editing: new, rename, delete, move, add apps. Every edit goes through
- * [FoldersConfig], which writes folders.json, so the file stays the one source of truth and stays
- * editable by hand.
+ * The menu's editing: new, rename, delete, move, remove, add to a folder, and placing what the
+ * menu doesn't show yet. Every edit goes through [DirectoryEditor], which writes directory.json,
+ * so the file stays the one source of truth and stays editable by hand.
  */
 @ActivityScoped
 class FolderEditor @Inject constructor(
     @ApplicationContext private val context: Context,
     @IoScope private val ioScope: CoroutineScope,
     private val nav: NavigationController,
-    private val foldersConfig: FoldersConfig,
+    private val libraryConfig: LibraryConfig,
+    private val directoryEditor: DirectoryEditor,
+    private val platformConfig: PlatformConfig,
+    private val romScanner: RomScanner,
     private val systemListViewModel: SystemListViewModel,
     private val launcherActions: LauncherActions,
     private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
@@ -37,68 +44,59 @@ class FolderEditor @Inject constructor(
 ) {
     private val currentPath: List<String> get() = systemListViewModel.state.value.folderPath
 
-    /** The folders.json entry behind a main list row, or null for rows folders cannot hold. */
-    fun entryFor(item: SystemListViewModel.ListItem): FolderEntry? = when (item) {
-        is SystemListViewModel.ListItem.FolderItem ->
-            foldersConfig.find(currentPath + item.name)?.let { FolderEntry.Folder(it) }
-        is SystemListViewModel.ListItem.PlatformItem -> {
-            // A merged row (MAME and FBN under one name) is placed by whichever tag the file uses.
-            val tags = item.platform.allTags.map { it.uppercase() }
-            val placed = tags.firstOrNull { foldersConfig.parentOf("platform:$it") != null }
-            FolderEntry.Platform(placed ?: item.platform.tag.uppercase())
-        }
-        is SystemListViewModel.ListItem.GameItem -> {
-            val app = (item.item as? dev.cannoli.scorza.model.ListItem.AppItem)?.app
-            app?.let { a ->
-                foldersConfig.allApps().firstOrNull { it.packageName == a.packageName }
-                    ?: FolderEntry.App(a.packageName, a.displayName, null)
-            }
-        }
-        else -> null
-    }
-
     fun promptNewFolder() {
         nav.dialogState.value = DialogState.MenuFolderNameInput(parentPath = currentPath)
     }
 
-    fun createFolder(parent: List<String>, name: String) = apply { foldersConfig.createFolder(parent, name) }
+    fun createFolder(parent: List<String>, name: String) = apply { directoryEditor.createFolder(parent, name) }
 
     fun renameFolder(name: String, newName: String) {
         val path = currentPath + name
         val target = currentPath + newName.trim()
-        apply { foldersConfig.renameFolder(path, newName).also { if (it == null) moveArt(path, target) } }
+        apply { directoryEditor.renameFolder(path, newName).also { if (it == null) moveArt(path, target) } }
     }
 
     fun confirmDelete(name: String) {
         nav.dialogState.value = DialogState.DeleteFolderConfirm(currentPath + name)
     }
 
-    fun deleteFolder(path: List<String>) = apply { foldersConfig.deleteFolder(path) }
+    fun deleteFolder(path: List<String>) = apply { directoryEditor.deleteFolder(path) }
 
-    /** Takes an app out of the folder being shown. */
+    /** Takes an app, shortcut or system out of the folder being shown. */
     fun removeFromFolder(item: SystemListViewModel.ListItem) {
-        val entry = entryFor(item) ?: return
+        val key = systemListViewModel.directoryKey(item) ?: return
         val path = currentPath
-        apply { foldersConfig.remove(path, entry.key) }
+        apply { directoryEditor.remove(path, key) }
     }
 
     fun openMovePicker(item: SystemListViewModel.ListItem, displayName: String) {
-        val entry = entryFor(item) ?: return
-        val own = (entry as? FolderEntry.Folder)?.node?.path
+        val key = systemListViewModel.directoryKey(item) ?: return
+        val own = (item as? SystemListViewModel.ListItem.FolderItem)?.let { currentPath + it.name }
+        openPicker(
+            title = context.getString(dev.cannoli.ui.R.string.folder_picker_title, displayName),
+            key = key,
+            from = currentPath,
+            exclude = own,
+        )
+    }
+
+    // The main menu first, then every folder as a tree. A folder cannot go inside itself or
+    // anything under it, so [exclude] and its subfolders are left out.
+    private fun openPicker(title: String, key: String, from: List<String>?, exclude: List<String>?) {
         val targets = buildList {
             add(LauncherScreen.FolderTarget(emptyList(), context.getString(dev.cannoli.ui.R.string.folder_target_main_menu), 0))
-            for (path in foldersConfig.allFolderPaths()) {
-                // A folder cannot go inside itself or anything under it.
-                if (own != null && path.take(own.size) == own) continue
+            for (path in libraryConfig.library.folderPaths()) {
+                if (exclude != null && path.take(exclude.size) == exclude) continue
                 add(LauncherScreen.FolderTarget(path, path.last(), path.size))
             }
         }
-        val here = foldersConfig.parentOf(entry.key) ?: emptyList()
+        val here = from ?: currentPath
         nav.dialogState.value = DialogState.None
         nav.push(
             LauncherScreen.FolderPicker(
-                title = context.getString(dev.cannoli.ui.R.string.folder_picker_title, displayName),
-                entry = entry,
+                title = title,
+                key = key,
+                from = from,
                 targets = targets,
                 selectedIndex = targets.indexOfFirst { it.path == here }.coerceAtLeast(0),
             )
@@ -108,12 +106,69 @@ class FolderEditor @Inject constructor(
     fun confirmMove(screen: LauncherScreen.FolderPicker) {
         val target = screen.targets.getOrNull(screen.selectedIndex) ?: return
         nav.pop()
-        val entry = screen.entry
+        val key = screen.key
+        val from = screen.from
         apply {
-            foldersConfig.move(entry, target.path).also { failure ->
-                if (failure == null && entry is FolderEntry.Folder) {
-                    moveArt(entry.node.path, target.path + entry.node.name)
+            directoryEditor.move(key, from, target.path).also { failure ->
+                val folder = key.removePrefix(FOLDER_PREFIX)
+                if (failure == null && from != null && key.startsWith(FOLDER_PREFIX)) {
+                    moveArt(from + folder, target.path + folder)
                 }
+            }
+        }
+    }
+
+    /**
+     * Acts on a row of the "Not in the menu" list: a system opens the folder picker to place it,
+     * and a ROM folder no system claims offers to copy a system for it from the templates.
+     */
+    fun placeUnplaced(entry: SystemListViewModel.Unplaced) {
+        when (entry) {
+            is SystemListViewModel.Unplaced.System -> openPlacePicker(entry.id, entry.name)
+            is SystemListViewModel.Unplaced.RomFolder -> ioScope.launch {
+                val template = directoryEditor.templateSystemFor(entry.folder)
+                withContext(Dispatchers.Main) {
+                    nav.dialogState.value = if (template != null) {
+                        DialogState.AdoptRomFolderConfirm(entry.folder, template)
+                    } else {
+                        DialogState.FolderEditError(
+                            context.getString(dev.cannoli.ui.R.string.dialog_no_template_for_folder, entry.folder)
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun openPlacePicker(systemId: String, name: String) = openPicker(
+        title = context.getString(dev.cannoli.ui.R.string.place_picker_title, name),
+        key = DirectoryItem.SystemItem(systemId).key,
+        from = null,
+        exclude = null,
+    )
+
+    /**
+     * Copies the template system for the ROM folder [folder] into the config, scans its games,
+     * then opens the picker to place it.
+     */
+    fun adoptRomFolder(folder: String) {
+        nav.dialogState.value = DialogState.None
+        ioScope.launch {
+            val result = directoryEditor.adoptRomFolder(folder)
+            if (result is DirectoryEditor.Adoption.Added) {
+                platformConfig.systemFor(result.systemId)?.let { system ->
+                    romScanner.scanPlatform(system.id.uppercase(), isArcade = system.arcade)
+                }
+            }
+            withContext(Dispatchers.Main) {
+                when (result) {
+                    is DirectoryEditor.Adoption.Added -> openPlacePicker(result.systemId, result.name)
+                    DirectoryEditor.Adoption.NoTemplate -> nav.dialogState.value = DialogState.FolderEditError(
+                        context.getString(dev.cannoli.ui.R.string.dialog_no_template_for_folder, folder)
+                    )
+                    is DirectoryEditor.Adoption.Failed -> nav.dialogState.value = DialogState.FolderEditError(result.reason)
+                }
+                launcherActions.rescanSystemList(scanDisk = false)
             }
         }
     }
@@ -140,23 +195,25 @@ class FolderEditor @Inject constructor(
         artworkLookup.invalidateAll()
     }
 
-    /** Opens the installed-apps checklist for the folder being shown. */
+    /** Opens "Add To This Folder" for the folder being shown: unplaced systems, then installed apps. */
     fun openAppPicker() {
         val path = currentPath
         val installed = installedLauncherApps()
-        val present = foldersConfig.find(path)?.entries.orEmpty()
-            .filterIsInstance<FolderEntry.App>().map { it.packageName }.toSet()
-        val checked = installed.indices.filter { installed[it].second in present }.toSet()
+        val systems = systemListViewModel.state.value.unplaced.filterIsInstance<SystemListViewModel.Unplaced.System>()
+        val present = libraryConfig.library.itemsAt(path).orEmpty()
+            .filterIsInstance<DirectoryItem.AppItem>().map { it.packageName }.toSet()
+        val checked = installed.indices.filter { installed[it].second in present }.map { it + systems.size }.toSet()
         nav.dialogState.value = DialogState.None
         nav.push(
             LauncherScreen.AppPicker(
                 folderPath = path,
                 title = context.getString(
-                    dev.cannoli.ui.R.string.app_picker_title,
+                    dev.cannoli.ui.R.string.folder_fill_title,
                     path.lastOrNull() ?: context.getString(dev.cannoli.ui.R.string.folder_target_main_menu),
                 ),
                 apps = installed.map { it.first },
                 packages = installed.map { it.second },
+                systems = systems,
                 checkedIndices = checked,
                 initialChecked = checked,
             )
@@ -166,11 +223,13 @@ class FolderEditor @Inject constructor(
     fun confirmAppPicker(state: LauncherScreen.AppPicker) {
         nav.pop()
         if (state.checkedIndices == state.initialChecked) return
-        val apps = state.checkedIndices.sorted().mapNotNull { idx ->
-            val pkg = state.packages.getOrNull(idx) ?: return@mapNotNull null
-            pkg to (state.apps.getOrNull(idx) ?: pkg)
+        val offset = state.systems.size
+        val systems = state.checkedIndices.sorted().mapNotNull { state.systems.getOrNull(it)?.id }
+        val apps = state.checkedIndices.sorted().filter { it >= offset }.mapNotNull { idx ->
+            val pkg = state.packages.getOrNull(idx - offset) ?: return@mapNotNull null
+            pkg to (state.apps.getOrNull(idx - offset) ?: pkg)
         }
-        apply { foldersConfig.setApps(state.folderPath, apps) }
+        apply { directoryEditor.fill(state.folderPath, apps, systems) }
     }
 
     private fun installedLauncherApps(): List<Pair<String, String>> {
@@ -190,7 +249,7 @@ class FolderEditor @Inject constructor(
     }
 
     // Edits touch the file, so they run off the main thread; the menu is rebuilt either way so
-    // what it shows is what folders.json now says.
+    // what it shows is what directory.json now says.
     private fun apply(edit: () -> String?) {
         ioScope.launch {
             val failure = edit()
@@ -199,5 +258,9 @@ class FolderEditor @Inject constructor(
                 launcherActions.rescanSystemList(scanDisk = false)
             }
         }
+    }
+
+    private companion object {
+        const val FOLDER_PREFIX = "folder:"
     }
 }

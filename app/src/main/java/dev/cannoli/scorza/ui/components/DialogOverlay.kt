@@ -87,6 +87,11 @@ fun DialogOverlay(
     val itemHeight = pillItemHeight(listLineHeight, listVerticalPadding)
     when (dialogState) {
         is DialogState.ContextMenu -> {
+            // Unplaced systems and ROM folders follow the options under a heading the cursor skips.
+            val unplacedRows: kotlin.collections.List<Any> =
+                if (dialogState.unplaced.isEmpty()) emptyList() else listOf(UnplacedHeading) + dialogState.unplaced
+            val shownSelection = dialogState.selectedOption +
+                if (dialogState.selectedOption >= dialogState.options.size) 1 else 0
             ListDialogScreen(
                 backgroundImagePath = backgroundImagePath,
                 backgroundTint = backgroundTint,
@@ -98,10 +103,24 @@ fun DialogOverlay(
                 buttonStyle = buttonStyle
             ) {
                 List(
-                    items = dialogState.options,
-                    selectedIndex = dialogState.selectedOption,
+                    items = dialogState.options + unplacedRows,
+                    selectedIndex = shownSelection,
                     itemHeight = itemHeight
-                ) { _, option, isSelected ->
+                ) { _, row, isSelected ->
+                    if (row !is String) {
+                        PillRowText(
+                            label = if (row is dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.Unplaced) {
+                                dev.cannoli.scorza.ui.screens.unplacedLabel(row)
+                            } else stringResource(R.string.unplaced_heading),
+                            isSelected = isSelected,
+                            fontSize = listFontSize,
+                            lineHeight = listLineHeight,
+                            verticalPadding = listVerticalPadding,
+                            dimmed = true,
+                        )
+                        return@List
+                    }
+                    val option = row
                     val parts = option.split("\t", limit = 2)
                     if (parts.size == 2) {
                         PillRowKeyValue(
@@ -915,6 +934,12 @@ fun DialogOverlay(
             confirmLabel = stringResource(R.string.label_delete),
         )
 
+        is DialogState.AdoptRomFolderConfirm -> ConfirmOverlay(
+            message = stringResource(R.string.dialog_adopt_rom_folder, dialogState.systemName, dialogState.folder),
+            buttonStyle = buttonStyle,
+            confirmLabel = stringResource(R.string.label_confirm),
+        )
+
         is DialogState.FolderEditError -> MessageOverlay(
             message = dialogState.message,
             buttonStyle = buttonStyle,
@@ -1297,3 +1322,6 @@ internal fun ListDialogScreen(
         }
     }
 }
+
+/** Marks the "Not in the menu" heading among a context menu's rows. */
+private object UnplacedHeading

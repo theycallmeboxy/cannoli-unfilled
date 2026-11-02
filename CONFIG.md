@@ -2,8 +2,8 @@
 
 > **Out of date.** This page describes the old format. Launching now reads `emulators.json` and
 > `systems.json` in the new format described in [docs/config-design.md](docs/config-design.md),
-> plus `overrides.json`; `cores.json`, `platforms.ini` and the old `emulators.json` layout are no
-> longer read. The launch intent fields below are unchanged. This page is being rewritten.
+> plus `overrides.json`, and the main menu reads `directory.json`; `cores.json`, `folders.json`,
+> `platforms.ini` and the old `emulators.json` layout are no longer read. The launch intent fields below are unchanged. This page is being rewritten.
 
 This fork has no built-in emulator. Every game launches in RetroArch or a standalone emulator,
 and both the launch intents and the main menu's folders are plain JSON files you can edit.

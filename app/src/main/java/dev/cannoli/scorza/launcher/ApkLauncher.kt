@@ -40,21 +40,28 @@ class ApkLauncher @Inject constructor(
     }
 
     /**
-     * Opens an app with the custom intent its folders.json entry gives. There is no game file,
-     * so only fixed-value extras apply; file extras in the entry are ignored.
+     * Opens a shortcut from shortcuts.json. It takes no game, so its data is at most a custom
+     * scheme's `scheme://authority`, sent as it is, and only fixed-value extras apply, with
+     * `{package}` filled in.
      */
-    fun launchConfigured(config: AppConfig): LaunchResult {
+    fun launchShortcut(config: AppConfig): LaunchResult {
         val pkg = config.packageName
+        debugLog("ApkLauncher.launchShortcut pkg=$pkg action=${config.action}")
         if (!context.isPackageInstalled(pkg)) return LaunchResult.AppNotInstalled(pkg)
+        val fill = { value: String -> value.replace("{${EmulatorIntentBuilder.VAR_PACKAGE}}", pkg) }
         val intent = Intent(config.action).apply {
             if (config.activity != null) component = android.content.ComponentName(pkg, config.activity)
             else setPackage(pkg)
             addFlags(config.intentFlags)
+            (config.data as? dev.cannoli.scorza.config.DataBinding.CustomScheme)?.let { d ->
+                val uri = android.net.Uri.parse("${d.scheme}://${d.authority}")
+                if (config.mimeType != null) setDataAndType(uri, config.mimeType) else data = uri
+            }
             for (extra in config.extras) when (extra.kind) {
-                dev.cannoli.scorza.config.ExtraValueKind.STRING -> putExtra(extra.key, extra.value)
+                dev.cannoli.scorza.config.ExtraValueKind.STRING -> extra.value?.let { putExtra(extra.key, fill(it)) }
                 dev.cannoli.scorza.config.ExtraValueKind.INT -> extra.value?.toIntOrNull()?.let { putExtra(extra.key, it) }
                 dev.cannoli.scorza.config.ExtraValueKind.BOOL -> extra.value?.toBooleanStrictOrNull()?.let { putExtra(extra.key, it) }
-                dev.cannoli.scorza.config.ExtraValueKind.STRING_ARRAY -> putExtra(extra.key, extra.values.orEmpty().toTypedArray())
+                dev.cannoli.scorza.config.ExtraValueKind.STRING_ARRAY -> putExtra(extra.key, extra.values.orEmpty().map(fill).toTypedArray())
                 else -> debugLog("  -> extra ${extra.key} needs a game file, skipped")
             }
         }

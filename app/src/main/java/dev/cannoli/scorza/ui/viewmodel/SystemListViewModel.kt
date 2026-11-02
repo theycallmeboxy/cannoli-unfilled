@@ -3,10 +3,12 @@ package dev.cannoli.scorza.ui.viewmodel
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
-import dev.cannoli.scorza.config.FolderEntry
-import dev.cannoli.scorza.config.FolderNode
-import dev.cannoli.scorza.config.FoldersConfig
 import dev.cannoli.scorza.config.PlatformConfig
+import dev.cannoli.scorza.config.library.DirectoryEditor
+import dev.cannoli.scorza.config.library.DirectoryItem
+import dev.cannoli.scorza.config.library.Library
+import dev.cannoli.scorza.config.library.LibraryConfig
+import dev.cannoli.scorza.config.library.key
 import dev.cannoli.scorza.db.AppsRepository
 import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.db.RecentlyPlayedRepository
@@ -15,6 +17,8 @@ import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.db.ScanScheduler
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.model.Platform
+import dev.cannoli.scorza.model.SHORTCUT_PACKAGE_PREFIX
+import dev.cannoli.scorza.model.shortcutName
 import dev.cannoli.scorza.scanner.RomDirectoryWatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -40,7 +44,8 @@ class SystemListViewModel @Inject constructor(
     private val cannoliPaths: CannoliPathsProvider,
     private val romDirectoryWatcher: RomDirectoryWatcher,
     private val scanScheduler: ScanScheduler,
-    private val foldersConfig: FoldersConfig,
+    private val libraryConfig: LibraryConfig,
+    private val directoryEditor: DirectoryEditor,
     private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
     @ApplicationContext private val context: Context,
 ) {
@@ -114,8 +119,21 @@ class SystemListViewModel @Inject constructor(
                 else -> ""
             }
         }
-        /** A folder from folders.json. [count] is how many entries it holds directly. */
+        /** A folder from directory.json. [count] is how many entries it holds directly. */
         data class FolderItem(val name: String, val count: Int, val artFile: java.io.File? = null) : ListItem()
+        /** Heads the dimmed "Not in the menu" rows that reorder mode adds at the end. */
+        data object UnplacedHeader : ListItem()
+        data class UnplacedRow(val entry: Unplaced) : ListItem()
+    }
+
+    /**
+     * Games the directory doesn't show, pointed out while editing so they are never lost: a
+     * system from systems.json with games that directory.json doesn't place, or a folder under
+     * Roms/ that holds files but that no system names as its ROM folder.
+     */
+    sealed interface Unplaced {
+        data class System(val id: String, val name: String, val games: Int) : Unplaced
+        data class RomFolder(val folder: String, val files: Int) : Unplaced
     }
 
     data class State(
@@ -130,6 +148,7 @@ class SystemListViewModel @Inject constructor(
         val hasGameItems: Boolean = false,
         /** The open folder, root first. Empty on the main menu. */
         val folderPath: List<String> = emptyList(),
+        val unplaced: List<Unplaced> = emptyList(),
     )
 
     private val _state = MutableStateFlow(State())
@@ -168,15 +187,16 @@ class SystemListViewModel @Inject constructor(
         lastScanConfig = ScanConfig(showRecentlyPlayed, showFavorites)
 
         scope.launch(Dispatchers.IO) {
-            foldersConfig.reloadIfChanged()
-            // A folder renamed or removed in folders.json while it was open: fall back to the
+            libraryConfig.reloadIfChanged()
+            // A folder renamed or removed in directory.json while it was open: fall back to the
             // deepest level that still exists.
-            val openFolder = withContext(Dispatchers.Main) {
-                while (folderPath.isNotEmpty() && foldersConfig.find(folderPath) == null) {
+            val (library, openItems) = withContext(Dispatchers.Main) {
+                val library = libraryConfig.library
+                while (folderPath.isNotEmpty() && library.itemsAt(folderPath) == null) {
                     folderPath = folderPath.dropLast(1)
                     folderPositions.removeLastOrNull()
                 }
-                foldersConfig.find(folderPath)
+                library to library.itemsAt(folderPath).orEmpty()
             }
             val shownPath = folderPath
             if (scanDisk) {
@@ -198,25 +218,12 @@ class SystemListViewModel @Inject constructor(
                     val count = countsByTag[tag] ?: 0
                     platformConfig.resolvePlatform(tag, count)
                 }
-
-            val groupedPlatforms = allPlatforms.groupBy { it.displayName }.map { (_, group) ->
-                if (group.size == 1) group[0]
-                else {
-                    val primary = group.maxBy { it.gameCount }
-                    primary.copy(
-                        gameCount = group.sumOf { it.gameCount },
-                        tags = group.map { it.tag }
-                    )
-                }
-            }
+            val platformsByTag = allPlatforms.associateBy { it.tag.uppercase() }
 
             val items = mutableListOf<ListItem>()
             val favoritesId = collectionsRepository.favoritesId()
-            val inFolders = foldersConfig.platformTagsInFolders()
 
-            if (openFolder != null) {
-                items.addAll(folderItems(openFolder, groupedPlatforms))
-            } else {
+            if (shownPath.isEmpty()) {
                 if (showRecentlyPlayed && recentlyPlayedRepository.hasAny()) {
                     items.add(ListItem.RecentlyPlayedItem)
                 }
@@ -229,23 +236,14 @@ class SystemListViewModel @Inject constructor(
                     items.add(ListItem.CollectionsFolder)
                 }
             }
-
-            val reorderableItems = mutableListOf<ListItem>()
-            if (openFolder == null) {
-                groupedPlatforms
-                    .filter { it.gameCount > 0 && it.allTags.none { tag -> tag.uppercase() in inFolders } }
-                    .sortedBy { it.displayName }
-                    .forEach { reorderableItems.add(ListItem.PlatformItem(it)) }
-                foldersConfig.roots.forEach { reorderableItems.add(folderItem(it)) }
-                foldersConfig.rootApps.forEach { reorderableItems.add(appItem(it)) }
-            }
-            if (reorderableItems.isNotEmpty()) {
-                val ordered = applyCustomOrder(reorderableItems, romsRepository.knownPlatformTags())
-                items.addAll(ordered)
-            }
+            // The directory's own order is the menu order, on the main menu and in every folder.
+            items.addAll(directoryRows(openItems, shownPath, platformsByTag, library))
+            val unplaced = unplacedSystems(library, countsByTag) + unclaimedRomFolders()
 
             val current = _state.value
-            if (items == current.items && groupedPlatforms == current.platforms && current.folderPath == shownPath) {
+            if (items == current.items && allPlatforms == current.platforms && current.folderPath == shownPath &&
+                unplaced == current.unplaced
+            ) {
                 if (current.isLoading) {
                     _state.update { it.copy(isLoading = false) }
                 }
@@ -269,53 +267,94 @@ class SystemListViewModel @Inject constructor(
             }
             _state.value = State(
                 items = items,
-                platforms = groupedPlatforms,
+                platforms = allPlatforms,
                 selectedIndex = safeIndex,
                 scrollTarget = scrollTo,
                 isLoading = false,
                 hasGameItems = items.any { it is ListItem.GameItem || (it is ListItem.FolderItem && it.artFile != null) },
                 folderPath = shownPath,
+                unplaced = unplaced,
             )
             withContext(Dispatchers.Main) { onReady() }
         }
     }
 
-    /** A folder's entries in file order. Platforms with no games stay hidden, as on the main menu. */
-    private fun folderItems(node: FolderNode, platforms: List<Platform>): List<ListItem> =
-        node.entries.mapNotNull { entry ->
-            when (entry) {
-                is FolderEntry.Folder -> folderItem(entry.node)
-                is FolderEntry.Platform -> platforms
-                    .firstOrNull { p -> p.allTags.any { it.uppercase() == entry.tag } }
-                    ?.takeIf { it.gameCount > 0 }
-                    ?.let { ListItem.PlatformItem(it) }
-                is FolderEntry.App -> appItem(entry)
+    /** A folder's items in file order. Systems with no games stay hidden. */
+    private fun directoryRows(
+        entries: List<DirectoryItem>,
+        path: List<String>,
+        platforms: Map<String, Platform>,
+        library: Library,
+    ): List<ListItem> = entries.mapNotNull { entry ->
+        when (entry) {
+            is DirectoryItem.Folder -> folderItem(entry, path)
+            is DirectoryItem.SystemItem -> platforms[entry.id.uppercase()]
+                ?.takeIf { it.gameCount > 0 }
+                ?.let { ListItem.PlatformItem(it) }
+            is DirectoryItem.ShortcutItem -> library.shortcuts[entry.name]?.let { shortcut ->
+                appItem(SHORTCUT_PACKAGE_PREFIX + shortcut.name, shortcut.displayName) { shortcut.displayName }
             }
-        }.distinct()
+            is DirectoryItem.AppItem -> appItem(entry.packageName, entry.name) { appLabel(entry.packageName) }
+        }
+    }.distinct()
 
-    private fun appItem(entry: FolderEntry.App): ListItem.GameItem {
-        val app = appsRepository.forFolderEntry(entry.packageName, entry.name) { appLabel(entry.packageName) }
+    // Apps and shortcuts keep a row in the apps table, which is what favorites and recently
+    // played point at.
+    private fun appItem(packageName: String, name: String?, fallbackName: () -> String): ListItem.GameItem {
+        val app = appsRepository.forDirectoryEntry(packageName, name, fallbackName)
         return ListItem.GameItem(dev.cannoli.scorza.model.ListItem.AppItem(app))
     }
 
-    /** The folders.json key for a row of the folder at [path], for saving a reorder. */
-    private fun folderKey(item: ListItem, path: List<String>): String? = when (item) {
-        is ListItem.FolderItem -> "folder:${item.name}"
-        is ListItem.PlatformItem -> {
-            val placed = foldersConfig.find(path)?.entries.orEmpty()
-                .filterIsInstance<FolderEntry.Platform>().map { it.tag }.toSet()
-            item.platform.allTags.map { it.uppercase() }.firstOrNull { it in placed }?.let { "platform:$it" }
+    /** The directory.json key of a row, such as `system:GBA`, or null for rows it doesn't hold. */
+    fun directoryKey(item: ListItem): String? = when (item) {
+        is ListItem.FolderItem -> DirectoryItem.Folder(item.name, emptyList()).key
+        is ListItem.PlatformItem ->
+            DirectoryItem.SystemItem(platformConfig.systemFor(item.platform.tag)?.id ?: item.platform.tag).key
+        is ListItem.GameItem -> (item.item as? dev.cannoli.scorza.model.ListItem.AppItem)?.app?.let { app ->
+            app.shortcutName?.let { DirectoryItem.ShortcutItem(it).key }
+                ?: DirectoryItem.AppItem(app.packageName, null).key
         }
-        is ListItem.GameItem -> (item.item as? dev.cannoli.scorza.model.ListItem.AppItem)?.let { "app:${it.app.packageName}" }
         else -> null
     }
 
     // Art for a folder lives under Art/Folders, nested like the folders themselves:
     // Art/Folders/Nintendo.png for the top-level Nintendo, Art/Folders/Nintendo/Hacks.png inside it.
-    private fun folderItem(node: FolderNode): ListItem.FolderItem {
-        val artTag = (listOf(FOLDER_ART_DIR) + node.path.dropLast(1)).joinToString("/")
-        val art = artworkLookup.findByName(artTag, dev.cannoli.scorza.romm.download.sanitizeFsName(node.name))
-        return ListItem.FolderItem(node.name, node.entries.size, art)
+    private fun folderItem(folder: DirectoryItem.Folder, parent: List<String>): ListItem.FolderItem {
+        val artTag = (listOf(FOLDER_ART_DIR) + parent).joinToString("/")
+        val art = artworkLookup.findByName(artTag, dev.cannoli.scorza.romm.download.sanitizeFsName(folder.name))
+        return ListItem.FolderItem(folder.name, folder.items.size, art)
+    }
+
+    private fun unplacedSystems(library: Library, counts: Map<String, Int>): List<Unplaced> {
+        val placed = library.placedSystemIds().map { it.uppercase() }.toSet()
+        return library.systems.values
+            .distinctBy { it.id.uppercase() }
+            .filter { it.id.uppercase() !in placed }
+            .mapNotNull { system ->
+                val games = counts[system.id.uppercase()] ?: 0
+                if (games > 0) Unplaced.System(system.id, system.name, games) else null
+            }
+            .sortedBy { it.name.lowercase() }
+    }
+
+    // Counted again only when a folder's own listing changes, since the scan runs on every move
+    // between folders.
+    private val romFolderCounts = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Int>>()
+
+    private fun unclaimedRomFolders(): List<Unplaced> {
+        val dirs = romDirectory.listFiles { f -> f.isDirectory && !f.name.startsWith(".") } ?: return emptyList()
+        return dirs
+            .filter { platformConfig.tagForFolder(it.name) == null }
+            .mapNotNull { dir ->
+                val mtime = dir.lastModified()
+                val files = romFolderCounts[dir.name]?.takeIf { it.first == mtime }?.second
+                    ?: dir.walkTopDown()
+                        .onEnter { !it.name.startsWith(".") || it == dir }
+                        .count { it.isFile && !it.name.startsWith(".") }
+                        .also { romFolderCounts[dir.name] = mtime to it }
+                if (files > 0) Unplaced.RomFolder(dir.name, files) else null
+            }
+            .sortedBy { it.folder.lowercase() }
     }
 
     private fun appLabel(packageName: String): String = try {
@@ -416,7 +455,10 @@ class SystemListViewModel @Inject constructor(
         _state.update { current ->
             val item = current.items.getOrNull(current.selectedIndex) ?: return@update current
             if (!item.isReorderable()) return@update current
-            current.copy(reorderMode = true, reorderOriginalIndex = current.selectedIndex)
+            // What the directory leaves out is listed, dimmed, below what can be moved.
+            val unplaced = if (current.unplaced.isEmpty()) emptyList()
+            else listOf(ListItem.UnplacedHeader) + current.unplaced.map { ListItem.UnplacedRow(it) }
+            current.copy(items = current.items + unplaced, reorderMode = true, reorderOriginalIndex = current.selectedIndex)
         }
     }
 
@@ -450,63 +492,39 @@ class SystemListViewModel @Inject constructor(
         val current = _state.value
         if (!current.reorderMode) return
         val path = folderPath
-        if (path.isNotEmpty()) {
-            val keys = current.items.mapNotNull { folderKey(it, path) }
-            scope.launch(Dispatchers.IO) {
-                foldersConfig.reorder(path, keys)?.let { dev.cannoli.scorza.util.ErrorLog.write("folder reorder: $it") }
-            }
-        } else {
-            val tags = current.items.mapNotNull { it.orderTag() }
-            if (tags.isNotEmpty()) {
-                tags.filter { isReservedTag(it) }.forEach { ensureReservedTag(it) }
-                scope.launch(Dispatchers.IO) {
-                    romsRepository.setPlatformOrder(tags)
-                }
-            }
+        val keys = current.items.mapNotNull(::directoryKey)
+        scope.launch(Dispatchers.IO) {
+            directoryEditor.reorder(path, keys)?.let { dev.cannoli.scorza.util.ErrorLog.write("menu reorder: $it") }
         }
-        _state.update { it.copy(reorderMode = false, reorderOriginalIndex = -1) }
+        leaveReorderMode()
     }
 
-    private fun ensureReservedTag(tag: String) {
-        romScanner.ensureReservedPlatformTag(tag)
+    private fun leaveReorderMode() {
+        _state.update { state ->
+            state.copy(
+                items = state.items.filterNot { it is ListItem.UnplacedHeader || it is ListItem.UnplacedRow },
+                reorderMode = false,
+                reorderOriginalIndex = -1,
+            )
+        }
     }
 
     fun cancelReorder(showRecentlyPlayed: Boolean = true, showFavorites: Boolean = true) {
         val current = _state.value
         if (!current.reorderMode) return
-        scan(showRecentlyPlayed, showFavorites)
+        // Put back the order the file still has.
+        leaveReorderMode()
+        scan(showRecentlyPlayed, showFavorites, scanDisk = false)
     }
 
     private fun ListItem.isReorderable(): Boolean = this is ListItem.PlatformItem || this is ListItem.FolderItem || this is ListItem.GameItem
 
-    private fun ListItem.orderTag(): String? = when (this) {
-        is ListItem.PlatformItem -> platform.tag
-        is ListItem.FolderItem -> FOLDER_TAG_PREFIX + name
-        // An app listed at the top level of folders.json sits on the main menu among the rest.
-        is ListItem.GameItem -> (item as? dev.cannoli.scorza.model.ListItem.AppItem)
-            ?.let { APP_TAG_PREFIX + it.app.packageName }
-        else -> null
-    }
-
-    private fun applyCustomOrder(items: List<ListItem>, order: List<String>): List<ListItem> {
-        if (order.isEmpty()) return items
-        val byTag = items.associateBy { it.orderTag() }
-        val ordered = mutableListOf<ListItem>()
-        for (tag in order) {
-            byTag[tag]?.let { ordered.add(it) }
-        }
-        val remaining = items.filter { it.orderTag() !in order }
-        return ordered + remaining
-    }
-
     fun close() { scope.cancel() }
 
     companion object {
-        // Folders share the platforms table's sort order under reserved tags. Older builds used
-        // __TOOLS__ and __PORTS__ the same way, which is why every reserved tag starts with __.
-        const val FOLDER_TAG_PREFIX = "__FOLDER__/"
         const val FOLDER_ART_DIR = "Folders"
-        const val APP_TAG_PREFIX = "__APP__/"
+
+        // Older builds kept rows such as __TOOLS__ in the platforms table; none is a system.
 
         fun isReservedTag(tag: String): Boolean = tag.startsWith("__")
     }

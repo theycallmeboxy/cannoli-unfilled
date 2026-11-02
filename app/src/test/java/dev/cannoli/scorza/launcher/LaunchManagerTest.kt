@@ -7,7 +7,10 @@ import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.config.library.Library
 import dev.cannoli.scorza.config.library.LibraryParser
 import dev.cannoli.scorza.config.library.LibraryValidator
+import dev.cannoli.scorza.model.App
+import dev.cannoli.scorza.model.AppType
 import dev.cannoli.scorza.model.Rom
+import dev.cannoli.scorza.model.SHORTCUT_PACKAGE_PREFIX
 import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.ui.screens.DialogState
 import io.mockk.every
@@ -64,6 +67,11 @@ class LaunchManagerTest {
         every { apkLauncher.launchWithRom(any(), any(), any(), any()) } returns LaunchResult.Success
     }
 
+    private val shortcuts = """
+        { "movies": { "name": "Movies", "package": "org.xbmc.kodi", "action": "android.intent.action.VIEW",
+            "data": { "kind": "custom_scheme", "scheme": "plugin", "authority": "plugin.video.example" } } }
+    """.trimIndent()
+
     private fun manager(overrides: String = """{ "games": {} }""", state: LaunchState = LaunchState()): LaunchManager {
         val library: Library = LibraryValidator.validate(
             LibraryParser.parseEmulators(emulators).value,
@@ -85,6 +93,7 @@ class LaunchManagerTest {
             launchState = state,
             romDir = { romDir },
             installedCoreService = cores,
+            shortcuts = { LibraryParser.parseShortcuts(shortcuts).value },
         )
     }
 
@@ -154,6 +163,31 @@ class LaunchManagerTest {
 
         assertEquals(false, state.launching)
         assertNull(state.lastLaunched)
+    }
+
+    @Test fun `a shortcut row launches its intent from shortcuts_json`() {
+        every { apkLauncher.launchShortcut(any()) } returns LaunchResult.Success
+        val app = App(id = 1L, type = AppType.TOOL, displayName = "Movies", packageName = SHORTCUT_PACKAGE_PREFIX + "movies")
+        assertNull(manager().launchApp(app))
+        val intent = slot<dev.cannoli.scorza.config.AppConfig>()
+        verify { apkLauncher.launchShortcut(capture(intent)) }
+        assertEquals("org.xbmc.kodi", intent.captured.packageName)
+        assertEquals(dev.cannoli.scorza.config.DataBinding.CustomScheme("plugin", "plugin.video.example"), intent.captured.data)
+        verify(exactly = 0) { apkLauncher.launch(any()) }
+    }
+
+    @Test fun `a shortcut gone from shortcuts_json says so instead of launching`() {
+        val app = App(id = 1L, type = AppType.TOOL, displayName = "Old", packageName = SHORTCUT_PACKAGE_PREFIX + "old")
+        val state = LaunchState()
+        assertTrue(manager(state = state).launchApp(app) is DialogState.LaunchError)
+        assertEquals(false, state.launching)
+        verify(exactly = 0) { apkLauncher.launchShortcut(any()) }
+    }
+
+    @Test fun `an app opens through its package`() {
+        every { apkLauncher.launch(any()) } returns LaunchResult.Success
+        assertNull(manager().launchApp(App(id = 1L, type = AppType.TOOL, displayName = "Kodi", packageName = "org.xbmc.kodi")))
+        verify { apkLauncher.launch("org.xbmc.kodi") }
     }
 
     private companion object {

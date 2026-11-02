@@ -522,6 +522,7 @@ class DialogInputHandler @Inject constructor(
                 folderEditor.deleteFolder(ds.path)
             }
             is DialogState.FolderEditError -> nav.dialogState.value = DialogState.None
+            is DialogState.AdoptRomFolderConfirm -> folderEditor.adoptRomFolder(ds.folder)
             is DialogState.DeleteCollectionConfirm -> {
                 val glState = gameListViewModel.state.value
                 val deletingFromParent = glState.isCollection && !glState.isCollectionsList
@@ -1084,6 +1085,7 @@ class DialogInputHandler @Inject constructor(
                 restoreContextMenu()
             }
             is DialogState.DeleteFolderConfirm,
+            is DialogState.AdoptRomFolderConfirm,
             is DialogState.FolderEditError -> nav.dialogState.value = DialogState.None
             is DialogState.QuitConfirm -> {
                 nav.dialogState.value = DialogState.None
@@ -1373,6 +1375,12 @@ class DialogInputHandler @Inject constructor(
 
     private fun onContextMenuConfirm(state: DialogState.ContextMenu) {
         if (nav.currentScreen == LauncherScreen.SystemList) {
+            state.selectedUnplaced?.let { entry ->
+                nav.pendingMainListItem = null
+                nav.dialogState.value = DialogState.None
+                folderEditor.placeUnplaced(entry)
+                return
+            }
             val listItem = nav.pendingMainListItem
             if (listItem != null) {
                 nav.pendingMainListItem = null
@@ -1397,7 +1405,10 @@ class DialogInputHandler @Inject constructor(
                     MENU_MOVE_TO_FOLDER -> systemListViewModel.getSelectedItem()?.let {
                         folderEditor.openMovePicker(it, state.gameName)
                     }
-                    MENU_ADD_APPS -> {
+                    MENU_REMOVE_FROM_FOLDER -> systemListViewModel.getSelectedItem()?.let {
+                        folderEditor.removeFromFolder(it)
+                    }
+                    MENU_ADD_TO_FOLDER -> {
                         val folder = systemListViewModel.getSelectedItem() as? SystemListViewModel.ListItem.FolderItem
                         if (folder != null) {
                             systemListViewModel.enterFolder(folder.name) { folderEditor.openAppPicker() }
@@ -1732,7 +1743,7 @@ class DialogInputHandler @Inject constructor(
         return buildList {
             if (glState.platformTag == "recently_played") add(MENU_REMOVE_FROM_RECENTS)
             add(if (isFav) MENU_REMOVE_FAVORITE else MENU_ADD_FAVORITE)
-            // An app's name and place come from folders.json, so it is renamed or removed there.
+            // An app's name and place come from directory.json, so it is renamed or removed there.
             if (isApk) {
                 add(MENU_MANAGE_COLLECTIONS)
                 if (app?.artFile != null) add(MENU_DELETE_ART)

@@ -62,8 +62,6 @@ class RomScanner(
         }
     }
 
-    fun ensureReservedPlatformTag(tag: String) = ensurePlatformRow(tag)
-
     private fun sync(tag: String, scanned: List<RomDirectoryWalker.ScannedRom>): SyncCounts {
         data class ExistingRow(val id: Long, val displayName: String, val tags: String?)
         val existing = db.queryAll(
