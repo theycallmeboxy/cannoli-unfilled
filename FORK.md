@@ -35,7 +35,9 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   translation for now). Its setting has three values: Show, Games Only (no apps) and Hide.
 - **Default font:** IBM Plex Mono. The old default, M+ 1 Code, is still in the font list, and
   Cannoli still falls back to it for languages Plex doesn't cover (Chinese, Japanese and Korean).
-- **Layout:** lists are centered by default. Settings → Display → Layout switches back to Left.
+- **Layout:** the Center layout is the default: list rows centered, the screen title centered, the
+  clock at the top left and the other status icons at the top right. Settings → Display → Layout
+  switches back to Left, upstream's layout.
 
 ### Added
 
@@ -62,6 +64,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-02 | Center layout: centered title, clock at the top left |
 | 2026-11-02 | Recents setting (Show / Games Only / Hide); centered layout; IBM Plex Mono default |
 | 2026-11-02 | Remove content modes; rename Recently Played to Recent; Apps In Recent setting |
 | 2026-11-02 | Add this file |

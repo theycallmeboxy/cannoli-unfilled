@@ -97,18 +97,9 @@ fun StatusBar(
     var wifiConnected by remember { mutableStateOf(false) }
     var hasVpn by remember { mutableStateOf(false) }
     var hasBluetooth by remember { mutableStateOf(false) }
-    var rawTime by remember { mutableStateOf(Date()) }
-
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(15000)
-            rawTime = Date()
-        }
-    }
+    val timeText = rememberClockText(use24hTime)
 
     DisposableEffect(Unit) {
-        rawTime = Date()
-
         val batteryFilter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
         val batteryReceiver = object : BroadcastReceiver() {
             override fun onReceive(ctx: Context, intent: Intent) {
@@ -170,10 +161,6 @@ fun StatusBar(
         }
     }
 
-    val timeFormat = remember(use24hTime) {
-        SimpleDateFormat(if (use24hTime) "HH:mm" else "h:mm a", Locale.getDefault())
-    }
-    val timeText = timeFormat.format(rawTime)
     val batteryPercent = stringResource(R.string.battery_level, batteryLevel)
 
     val colors = LocalCannoliColors.current
@@ -229,5 +216,42 @@ fun StatusBar(
             }
         }
         if (showClock) Text(text = timeText, style = textStyle)
+    }
+}
+
+@Composable
+private fun rememberClockText(use24hTime: Boolean): String {
+    var rawTime by remember { mutableStateOf(Date()) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(15000)
+            rawTime = Date()
+        }
+    }
+    val timeFormat = remember(use24hTime) {
+        SimpleDateFormat(if (use24hTime) "HH:mm" else "h:mm a", Locale.getDefault())
+    }
+    return timeFormat.format(rawTime)
+}
+
+/** The clock on its own, for the center layout, which puts it at the top left and the rest of
+ *  the status bar at the top right. Same size and height as [StatusBar] so the two line up. */
+@Composable
+fun StatusClock(use24hTime: Boolean = false, textSizeSp: Int = 16) {
+    val scaleFactor = LocalScaleFactor.current
+    val timeText = rememberClockText(use24hTime)
+    Row(
+        modifier = Modifier.defaultMinSize(minHeight = (32 * scaleFactor).dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = timeText,
+            style = TextStyle(
+                fontFamily = LocalCannoliFont.current,
+                fontWeight = FontWeight.Normal,
+                fontSize = (textSizeSp * scaleFactor).sp,
+                color = LocalCannoliColors.current.statusBar
+            )
+        )
     }
 }

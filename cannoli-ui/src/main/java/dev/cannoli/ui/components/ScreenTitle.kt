@@ -31,9 +31,18 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cannoli.ui.theme.LocalCannoliColors
+import dev.cannoli.ui.theme.LocalCenteredLists
+import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 
 
 val LocalStatusBarLeftEdge = staticCompositionLocalOf<MutableIntState> { mutableIntStateOf(Int.MAX_VALUE) }
+
+// Right edge of the clock when the center layout moves it to the top left; Int.MIN_VALUE when it isn't there.
+val LocalStatusClockRightEdge = staticCompositionLocalOf<MutableIntState> { mutableIntStateOf(Int.MIN_VALUE) }
 
 const val TitleFontScale = 1.3f
 
@@ -156,19 +165,32 @@ private fun TitleText(
 ) {
     val scrollState = rememberScrollState()
     val statusBarLeftPx = LocalStatusBarLeftEdge.current.intValue
+    val clockRightPx = LocalStatusClockRightEdge.current.intValue
+    val centered = LocalCenteredLists.current
     val density = LocalDensity.current
     val textMeasurer = rememberTextMeasurer()
+    var originPx by remember { mutableFloatStateOf(0f) }
 
     MarqueeEffect(scrollState, active = true, key = text)
 
     val scaledFontSizeSp = fontSize.value * TitleFontScale
     val internalPadding = pillInternalPadding()
 
-    BoxWithConstraints(modifier = modifier) {
+    BoxWithConstraints(
+        modifier = modifier.onGloballyPositioned { originPx = it.positionInWindow().x },
+        contentAlignment = if (centered) Alignment.Center else Alignment.CenterStart
+    ) {
         val containerWidthPx = with(density) { maxWidth.toPx() }
         val paddingPx = with(density) { (screenPadding + internalPadding).toPx() }
         val gapPx = with(density) { 16.dp.toPx() }
-        val availableWidthPx = if (statusBarLeftPx < Int.MAX_VALUE) {
+        val availableWidthPx = if (centered) {
+            // Centered between the clock on the left and the status icons on the right: the
+            // narrower side sets how wide the title may grow on both.
+            val centerPx = originPx + containerWidthPx / 2
+            val leftRoom = if (clockRightPx > Int.MIN_VALUE) centerPx - clockRightPx - gapPx else containerWidthPx / 2
+            val rightRoom = if (statusBarLeftPx < Int.MAX_VALUE) statusBarLeftPx - centerPx - gapPx else containerWidthPx / 2
+            (minOf(leftRoom, rightRoom, containerWidthPx / 2) * 2).coerceAtLeast(0f)
+        } else if (statusBarLeftPx < Int.MAX_VALUE) {
             (statusBarLeftPx - paddingPx - gapPx).coerceAtLeast(0f)
         } else {
             containerWidthPx
@@ -186,6 +208,7 @@ private fun TitleText(
         }
 
         val availableWidthDp = with(density) { availableWidthPx.toDp() }
+        val limitWidth = centered || statusBarLeftPx < Int.MAX_VALUE
 
         Text(
             text = text,
@@ -197,11 +220,8 @@ private fun TitleText(
             maxLines = 1,
             softWrap = false,
             modifier = Modifier
-                .padding(start = internalPadding)
-                .then(
-                    if (statusBarLeftPx < Int.MAX_VALUE) Modifier.widthIn(max = availableWidthDp)
-                    else Modifier
-                )
+                .padding(start = if (centered) 0.dp else internalPadding)
+                .then(if (limitWidth) Modifier.widthIn(max = availableWidthDp) else Modifier)
                 .horizontalScroll(scrollState)
         )
     }

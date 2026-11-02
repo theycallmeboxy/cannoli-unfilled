@@ -80,6 +80,7 @@ import dev.cannoli.ui.components.List
 import dev.cannoli.ui.components.ListSection
 import dev.cannoli.ui.components.SectionedList
 import dev.cannoli.ui.components.LocalStatusBarLeftEdge
+import dev.cannoli.ui.components.LocalStatusClockRightEdge
 import dev.cannoli.ui.components.MessageOverlay
 import dev.cannoli.ui.components.OsdHost
 import dev.cannoli.ui.components.PillRowKeyValue
@@ -513,6 +514,7 @@ fun AppNavGraph(
     )
 
     val statusBarLeftEdge = remember { mutableIntStateOf(Int.MAX_VALUE) }
+    val statusClockRightEdge = remember { mutableIntStateOf(Int.MIN_VALUE) }
 
     val scaleFactor = appSettings.textSize.sp / 22f
     val cannoliTypography = buildCannoliTypography(baseSizeSp = appSettings.textSize.sp, fontFamily = LocalCannoliFont.current)
@@ -527,6 +529,7 @@ fun AppNavGraph(
     CompositionLocalProvider(
         LocalCannoliColors provides cannoliColors,
         LocalStatusBarLeftEdge provides statusBarLeftEdge,
+        LocalStatusClockRightEdge provides statusClockRightEdge,
         LocalScaleFactor provides scaleFactor,
         LocalCannoliTypography provides cannoliTypography,
         LocalViewportInsets provides viewportInsets,
@@ -1829,6 +1832,22 @@ fun AppNavGraph(
                 || appSettings.showVpn
                 || appSettings.showClock
                 || appSettings.batteryDisplay != dev.cannoli.scorza.settings.BatteryDisplay.HIDE
+        // The center layout splits the bar: the clock at the top left, everything else at the top right.
+        val splitClock = dev.cannoli.ui.theme.LocalCenteredLists.current && appSettings.showClock
+        if (!hideForDialog && !hideForScreen && splitClock) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(screenInsets())
+                    .onGloballyPositioned { coords ->
+                        statusClockRightEdge.intValue = (coords.positionInWindow().x + coords.size.width).toInt()
+                    }
+            ) {
+                dev.cannoli.ui.components.StatusClock(use24hTime = appSettings.use24h)
+            }
+        } else {
+            androidx.compose.runtime.SideEffect { statusClockRightEdge.intValue = Int.MIN_VALUE }
+        }
         if (!hideForDialog && !hideForScreen && hasContent) {
         Box(
             modifier = Modifier
@@ -1845,7 +1864,7 @@ fun AppNavGraph(
                 showWifi = appSettings.showWifi,
                 showBluetooth = appSettings.showBluetooth,
                 showVpn = appSettings.showVpn,
-                showClock = appSettings.showClock,
+                showClock = appSettings.showClock && !splitClock,
                 showBattery = appSettings.batteryDisplay != dev.cannoli.scorza.settings.BatteryDisplay.HIDE,
                 batteryIconOnly = appSettings.batteryDisplay == dev.cannoli.scorza.settings.BatteryDisplay.ICON,
                 use24hTime = appSettings.use24h,
