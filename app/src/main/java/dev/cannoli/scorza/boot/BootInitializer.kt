@@ -23,7 +23,6 @@ import dev.cannoli.scorza.settings.SettingsRepository
 import dev.cannoli.scorza.setup.SetupCoordinator
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
-import dev.cannoli.scorza.updater.UpdateManager
 import dev.cannoli.scorza.util.KitchenLog
 import dev.cannoli.scorza.util.ScanLog
 import dev.cannoli.scorza.util.StorageLog
@@ -54,7 +53,6 @@ class BootInitializer @Inject constructor(
     private val gameListViewModel: GameListViewModel,
     private val settingsViewModel: SettingsViewModel,
     private val collectionsRepository: CollectionsRepository,
-    private val updateManager: UpdateManager,
     private val nav: NavigationController,
     private val launcherActions: LauncherActions,
     private val setupCoordinator: SetupCoordinator,
@@ -121,14 +119,6 @@ class BootInitializer @Inject constructor(
         withContext(Dispatchers.Main) {
             gameListViewModel.showFavoriteStars = settings.contentMode != ContentMode.FIVE_GAME_HANDHELD
             settingsViewModel.reinitialize(root, context.packageManager, context.packageName, collectionsRepository)
-
-            ioScope.launch { updateManager.purgeStaleDownloads() }
-
-            if (updateManager.shouldAutoCheck()) {
-                ioScope.launch { updateManager.checkForUpdate() }
-            }
-            // updateAvailable -> settingsViewModel.updateInfo is now pushed lifecycle-bound
-            // from MainActivity.ReadyNavGraph so it cancels on Activity destroy.
 
             nav.screenStack.clear()
             nav.screenStack.add(LauncherScreen.SystemList)

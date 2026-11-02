@@ -32,7 +32,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "dev.cannoli.scorza"
+        // Our own ID, so this fork installs beside upstream Cannoli instead of colliding with it.
+        applicationId = "io.github.theycallmeboxy.cannoli"
         minSdk = 28
         targetSdk = 36
         versionCode = 1

@@ -39,7 +39,6 @@ class ConflictsApplyingStateTest {
             recentlyPlayedManager = mockk(relaxed = true),
             platformResolver = mockk(relaxed = true),
             installedCoreService = mockk(relaxed = true),
-            updateManager = mockk(relaxed = true),
             atomicRename = mockk(relaxed = true),
             scanner = mockk(relaxed = true),
             romDirectoryWalker = mockk(relaxed = true),

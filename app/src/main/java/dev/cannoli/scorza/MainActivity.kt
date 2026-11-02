@@ -65,7 +65,6 @@ import dev.cannoli.scorza.ui.viewmodel.InputTesterViewModel
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel
 import dev.cannoli.scorza.romm.sync.RomKeys
-import dev.cannoli.scorza.updater.UpdateManager
 import dev.cannoli.ui.theme.CannoliTheme
 import javax.inject.Inject
 import javax.inject.Provider
@@ -87,7 +86,6 @@ class MainActivity : ComponentActivity(), ActivityActions {
     @Inject lateinit var activeMappingHolder: dev.cannoli.scorza.input.runtime.ActiveMappingHolder
     @Inject lateinit var osdController: dev.cannoli.ui.components.OsdController
     @Inject lateinit var inputTesterController: InputTesterController
-    @Inject lateinit var updateManager: UpdateManager
     @Inject lateinit var setupCoordinator: SetupCoordinator
     @Inject lateinit var launchManager: Provider<LaunchManager>
     @Inject lateinit var launchState: dev.cannoli.scorza.launcher.LaunchState
@@ -286,14 +284,10 @@ class MainActivity : ComponentActivity(), ActivityActions {
         val glvm = gameListViewModel.get()
         val itvm = inputTesterViewModel.get()
         val cvm = controllersViewModel.get()
-        val updateInfo = updateManager.updateAvailable.collectAsState().value
-        val dlProgress = updateManager.downloadProgress.collectAsState().value
-        val dlError = updateManager.downloadError.collectAsState().value
         val navScreen = nav.currentScreen
         val navDialogState = nav.dialogState
         val activeMapping by activeMappingHolder.active.collectAsState()
         val syncStatus by saveSyncStatusHolder.state.collectAsState()
-        LaunchedEffect(updateInfo) { svm.updateInfo = updateInfo }
         LaunchedEffect(navScreen) {
         }
         val currentDialog by navDialogState.collectAsState()
@@ -318,9 +312,6 @@ class MainActivity : ComponentActivity(), ActivityActions {
             controllersViewModel = cvm,
             dialogState = navDialogState,
             onListStateChanged = { listState -> nav.activeListState = listState },
-            updateAvailable = updateInfo != null,
-            downloadProgress = dlProgress ?: 0f,
-            downloadError = dlError,
             osdController = osdController,
             activeMapping = activeMapping,
             mappingRepository = mappingRepository.get(),

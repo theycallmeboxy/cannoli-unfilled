@@ -99,13 +99,6 @@ class SettingsViewModel @Inject constructor(
         @param:StringRes val labelRes: Int
     )
 
-
-    var updateInfo: dev.cannoli.scorza.updater.UpdateInfo? = null
-        set(value) {
-            field = value
-            reloadCategories()
-        }
-
     data class State(
         val categories: List<Category> = emptyList(),
         val categoryIndex: Int = 0,
@@ -140,7 +133,6 @@ class SettingsViewModel @Inject constructor(
         val showVpn: Boolean = false,
         val showClock: Boolean = true,
         val batteryDisplay: BatteryDisplay = BatteryDisplay.DEFAULT,
-        val showUpdate: Boolean = true,
         val showKitchen: Boolean = true,
         val showDownloads: Boolean = true,
         val mainMenuQuit: Boolean = false,
@@ -182,7 +174,6 @@ class SettingsViewModel @Inject constructor(
         showVpn = settings.showVpn,
         showClock = settings.showClock,
         batteryDisplay = settings.batteryDisplay,
-        showUpdate = settings.showUpdate,
         showKitchen = settings.showKitchen,
         showDownloads = settings.showDownloads,
         mainMenuQuit = settings.mainMenuQuit,
@@ -246,7 +237,6 @@ class SettingsViewModel @Inject constructor(
         val raPackage: String,
         val toolsName: String,
         val portsName: String,
-        val releaseChannel: String,
         val artWidth: Int,
         val artScale: ArtScale,
         val portraitMarginPx: Int,
@@ -510,7 +500,6 @@ class SettingsViewModel @Inject constructor(
                 val cur = entries.indexOf(settings.batteryDisplay).coerceAtLeast(0)
                 settings.batteryDisplay = entries[((cur + direction) % entries.size + entries.size) % entries.size]
             }
-            "show_update" -> settings.showUpdate = !settings.showUpdate
             "main_menu_quit" -> settings.mainMenuQuit = !settings.mainMenuQuit
             "portrait_margin" -> {
                 val step = when {
@@ -553,11 +542,6 @@ class SettingsViewModel @Inject constructor(
                     val cur = pkgs.indexOf(settings.retroArchPackage).coerceAtLeast(0)
                     settings.retroArchPackage = pkgs[((cur + direction) % pkgs.size + pkgs.size) % pkgs.size]
                 }
-            }
-            "release_channel" -> {
-                val channels = dev.cannoli.scorza.updater.ReleaseChannel.entries
-                val cur = channels.indexOfFirst { it.name == settings.releaseChannel }.coerceAtLeast(0)
-                settings.releaseChannel = channels[((cur + direction) % channels.size + channels.size) % channels.size].name
             }
             "romm_allow_self_signed" -> rommStore.allowSelfSigned = !rommStore.allowSelfSigned
         }
@@ -699,7 +683,6 @@ class SettingsViewModel @Inject constructor(
         raPackage = settings.retroArchPackage,
         toolsName = settings.toolsName,
         portsName = settings.portsName,
-        releaseChannel = settings.releaseChannel,
         artWidth = settings.artWidth,
         artScale = settings.artScale,
         portraitMarginPx = settings.portraitMarginPx,
@@ -737,7 +720,6 @@ class SettingsViewModel @Inject constructor(
         settings.retroArchPackage = snap.raPackage
         settings.toolsName = snap.toolsName
         settings.portsName = snap.portsName
-        settings.releaseChannel = snap.releaseChannel
         settings.artWidth = snap.artWidth
         settings.artScale = snap.artScale
         settings.portraitMarginPx = snap.portraitMarginPx
@@ -866,7 +848,6 @@ class SettingsViewModel @Inject constructor(
             add(SettingsItem("show_clock", R.string.setting_clock, valueRes = if (!settings.showClock) R.string.value_hide else if (settings.timeFormat == TimeFormat.TWELVE_HOUR) R.string.value_12h else R.string.value_24h))
             add(SettingsItem("show_kitchen", R.string.setting_kitchen_running, valueRes = showHide(settings.showKitchen)))
             add(SettingsItem("show_downloads", R.string.setting_downloads_running, valueRes = showHide(settings.showDownloads)))
-            add(SettingsItem("show_update", R.string.setting_updater, valueRes = showHide(settings.showUpdate)))
             add(SettingsItem("show_vpn", R.string.setting_vpn, valueRes = showHide(settings.showVpn)))
             add(SettingsItem("show_wifi", R.string.setting_wifi, valueRes = showHide(settings.showWifi)))
         }
@@ -911,11 +892,6 @@ class SettingsViewModel @Inject constructor(
             add(SettingsItem("regenerate_system_folders", R.string.setting_regenerate_system_folders, isEditable = true))
             add(SettingsItem("kitchen_code_bypass", R.string.setting_kitchen_code_bypass, valueRes = onOff(settings.kitchenCodeBypass)))
             add(SettingsItem("experimental_features", R.string.setting_experimental_features, valueRes = onOff(settings.experimentalFeatures)))
-            add(SettingsItem(
-                "release_channel",
-                R.string.settings_release_channel,
-                valueText = dev.cannoli.scorza.updater.ReleaseChannel.fromString(settings.releaseChannel).label
-            ))
         }
         "debug" -> listOf(
             SettingsItem("audit_emulator_intents", R.string.setting_audit_emulator_intents, isEditable = true),

@@ -66,7 +66,6 @@ class DialogInputHandler @Inject constructor(
     private val recentlyPlayedManager: RecentlyPlayedRepository,
     private val platformResolver: PlatformConfig,
     private val installedCoreService: InstalledCoreService,
-    private val updateManager: dev.cannoli.scorza.updater.UpdateManager,
     private val atomicRename: AtomicRename,
     private val scanner: RomScanner,
     private val romDirectoryWalker: RomDirectoryWalker,
@@ -552,13 +551,6 @@ class DialogInputHandler @Inject constructor(
                             }
                         }
                     }
-                }
-            }
-            is DialogState.UpdateDownload -> {
-                val info = updateManager.updateAvailable.value
-                if (info != null) {
-                    updateManager.clearError()
-                    ioScope.launch { updateManager.downloadAndInstall(info) }
                 }
             }
             is DialogState.RestartRequired -> {
@@ -1118,11 +1110,6 @@ class DialogInputHandler @Inject constructor(
             is DialogState.LaunchError -> {
                 nav.dialogState.value = DialogState.None
             }
-            is DialogState.UpdateDownload -> {
-                updateManager.cancelDownload()
-                updateManager.clearError()
-                nav.dialogState.value = DialogState.About()
-            }
             is DialogState.About -> {
                 nav.dialogState.value = DialogState.None
                 launcherActions.rescanSystemList()
@@ -1310,13 +1297,6 @@ class DialogInputHandler @Inject constructor(
             }
             is DialogState.HexColorInput -> {
                 launcherActions.openColorPicker(ds.settingKey)
-            }
-            is DialogState.About -> {
-                val info = updateManager.updateAvailable.value
-                if (info != null) {
-                    nav.dialogState.value = DialogState.UpdateDownload(info.versionName, info.changelog)
-                    ioScope.launch { updateManager.downloadAndInstall(info) }
-                }
             }
             is DialogState.RommConnected -> {
                 nav.dialogState.value = DialogState.RommConfirm(dev.cannoli.scorza.ui.screens.RommConfirmAction.DISCONNECT)

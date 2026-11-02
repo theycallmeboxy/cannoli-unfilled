@@ -229,10 +229,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     val batteryDisplaySet: Boolean
         get() = jsonRead { has(KEY_BATTERY_DISPLAY) }
 
-    var showUpdate: Boolean
-        get() = jsonRead { optBoolean(KEY_SHOW_UPDATE, true) }
-        set(value) = jsonWrite { put(KEY_SHOW_UPDATE, value) }
-
     var showKitchen: Boolean
         get() = jsonRead { optBoolean(KEY_SHOW_KITCHEN, true) }
         set(value) = jsonWrite { put(KEY_SHOW_KITCHEN, value) }
@@ -329,34 +325,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = jsonRead { optString(KEY_COLOR_STATUS_BAR, "#FFFFFF") }
         set(value) = jsonWrite { put(KEY_COLOR_STATUS_BAR, value) }
 
-    var releaseChannel: String
-        get() = jsonRead { optString(KEY_RELEASE_CHANNEL, "STABLE") }
-        set(value) = jsonWrite { put(KEY_RELEASE_CHANNEL, value) }
-
-    var lastUpdateCheck: Long
-        get() = jsonRead { optLong(KEY_LAST_UPDATE_CHECK, 0L) }
-        set(value) = jsonWrite { put(KEY_LAST_UPDATE_CHECK, value) }
-
-    var cachedUpdateVersion: String
-        get() = jsonRead { optString(KEY_CACHED_UPDATE_VERSION, "") }
-        set(value) = jsonWrite { if (value.isEmpty()) remove(KEY_CACHED_UPDATE_VERSION) else put(KEY_CACHED_UPDATE_VERSION, value) }
-
-    var cachedUpdateCode: Int
-        get() = jsonRead { optInt(KEY_CACHED_UPDATE_CODE, 0) }
-        set(value) = jsonWrite { if (value == 0) remove(KEY_CACHED_UPDATE_CODE) else put(KEY_CACHED_UPDATE_CODE, value) }
-
-    var cachedUpdateTag: String
-        get() = jsonRead { optString(KEY_CACHED_UPDATE_TAG, "") }
-        set(value) = jsonWrite { if (value.isEmpty()) remove(KEY_CACHED_UPDATE_TAG) else put(KEY_CACHED_UPDATE_TAG, value) }
-
-    var cachedUpdateApk: String
-        get() = jsonRead { optString(KEY_CACHED_UPDATE_APK, "") }
-        set(value) = jsonWrite { if (value.isEmpty()) remove(KEY_CACHED_UPDATE_APK) else put(KEY_CACHED_UPDATE_APK, value) }
-
-    var cachedUpdateChangelog: String
-        get() = jsonRead { optString(KEY_CACHED_UPDATE_CHANGELOG, "") }
-        set(value) = jsonWrite { if (value.isEmpty()) remove(KEY_CACHED_UPDATE_CHANGELOG) else put(KEY_CACHED_UPDATE_CHANGELOG, value) }
-
     var loggingRomScan: Boolean
         get() = jsonRead { optBoolean(KEY_LOGGING_ROM_SCAN, false) }
         set(value) = jsonWrite { put(KEY_LOGGING_ROM_SCAN, value) }
@@ -452,7 +420,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_SHOW_VPN = "show_vpn"
         private const val KEY_SHOW_CLOCK = "show_clock"
         private const val KEY_BATTERY_DISPLAY = "battery_display"
-        private const val KEY_SHOW_UPDATE = "show_update"
         private const val KEY_SHOW_KITCHEN = "show_kitchen"
         private const val KEY_SHOW_DOWNLOADS = "show_downloads"
         private const val KEY_CONCURRENT_DOWNLOADS = "concurrent_downloads"
@@ -467,13 +434,6 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_RA_USERNAME = "ra_username"
         private const val KEY_RA_TOKEN = "ra_token"
         private const val KEY_RA_PASSWORD = "ra_password"
-        private const val KEY_RELEASE_CHANNEL = "release_channel"
-        private const val KEY_LAST_UPDATE_CHECK = "last_update_check"
-        private const val KEY_CACHED_UPDATE_VERSION = "cached_update_version"
-        private const val KEY_CACHED_UPDATE_CODE = "cached_update_code"
-        private const val KEY_CACHED_UPDATE_TAG = "cached_update_tag"
-        private const val KEY_CACHED_UPDATE_APK = "cached_update_apk"
-        private const val KEY_CACHED_UPDATE_CHANGELOG = "cached_update_changelog"
         private const val KEY_CONTENT_MODE = "content_mode"
         private const val KEY_LOGGING_ROM_SCAN = "logging_rom_scan"
         private const val KEY_LOGGING_INPUT = "logging_input"

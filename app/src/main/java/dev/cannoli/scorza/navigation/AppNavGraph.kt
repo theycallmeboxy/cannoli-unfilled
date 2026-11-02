@@ -448,9 +448,6 @@ fun AppNavGraph(
     controllersViewModel: ControllersViewModel,
     dialogState: StateFlow<DialogState>,
     onListStateChanged: ((androidx.compose.foundation.lazy.LazyListState?) -> Unit)? = null,
-    updateAvailable: Boolean = false,
-    downloadProgress: Float = 0f,
-    downloadError: String? = null,
     osdController: dev.cannoli.ui.components.OsdController,
     activeMapping: dev.cannoli.scorza.input.DeviceMapping? = null,
     mappingRepository: dev.cannoli.scorza.input.repo.MappingRepository? = null,
@@ -1691,17 +1688,13 @@ fun AppNavGraph(
             listFontSize = listFontSize,
             listLineHeight = listLineHeight,
             listVerticalPadding = listVerticalPadding,
-            downloadProgress = downloadProgress,
-            downloadError = downloadError,
             downloads = overlayDownloads,
-            updateAvailable = updateAvailable,
             buttonStyle = labels,
         )
 
         val systemListState = systemListViewModel?.state?.collectAsState()?.value
         val hideForDialog = dialog is DialogState.About
                 || dialog is DialogState.Kitchen
-                || dialog is DialogState.UpdateDownload
                 || dialog is KeyboardHost
         val hideForScreen = currentScreen is LauncherScreen.Credits
                 || currentScreen is LauncherScreen.CreditsSection
@@ -1742,7 +1735,6 @@ fun AppNavGraph(
                 || appSettings.showVpn
                 || appSettings.showClock
                 || appSettings.batteryDisplay != dev.cannoli.scorza.settings.BatteryDisplay.HIDE
-                || (updateAvailable && appSettings.showUpdate)
         if (!hideForDialog && !hideForScreen && hasContent) {
         Box(
             modifier = Modifier
@@ -1753,7 +1745,6 @@ fun AppNavGraph(
                 }
         ) {
             StatusBar(
-                updateAvailable = updateAvailable,
                 kitchenRunning = showKitchenIcon,
                 downloadCount = activeDownloadCount,
                 downloadsActive = artRunning,
@@ -1763,7 +1754,6 @@ fun AppNavGraph(
                 showClock = appSettings.showClock,
                 showBattery = appSettings.batteryDisplay != dev.cannoli.scorza.settings.BatteryDisplay.HIDE,
                 batteryIconOnly = appSettings.batteryDisplay == dev.cannoli.scorza.settings.BatteryDisplay.ICON,
-                showUpdate = appSettings.showUpdate,
                 use24hTime = appSettings.use24h,
                 saveSyncStatus = saveSyncStatus,
                 rommCacheSyncStatus = cacheSyncStatus,

@@ -29,7 +29,7 @@ import dev.cannoli.ui.theme.Spacing
 import dev.cannoli.ui.theme.Success
 
 @Composable
-fun AboutOverlay(statusMessage: String? = null, updateAvailable: Boolean = false, buttonStyle: ButtonStyle = ButtonStyle()) {
+fun AboutOverlay(statusMessage: String? = null, buttonStyle: ButtonStyle = ButtonStyle()) {
     val typo = LocalCannoliTypography.current
     Box(
         modifier = Modifier
@@ -85,7 +85,6 @@ fun AboutOverlay(statusMessage: String? = null, updateAvailable: Boolean = false
                 .padding(screenPadding),
             leftItems = listOf(buttonStyle.back to stringResource(R.string.label_back)),
             rightItems = buildList {
-                if (updateAvailable) add(buttonStyle.west to stringResource(R.string.label_update))
                 add(buttonStyle.north to stringResource(R.string.label_credits))
             }
         )

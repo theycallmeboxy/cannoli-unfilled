@@ -109,7 +109,6 @@ sealed interface DialogState {
     }
     data class KeyboardHelp(val restore: DialogState, val layout: KeyboardLayout) : DialogState
     data object QuitConfirm : DialogState
-    data class UpdateDownload(val versionName: String, val changelog: String) : DialogState
     data object RestartRequired : DialogState
     /** [newRomDirectory] is empty when clearing the pick, which resolves back to the Cannoli root. */
     data class LibrarySwitchConfirm(val newRomDirectory: String) : DialogState

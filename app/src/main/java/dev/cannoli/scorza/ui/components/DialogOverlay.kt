@@ -64,7 +64,6 @@ import dev.cannoli.ui.components.RommPairingOverlay
 import dev.cannoli.ui.components.RestartOverlay
 import dev.cannoli.ui.components.ScreenBackground
 import dev.cannoli.ui.components.ScreenTitle
-import dev.cannoli.ui.components.UpdateDownloadOverlay
 import dev.cannoli.ui.components.footerReservation
 import dev.cannoli.ui.components.listTitleSpacing
 import dev.cannoli.ui.components.pillItemHeight
@@ -80,10 +79,7 @@ fun DialogOverlay(
     listFontSize: TextUnit,
     listLineHeight: TextUnit,
     listVerticalPadding: Dp,
-    downloadProgress: Float = 0f,
-    downloadError: String? = null,
     downloads: List<RommDownloadItem> = emptyList(),
-    updateAvailable: Boolean = false,
     buttonStyle: ButtonStyle = ButtonStyle(),
     // Only the Tools and Ports lists offer to drop a shortcut for an app that has gone missing,
     // and that depends on the list being viewed rather than on anything the dialog carries.
@@ -207,7 +203,7 @@ fun DialogOverlay(
         }
 
         is DialogState.About -> {
-            AboutOverlay(statusMessage = dialogState.statusMessage, updateAvailable = updateAvailable, buttonStyle = buttonStyle)
+            AboutOverlay(statusMessage = dialogState.statusMessage, buttonStyle = buttonStyle)
         }
 
         is DialogState.Kitchen -> {
@@ -231,16 +227,6 @@ fun DialogOverlay(
         }
         is DialogState.RommConnected -> {
             RommConnectedOverlay(host = dialogState.host, username = dialogState.username, version = dialogState.version, buttonStyle = buttonStyle)
-        }
-
-        is DialogState.UpdateDownload -> {
-            UpdateDownloadOverlay(
-                versionName = dialogState.versionName,
-                changelog = dialogState.changelog,
-                progress = downloadProgress,
-                error = downloadError,
-                buttonStyle = buttonStyle
-            )
         }
 
         is DialogState.RestartRequired -> {

@@ -22,7 +22,6 @@ import dev.cannoli.scorza.setup.SetupCoordinator
 import dev.cannoli.scorza.ui.screens.DialogState
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
 import dev.cannoli.ui.components.KeyboardState
-import dev.cannoli.scorza.updater.UpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -38,7 +37,6 @@ class SettingsInputHandler @Inject constructor(
     private val installedCoreService: InstalledCoreService,
     private val setupCoordinator: SetupCoordinator,
     private val inputTesterController: InputTesterController,
-    private val updateManager: UpdateManager,
     private val intentAuditor: IntentAuditor,
     private val settingsViewModel: SettingsViewModel,
     private val launcherActions: LauncherActions,
@@ -60,9 +58,6 @@ class SettingsInputHandler @Inject constructor(
     override fun onLeft() {
         if (settingsViewModel.state.value.inSubList) {
             settingsViewModel.cycleSelected(-1, repeatCount = nav.lastKeyRepeatCount)
-            if (settingsViewModel.getSelectedItem()?.key == "release_channel") {
-                ioScope.launch { updateManager.checkForUpdate() }
-            }
         } else {
             pageJump(-1)
         }
@@ -71,9 +66,6 @@ class SettingsInputHandler @Inject constructor(
     override fun onRight() {
         if (settingsViewModel.state.value.inSubList) {
             settingsViewModel.cycleSelected(1, repeatCount = nav.lastKeyRepeatCount)
-            if (settingsViewModel.getSelectedItem()?.key == "release_channel") {
-                ioScope.launch { updateManager.checkForUpdate() }
-            }
         } else {
             pageJump(1)
         }

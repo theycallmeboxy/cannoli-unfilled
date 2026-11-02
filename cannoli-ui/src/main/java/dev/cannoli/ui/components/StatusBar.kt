@@ -75,7 +75,6 @@ private fun batteryLevelIcon(percent: Int): String = when {
 
 @Composable
 fun StatusBar(
-    updateAvailable: Boolean = false,
     kitchenRunning: Boolean = false,
     downloadCount: Int = 0,
     downloadsActive: Boolean = false,
@@ -85,7 +84,6 @@ fun StatusBar(
     showClock: Boolean = true,
     showBattery: Boolean = true,
     batteryIconOnly: Boolean = false,
-    showUpdate: Boolean = true,
     use24hTime: Boolean = false,
     textSizeSp: Int = 16,
     saveSyncStatus: SaveSyncStatus = SaveSyncStatus.DISABLED,
@@ -195,11 +193,10 @@ fun StatusBar(
         color = colors.statusBar
     )
 
-    val showUpdateIcon = updateAvailable && showUpdate
     val showBtIcon = showBluetooth && hasBluetooth
     val showWifiIcon = showWifi && wifiConnected
     val showVpnIcon = showVpn && hasVpn
-    val anyVisible = cloudIcon(saveSyncStatus) != null || cacheSyncIcon(rommCacheSyncStatus) != null || kitchenRunning || downloadCount > 0 || downloadsActive || showUpdateIcon || showBtIcon || showWifiIcon || showVpnIcon || showBattery || showClock
+    val anyVisible = cloudIcon(saveSyncStatus) != null || cacheSyncIcon(rommCacheSyncStatus) != null || kitchenRunning || downloadCount > 0 || downloadsActive || showBtIcon || showWifiIcon || showVpnIcon || showBattery || showClock
 
     if (!anyVisible) return
 
@@ -220,7 +217,6 @@ fun StatusBar(
         } else if (downloadsActive) {
             Text(text = CannoliIcons.Download.glyph, style = iconStyle)
         }
-        if (showUpdateIcon) Text(text = CannoliIcons.Update.glyph, style = iconStyle)
         if (showBtIcon) Text(text = CannoliIcons.Bluetooth.glyph, style = iconStyle)
         if (showWifiIcon) Text(text = CannoliIcons.Wifi.glyph, style = iconStyle)
         if (showVpnIcon) Text(text = CannoliIcons.Vpn.glyph, style = iconStyle)

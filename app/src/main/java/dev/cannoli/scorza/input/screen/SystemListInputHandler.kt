@@ -23,7 +23,6 @@ import dev.cannoli.scorza.ui.screens.DialogState
 import dev.cannoli.scorza.ui.viewmodel.GameListViewModel
 import dev.cannoli.scorza.ui.viewmodel.SettingsViewModel
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel
-import dev.cannoli.scorza.updater.UpdateManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -35,7 +34,6 @@ class SystemListInputHandler @Inject constructor(
     private val settings: SettingsRepository,
     private val collectionsRepository: CollectionsRepository,
     private val platformConfig: PlatformConfig,
-    private val updateManager: UpdateManager,
     private val systemListViewModel: SystemListViewModel,
     private val gameListViewModel: GameListViewModel,
     private val settingsViewModel: SettingsViewModel,
@@ -116,9 +114,6 @@ class SystemListInputHandler @Inject constructor(
             systemListViewModel.savePosition()
             settingsViewModel.load()
             nav.screenStack.add(LauncherScreen.Settings)
-            if (updateManager.isOnline()) {
-                ioScope.launch { updateManager.checkForUpdate() }
-            }
         }
     }
 
@@ -127,9 +122,6 @@ class SystemListInputHandler @Inject constructor(
             systemListViewModel.savePosition()
             settingsViewModel.load()
             nav.screenStack.add(LauncherScreen.Settings)
-            if (updateManager.isOnline()) {
-                ioScope.launch { updateManager.checkForUpdate() }
-            }
         } else {
             if (systemListViewModel.state.value.items.isEmpty()) {
                 launcherActions.openKitchen()
