@@ -11,6 +11,8 @@ ENV ANDROID_HOME=/opt/android-sdk
 ENV ANDROID_SDK_ROOT=/opt/android-sdk
 ENV PATH=/opt/android-sdk/cmdline-tools/latest/bin:/opt/android-sdk/platform-tools:$PATH
 ENV GRADLE_USER_HOME=/root/.cache/gradle
+# Keeps the debug signing key across container rebuilds, so debug builds install over each other.
+ENV ANDROID_USER_HOME=/root/.cache/android-user
 
 RUN mkdir -p /opt/android-sdk/cmdline-tools \
  && curl -fsSL https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip -o /tmp/clt.zip \
