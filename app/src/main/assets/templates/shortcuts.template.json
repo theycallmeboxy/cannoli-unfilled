@@ -1,0 +1,51 @@
+{
+  "_about": [
+    "Examples of shortcuts: launch intents that act like an app rather than a system. Never read as config.",
+    "To use one, copy it into shortcuts.json (same key) and place it in directory.json, e.g. { \"shortcut\": \"settings-wifi\" }.",
+    "Each takes a \"name\" for the menu plus a launch intent (see CONFIG.md). Without an \"action\" it opens like a home screen icon.",
+    "A shortcut takes no game, so data kinds and extras that pass the game file (file_provider, path, uri_string...) don't apply.",
+    "To open a URI, use data kind custom_scheme: the URI is scheme://authority."
+  ],
+  "settings-wifi": {
+    "_note": "An action on its own: Android's Wi-Fi settings.",
+    "name": "Wi-Fi",
+    "package": "com.android.settings",
+    "action": "android.settings.WIFI_SETTINGS"
+  },
+  "cannoli-notifications": {
+    "_note": "A named activity with a fixed extra: this app's notification settings.",
+    "name": "Cannoli Notifications",
+    "package": "com.android.settings",
+    "activity": "com.android.settings.Settings$AppNotificationSettingsActivity",
+    "action": "android.settings.APP_NOTIFICATION_SETTINGS",
+    "extras": [
+      {
+        "key": "android.provider.extra.APP_PACKAGE",
+        "kind": "string",
+        "value": "io.github.theycallmeboxy.cannoli"
+      }
+    ]
+  },
+  "web-manual": {
+    "_note": "VIEW of a web page in a browser. The URI is https://<authority>.",
+    "name": "RetroArch Docs",
+    "package": "com.android.chrome",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "custom_scheme",
+      "scheme": "https",
+      "authority": "docs.libretro.com"
+    }
+  },
+  "kodi-movies": {
+    "_note": "VIEW with an app's own scheme: opens a Kodi add-on.",
+    "name": "Movies",
+    "package": "org.xbmc.kodi",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "custom_scheme",
+      "scheme": "plugin",
+      "authority": "plugin.video.example"
+    }
+  }
+}

@@ -1,0 +1,749 @@
+{
+  "_about": [
+    "Every emulator Cannoli knows how to launch. This file is rewritten on every update and never read as config.",
+    "To use one, copy its entry into emulators.json (same key), then list that key in a system in systems.json.",
+    "The key is the emulator's name. The value is a launch intent (see CONFIG.md) plus an optional display \"name\".",
+    "Placeholders in extra values: {rom_path}, {package}, {rom_extension}, {rom_contents} and {rom_id} are always filled in.",
+    "Any other placeholder, such as {core}, is filled from the system entry that lists the emulator.",
+    "Keys starting with _ are ignored everywhere, so a copied entry can keep its _note."
+  ],
+  "retroarch": {
+    "_note": "RetroArch 64-bit. Each system passes its core as {core}, e.g. \"core\": \"mgba_libretro\".",
+    "name": "RetroArch",
+    "package": "com.retroarch.aarch64",
+    "activity": "com.retroarch.browser.retroactivity.RetroActivityFuture",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "ROM",
+        "kind": "string",
+        "value": "{rom_path}"
+      },
+      {
+        "key": "LIBRETRO",
+        "kind": "string",
+        "value": "/data/data/{package}/cores/{core}_android.so"
+      },
+      {
+        "key": "CONFIGFILE",
+        "kind": "string",
+        "value": "/storage/emulated/0/Android/data/{package}/files/retroarch.cfg"
+      }
+    ]
+  },
+  "skyemu": {
+    "_note": "Used by GB, GBC, GBA, NDS.",
+    "name": "SkyEmu",
+    "package": "com.sky.SkyEmu",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "gbcemu": {
+    "_note": "Used by GB, GBC.",
+    "name": "GBC.emu",
+    "package": "com.explusalpha.GbcEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "fastemulator-gbc": {
+    "_note": "Used by GB, GBC.",
+    "name": "My OldBoy!",
+    "package": "com.fastemulator.gbc",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "linkboy": {
+    "_note": "Used by GB, GBC, GBA.",
+    "name": "Linkboy",
+    "package": "com.pixelrespawn.linkboy",
+    "data": {
+      "kind": "custom_scheme",
+      "scheme": "linkboy",
+      "authority": "emulator"
+    }
+  },
+  "pizzaboypro": {
+    "_note": "Used by GB, GBC.",
+    "name": "Pizza Boy GBC Pro",
+    "package": "it.dbtecno.pizzaboypro",
+    "extras": [
+      {
+        "key": "rom_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "pizzaboy": {
+    "_note": "Used by GB, GBC.",
+    "name": "Pizza Boy GBC",
+    "package": "it.dbtecno.pizzaboy",
+    "extras": [
+      {
+        "key": "rom_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "noods": {
+    "_note": "Used by GBA, NDS.",
+    "name": "NooDS",
+    "package": "com.hydra.noods",
+    "extras": [
+      {
+        "key": "LaunchPath",
+        "kind": "path"
+      }
+    ]
+  },
+  "gbaemu": {
+    "_note": "Used by GBA.",
+    "name": "GBA.emu",
+    "package": "com.explusalpha.GbaEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "fastemulator-gba": {
+    "_note": "Used by GBA.",
+    "name": "My Boy!",
+    "package": "com.fastemulator.gba",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "pizzaboygbapro": {
+    "_note": "Used by GBA.",
+    "name": "Pizza Boy GBA Pro",
+    "package": "it.dbtecno.pizzaboygbapro",
+    "extras": [
+      {
+        "key": "rom_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "pizzaboygba": {
+    "_note": "Used by GBA.",
+    "name": "Pizza Boy GBA",
+    "package": "it.dbtecno.pizzaboygba",
+    "extras": [
+      {
+        "key": "rom_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "nesemu": {
+    "_note": "Used by NES, FDS.",
+    "name": "NES.emu",
+    "package": "com.explusalpha.NesEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "ines-free": {
+    "_note": "Used by NES, FDS.",
+    "name": "iNES",
+    "package": "com.fms.ines.free",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "androidemu-nes": {
+    "_note": "Used by NES, FDS.",
+    "name": "Nesoid",
+    "package": "com.androidemu.nes",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "snes9xplus": {
+    "_note": "Used by SNES.",
+    "name": "Snes9x EX+",
+    "package": "com.explusalpha.Snes9xPlus",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "fzurita-pro": {
+    "_note": "Used by N64.",
+    "name": "Mupen64Plus FZ Pro",
+    "package": "org.mupen64plusae.v3.fzurita.pro",
+    "activity": "paulscode.android.mupen64plusae.SplashActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "fzurita": {
+    "_note": "Used by N64.",
+    "name": "Mupen64Plus FZ",
+    "package": "org.mupen64plusae.v3.fzurita",
+    "activity": "paulscode.android.mupen64plusae.SplashActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "fzurita-amazon": {
+    "_note": "Used by N64.",
+    "name": "Mupen64Plus FZ (Amazon)",
+    "package": "org.mupen64plusae.v3.fzurita.amazon",
+    "activity": "paulscode.android.mupen64plusae.SplashActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "m64-fx-plus-emulate": {
+    "_note": "Used by N64.",
+    "name": "M64Plus FX",
+    "package": "com.m64.fx.plus.emulate",
+    "activity": "paulscode.android.mupen64plusae.SplashActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "mupen64plusae-v3-alpha": {
+    "_note": "Used by N64.",
+    "name": "Mupen64Plus AE",
+    "package": "org.mupen64plusae.v3.alpha",
+    "activity": "paulscode.android.mupen64plusae.SplashActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "melonds": {
+    "_note": "Used by NDS.",
+    "name": "melonDS",
+    "package": "me.magnum.melonds",
+    "action": "me.magnum.melonds.LAUNCH_ROM",
+    "extras": [
+      {
+        "key": "uri",
+        "kind": "uri_parcelable"
+      }
+    ]
+  },
+  "melondualds": {
+    "_note": "Used by NDS.",
+    "name": "melonDS Dual",
+    "package": "me.magnum.melondualds",
+    "action": "me.magnum.melonds.LAUNCH_ROM",
+    "extras": [
+      {
+        "key": "uri",
+        "kind": "uri_parcelable"
+      }
+    ]
+  },
+  "melonds-nightly": {
+    "_note": "Used by NDS.",
+    "name": "melonDS Nightly",
+    "package": "me.magnum.melonds.nightly",
+    "action": "me.magnum.melonds.nightly.LAUNCH_ROM",
+    "extras": [
+      {
+        "key": "uri",
+        "kind": "uri_parcelable"
+      }
+    ]
+  },
+  "drastic": {
+    "_note": "Used by NDS.",
+    "name": "DraStic",
+    "package": "com.dsemu.drastic",
+    "activity": "com.dsemu.drastic.DraSticActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "absolute_path"
+    }
+  },
+  "fms-mg": {
+    "_note": "Used by GG, SMS, SG1000.",
+    "name": "MasterGear",
+    "package": "com.fms.mg",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "pizzaboyscpro": {
+    "_note": "Used by GG, SMS, MD, SEGACD.",
+    "name": "Pizza Boy SC Pro",
+    "package": "it.dbtecno.pizzaboyscpro",
+    "extras": [
+      {
+        "key": "rom_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "pizzaboyscbasic": {
+    "_note": "Used by GG, SMS, MD, SEGACD.",
+    "name": "Pizza Boy SC Basic",
+    "package": "it.dbtecno.pizzaboyscbasic",
+    "extras": [
+      {
+        "key": "rom_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "mdemu": {
+    "_note": "Used by SMS, MD, SEGACD.",
+    "name": "MD.emu",
+    "package": "com.explusalpha.MdEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "saturnemu": {
+    "_note": "Used by SATURN.",
+    "name": "Saturn.emu",
+    "package": "com.explusalpha.SaturnEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "yabasanshioro2-pro": {
+    "_note": "Used by SATURN.",
+    "name": "Yaba Sanshiro 2 Pro",
+    "package": "org.devmiyax.yabasanshioro2.pro",
+    "activity": "org.uoyabause.android.Yabause",
+    "extras": [
+      {
+        "key": "org.uoyabause.android.FileNameEx",
+        "kind": "path"
+      }
+    ]
+  },
+  "yabasanshioro2": {
+    "_note": "Used by SATURN.",
+    "name": "Yaba Sanshiro 2",
+    "package": "org.devmiyax.yabasanshioro2",
+    "activity": "org.uoyabause.android.Yabause",
+    "extras": [
+      {
+        "key": "org.uoyabause.android.FileNameEx",
+        "kind": "path"
+      }
+    ]
+  },
+  "duckstation": {
+    "_note": "Used by PS.",
+    "name": "DuckStation",
+    "package": "com.github.stenzek.duckstation",
+    "activity": "com.github.stenzek.duckstation.EmulationActivity",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "bootPath",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "fpse64": {
+    "_note": "Used by PS.",
+    "name": "FPse64",
+    "package": "com.emulator.fpse64",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "fpse": {
+    "_note": "Used by PS.",
+    "name": "FPse",
+    "package": "com.emulator.fpse",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "ppssppgold": {
+    "_note": "Used by PSP.",
+    "name": "PPSSPP Gold",
+    "package": "org.ppsspp.ppssppgold",
+    "activity": "org.ppsspp.ppssppgold.PpssppActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "ppsspp": {
+    "_note": "Used by PSP.",
+    "name": "PPSSPP",
+    "package": "org.ppsspp.ppsspp",
+    "activity": "org.ppsspp.ppsspp.PpssppActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "flycast-emulator": {
+    "_note": "Used by DC, MAME, FBN.",
+    "name": "Flycast",
+    "package": "com.flycast.emulator",
+    "activity": "com.flycast.emulator.MainActivity",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "external_storage_saf"
+    }
+  },
+  "redream": {
+    "_note": "Used by DC.",
+    "name": "Redream",
+    "package": "io.recompiled.redream",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "lynxemu": {
+    "_note": "Used by LYNX.",
+    "name": "Lynx.emu",
+    "package": "com.explusalpha.LynxEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "iratajaguar": {
+    "_note": "Used by JAGUAR.",
+    "name": "ru.vastness.altmer.iratajaguar",
+    "package": "ru.vastness.altmer.iratajaguar",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "a2600emu": {
+    "_note": "Used by ATARI2600.",
+    "name": "2600.emu",
+    "package": "com.explusalpha.A2600Emu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "pceemu": {
+    "_note": "Used by PCE, SUPERGRAFX.",
+    "name": "PCE.emu",
+    "package": "com.PceEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "pico8": {
+    "_note": "Used by PICO8.",
+    "name": "io.wip.pico8",
+    "package": "io.wip.pico8",
+    "activity": "com.godot.game.GodotAppLauncher",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "external_storage_saf"
+    }
+  },
+  "ngpemu": {
+    "_note": "Used by NGP, NGPC.",
+    "name": "NGP.emu",
+    "package": "com.explusalpha.NgpEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "swanemu": {
+    "_note": "Used by WS, WSC.",
+    "name": "Swan.emu",
+    "package": "com.explusalpha.SwanEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "neoemu": {
+    "_note": "Used by NEOGEO, MAME, FBN.",
+    "name": "NEO.emu",
+    "package": "com.explusalpha.NeoEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "mame4droid": {
+    "_note": "Used by NEOGEO, MAME, FBN.",
+    "name": "MAME4droid",
+    "package": "com.seleuco.mame4droid",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "finalburn": {
+    "_note": "Used by NEOGEO, MAME, FBN.",
+    "name": "com.bangkokfusion.finalburn",
+    "package": "com.bangkokfusion.finalburn"
+  },
+  "simongellis-vvb": {
+    "_note": "Used by VIRTUALBOY.",
+    "name": "com.simongellis.vvb",
+    "package": "com.simongellis.vvb",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "msxemu": {
+    "_note": "Used by COLECOVISION.",
+    "name": "MSX.emu",
+    "package": "com.explusalpha.MsxEmu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "colem-deluxe": {
+    "_note": "Used by COLECOVISION.",
+    "name": "ColEm Deluxe",
+    "package": "com.fms.colem.deluxe",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "colem": {
+    "_note": "Used by COLECOVISION.",
+    "name": "ColEm",
+    "package": "com.fms.colem",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "dosbox": {
+    "_note": "Used by DOS.",
+    "name": "DosBox Turbo",
+    "package": "com.fishstix.dosbox"
+  },
+  "magicbox": {
+    "_note": "Used by DOS.",
+    "name": "Magic Dosbox",
+    "package": "bruenor.magicbox"
+  },
+  "scummvm": {
+    "_note": "Used by SCUMMVM.",
+    "name": "ScummVM",
+    "package": "org.scummvm.scummvm"
+  },
+  "gamenative": {
+    "_note": "Used by PC.",
+    "name": "GameNative",
+    "package": "app.gamenative",
+    "activity": "app.gamenative.MainActivity",
+    "action": "app.gamenative.LAUNCH_GAME",
+    "extras": [
+      {
+        "key": "app_id",
+        "kind": "int",
+        "value": "{rom_id}"
+      },
+      {
+        "key": "game_source",
+        "kind": "string",
+        "value": "{rom_extension}",
+        "map": {
+          "steam": "STEAM",
+          "steamappid": "STEAM",
+          "epic": "EPIC",
+          "gog": "GOG",
+          "amazon": "AMAZON",
+          "pcgame": "CUSTOM_GAME"
+        }
+      }
+    ]
+  },
+  "gamehub-lite": {
+    "_note": "Used by PC.",
+    "name": "GameHub Lite",
+    "package": "gamehub.lite",
+    "activity": "com.xj.landscape.launcher.ui.gamedetail.GameDetailActivity",
+    "action": "gamehub.lite.LAUNCH_GAME",
+    "extras": [
+      {
+        "key": "steamAppId",
+        "kind": "string",
+        "value": "{rom_id}",
+        "whenExtension": [
+          "steam",
+          "steamappid"
+        ]
+      },
+      {
+        "key": "localGameId",
+        "kind": "string",
+        "value": "{rom_id}",
+        "whenExtension": [
+          "localgameid",
+          "txt"
+        ]
+      },
+      {
+        "key": "autoStartGame",
+        "kind": "bool",
+        "value": "true"
+      }
+    ],
+    "intentFlags": 1342210048
+  },
+  "aethersx2-android": {
+    "_note": "Used by PS2.",
+    "name": "AetherSX2",
+    "package": "xyz.aethersx2.android",
+    "activity": "xyz.aethersx2.android.EmulationActivity",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "bootPath",
+        "kind": "uri_string"
+      }
+    ],
+    "intentFlags": 268468224
+  },
+  "armsx2": {
+    "_note": "Used by PS2.",
+    "name": "ARMSX2",
+    "package": "com.armsx2",
+    "activity": "com.armsx2.Main",
+    "action": "android.intent.action.VIEW",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "dolphinemu": {
+    "_note": "Used by GC, WII.",
+    "name": "Dolphin",
+    "package": "org.dolphinemu.dolphinemu",
+    "activity": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "AutoStartFile",
+        "kind": "path"
+      }
+    ]
+  },
+  "mmjr": {
+    "_note": "Used by GC, WII.",
+    "name": "Dolphin MMJR",
+    "package": "org.dolphinemu.mmjr",
+    "activity": "org.dolphinemu.dolphinemu.ui.main.MainActivity",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "AutoStartFile",
+        "kind": "path"
+      }
+    ]
+  },
+  "azahar": {
+    "_note": "Used by 3DS.",
+    "name": "Azahar",
+    "package": "org.azahar_emu.azahar",
+    "activity": "org.citra.citra_emu.activities.EmulationActivity",
+    "data": {
+      "kind": "file_provider"
+    },
+    "intentFlags": 268468224
+  },
+  "cemu": {
+    "_note": "Used by WIIU.",
+    "name": "Cemu",
+    "package": "info.cemu.cemu",
+    "data": {
+      "kind": "file_provider"
+    }
+  },
+  "vita3k-emulator": {
+    "_note": "Used by PSVITA.",
+    "name": "Vita3K",
+    "package": "org.vita3k.emulator",
+    "activity": "org.vita3k.emulator.Emulator",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "AppStartParameters",
+        "kind": "string_array",
+        "values": [
+          "-r",
+          "{rom_contents}"
+        ]
+      }
+    ]
+  },
+  "ikhoeyzx": {
+    "_note": "Used by PSVITA.",
+    "name": "Vita3K (ikhoeyZX)",
+    "package": "org.vita3k.emulator.ikhoeyZX",
+    "activity": "org.vita3k.emulator.Emulator",
+    "action": "android.intent.action.MAIN",
+    "extras": [
+      {
+        "key": "AppStartParameters",
+        "kind": "string_array",
+        "values": [
+          "-r",
+          "{rom_contents}"
+        ]
+      }
+    ]
+  },
+  "aps3e-premium": {
+    "_note": "Used by PS3.",
+    "name": "aPS3e Premium",
+    "package": "aenu.aps3e.premium",
+    "action": "aenu.intent.action.APS3E",
+    "extras": [
+      {
+        "key": "iso_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "aps3e": {
+    "_note": "Used by PS3.",
+    "name": "aPS3e",
+    "package": "aenu.aps3e",
+    "action": "aenu.intent.action.APS3E",
+    "extras": [
+      {
+        "key": "iso_uri",
+        "kind": "uri_string"
+      }
+    ]
+  },
+  "eden-emulator": {
+    "_note": "Used by NSW.",
+    "name": "Eden",
+    "package": "dev.eden.eden_emulator",
+    "action": "android.nfc.action.TECH_DISCOVERED",
+    "data": {
+      "kind": "file_provider"
+    },
+    "intentFlags": 268468224
+  },
+  "eden-emulator-nightly": {
+    "_note": "Used by NSW.",
+    "name": "Eden Nightly",
+    "package": "dev.eden.eden_emulator.nightly",
+    "action": "android.nfc.action.TECH_DISCOVERED",
+    "data": {
+      "kind": "file_provider"
+    },
+    "intentFlags": 268468224
+  }
+}

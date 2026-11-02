@@ -1,0 +1,584 @@
+{
+  "_about": [
+    "Every system Cannoli knows. This file is rewritten on every update and never read as config.",
+    "To use one, copy its entry into systems.json, and the emulators it lists from emulators.template.json into emulators.json.",
+    "Then place the system in directory.json, e.g. { \"system\": \"GBA\" }, to show it on the menu.",
+    "\"roms\" is its folder under Roms/ (defaults to the key). \"extensions\" limits the file types; leave it out to accept every file.",
+    "\"emulators\" lists what can run it, the first being the default: an emulator name, or an object with \"emulator\" plus values for its placeholders, such as \"core\".",
+    "An object can also take a \"name\", which overrides.json and the picker use when the same emulator is listed twice."
+  ],
+  "GB": {
+    "name": "Game Boy",
+    "roms": "GB",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "gambatte_libretro"
+      },
+      "skyemu",
+      "gbcemu",
+      "fastemulator-gbc",
+      "linkboy",
+      "pizzaboypro",
+      "pizzaboy"
+    ]
+  },
+  "GBC": {
+    "name": "Game Boy Color",
+    "roms": "GBC",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "gambatte_libretro"
+      },
+      "skyemu",
+      "gbcemu",
+      "fastemulator-gbc",
+      "linkboy",
+      "pizzaboypro",
+      "pizzaboy"
+    ]
+  },
+  "GBA": {
+    "name": "Game Boy Advance",
+    "roms": "GBA",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mgba_libretro"
+      },
+      "noods",
+      "skyemu",
+      "gbaemu",
+      "fastemulator-gba",
+      "linkboy",
+      "pizzaboygbapro",
+      "pizzaboygba"
+    ]
+  },
+  "NES": {
+    "name": "Nintendo Entertainment System",
+    "roms": "NES",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "nestopia_libretro"
+      },
+      "nesemu",
+      "ines-free",
+      "androidemu-nes"
+    ]
+  },
+  "FDS": {
+    "name": "Famicom Disk System",
+    "roms": "FDS",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "nestopia_libretro"
+      },
+      "nesemu",
+      "ines-free",
+      "androidemu-nes"
+    ]
+  },
+  "SNES": {
+    "name": "Super Nintendo Entertainment System",
+    "roms": "SNES",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "snes9x_libretro"
+      },
+      "snes9xplus"
+    ]
+  },
+  "N64": {
+    "name": "Nintendo 64",
+    "roms": "N64",
+    "emulators": [
+      "fzurita-pro",
+      "fzurita",
+      "fzurita-amazon",
+      "m64-fx-plus-emulate",
+      "mupen64plusae-v3-alpha"
+    ]
+  },
+  "NDS": {
+    "name": "Nintendo DS",
+    "roms": "NDS",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "melonds_libretro"
+      },
+      "melonds",
+      "melondualds",
+      "melonds-nightly",
+      "noods",
+      "drastic",
+      "skyemu"
+    ]
+  },
+  "GG": {
+    "name": "Game Gear",
+    "roms": "GG",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "genesis_plus_gx_libretro"
+      },
+      "fms-mg",
+      "pizzaboyscpro",
+      "pizzaboyscbasic"
+    ]
+  },
+  "SMS": {
+    "name": "Master System",
+    "roms": "SMS",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "genesis_plus_gx_libretro"
+      },
+      "mdemu",
+      "fms-mg",
+      "pizzaboyscpro",
+      "pizzaboyscbasic"
+    ]
+  },
+  "MD": {
+    "name": "Sega Genesis",
+    "roms": "MD",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "genesis_plus_gx_libretro"
+      },
+      "mdemu",
+      "pizzaboyscpro",
+      "pizzaboyscbasic"
+    ]
+  },
+  "SG1000": {
+    "name": "Sega SG-1000",
+    "roms": "SG1000",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "genesis_plus_gx_libretro"
+      },
+      "fms-mg"
+    ]
+  },
+  "32X": {
+    "name": "Sega 32X",
+    "roms": "32X",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "picodrive_libretro"
+      }
+    ]
+  },
+  "SEGACD": {
+    "name": "Sega CD",
+    "roms": "SEGACD",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "genesis_plus_gx_libretro"
+      },
+      "mdemu",
+      "pizzaboyscpro",
+      "pizzaboyscbasic"
+    ]
+  },
+  "SATURN": {
+    "name": "Sega Saturn",
+    "roms": "SATURN",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_saturn_libretro"
+      },
+      "saturnemu",
+      "yabasanshioro2-pro",
+      "yabasanshioro2"
+    ]
+  },
+  "PS": {
+    "name": "PlayStation",
+    "roms": "PS",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "pcsx_rearmed_libretro"
+      },
+      "duckstation",
+      "fpse64",
+      "fpse"
+    ]
+  },
+  "PSP": {
+    "name": "PSP",
+    "roms": "PSP",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "ppsspp_libretro"
+      },
+      "ppssppgold",
+      "ppsspp"
+    ]
+  },
+  "DC": {
+    "name": "Dreamcast",
+    "roms": "DC",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "flycast_libretro"
+      },
+      "flycast-emulator",
+      "redream"
+    ]
+  },
+  "LYNX": {
+    "name": "Atari Lynx",
+    "roms": "LYNX",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "handy_libretro"
+      },
+      "lynxemu"
+    ]
+  },
+  "JAGUAR": {
+    "name": "Atari Jaguar",
+    "roms": "JAGUAR",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "virtualjaguar_libretro"
+      },
+      "iratajaguar"
+    ]
+  },
+  "ATARI2600": {
+    "name": "Atari 2600",
+    "roms": "ATARI2600",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "stella_libretro"
+      },
+      "a2600emu"
+    ]
+  },
+  "ATARI5200": {
+    "name": "Atari 5200",
+    "roms": "ATARI5200",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "atari800_libretro"
+      }
+    ]
+  },
+  "ATARI7800": {
+    "name": "Atari 7800",
+    "roms": "ATARI7800",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "prosystem_libretro"
+      }
+    ]
+  },
+  "PCE": {
+    "name": "PC Engine",
+    "roms": "PCE",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_pce_fast_libretro"
+      },
+      "pceemu"
+    ]
+  },
+  "PCFX": {
+    "name": "PC-FX",
+    "roms": "PCFX",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_pcfx_libretro"
+      }
+    ]
+  },
+  "PICO8": {
+    "name": "PICO-8",
+    "roms": "PICO8",
+    "emulators": [
+      "pico8"
+    ]
+  },
+  "NGP": {
+    "name": "Neo Geo Pocket",
+    "roms": "NGP",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_ngp_libretro"
+      },
+      "ngpemu"
+    ]
+  },
+  "NGPC": {
+    "name": "Neo Geo Pocket Color",
+    "roms": "NGPC",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_ngp_libretro"
+      },
+      "ngpemu"
+    ]
+  },
+  "WS": {
+    "name": "WonderSwan",
+    "roms": "WS",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_wswan_libretro"
+      },
+      "swanemu"
+    ]
+  },
+  "WSC": {
+    "name": "WonderSwan Color",
+    "roms": "WSC",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_wswan_libretro"
+      },
+      "swanemu"
+    ]
+  },
+  "NEOGEO": {
+    "name": "Neo Geo",
+    "roms": "NEOGEO",
+    "arcade": true,
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "fbneo_libretro"
+      },
+      "neoemu",
+      "mame4droid",
+      "finalburn"
+    ]
+  },
+  "MAME": {
+    "name": "Arcade",
+    "roms": "MAME",
+    "arcade": true,
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mame2003_plus_libretro"
+      },
+      "mame4droid",
+      "neoemu",
+      "flycast-emulator",
+      "finalburn"
+    ]
+  },
+  "FBN": {
+    "name": "Arcade",
+    "roms": "FBN",
+    "arcade": true,
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "fbneo_libretro"
+      },
+      "mame4droid",
+      "neoemu",
+      "flycast-emulator",
+      "finalburn"
+    ]
+  },
+  "VIRTUALBOY": {
+    "name": "Virtual Boy",
+    "roms": "VIRTUALBOY",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_vb_libretro"
+      },
+      "simongellis-vvb"
+    ]
+  },
+  "POKEMINI": {
+    "name": "Pokemon Mini",
+    "roms": "POKEMINI",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "pokemini_libretro"
+      }
+    ]
+  },
+  "COLECOVISION": {
+    "name": "ColecoVision",
+    "roms": "COLECOVISION",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "bluemsx_libretro"
+      },
+      "msxemu",
+      "colem-deluxe",
+      "colem"
+    ]
+  },
+  "VECTREX": {
+    "name": "Vectrex",
+    "roms": "VECTREX",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "vecx_libretro"
+      }
+    ]
+  },
+  "INTELLIVISION": {
+    "name": "Intellivision",
+    "roms": "INTELLIVISION",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "freeintv_libretro"
+      }
+    ]
+  },
+  "SUPERGRAFX": {
+    "name": "PC Engine SuperGrafx",
+    "roms": "SUPERGRAFX",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "mednafen_supergrafx_libretro"
+      },
+      "pceemu"
+    ]
+  },
+  "DOS": {
+    "name": "DOS",
+    "roms": "DOS",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "dosbox_pure_libretro"
+      },
+      "dosbox",
+      "magicbox"
+    ]
+  },
+  "SCUMMVM": {
+    "name": "ScummVM",
+    "roms": "SCUMMVM",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "scummvm_libretro"
+      },
+      "scummvm"
+    ]
+  },
+  "AMIGA": {
+    "name": "Amiga",
+    "roms": "AMIGA",
+    "emulators": [
+      {
+        "emulator": "retroarch",
+        "core": "puae_libretro"
+      }
+    ]
+  },
+  "PC": {
+    "name": "PC",
+    "roms": "PC",
+    "emulators": [
+      "gamenative",
+      "gamehub-lite"
+    ]
+  },
+  "PS2": {
+    "name": "PlayStation 2",
+    "roms": "PS2",
+    "emulators": [
+      "aethersx2-android",
+      "armsx2"
+    ]
+  },
+  "GC": {
+    "name": "GameCube",
+    "roms": "GC",
+    "emulators": [
+      "dolphinemu",
+      "mmjr"
+    ]
+  },
+  "WII": {
+    "name": "Wii",
+    "roms": "WII",
+    "emulators": [
+      "dolphinemu",
+      "mmjr"
+    ]
+  },
+  "3DS": {
+    "name": "Nintendo 3DS",
+    "roms": "3DS",
+    "emulators": [
+      "azahar"
+    ]
+  },
+  "WIIU": {
+    "name": "Wii U",
+    "roms": "WIIU",
+    "emulators": [
+      "cemu"
+    ]
+  },
+  "PSVITA": {
+    "name": "PS Vita",
+    "roms": "PSVITA",
+    "emulators": [
+      "vita3k-emulator",
+      "ikhoeyzx"
+    ]
+  },
+  "PS3": {
+    "name": "PlayStation 3",
+    "roms": "PS3",
+    "emulators": [
+      "aps3e-premium",
+      "aps3e"
+    ]
+  },
+  "NSW": {
+    "name": "Nintendo Switch",
+    "roms": "NSW",
+    "emulators": [
+      "eden-emulator",
+      "eden-emulator-nightly"
+    ]
+  }
+}
