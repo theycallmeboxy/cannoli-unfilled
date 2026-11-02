@@ -88,6 +88,7 @@ class SystemListScanTargetsTest {
             scanScheduler = scheduler,
             libraryConfig = library,
             directoryEditor = dev.cannoli.scorza.config.library.DirectoryEditor(library),
+            installedCoreService = mockk(relaxed = true),
             artworkLookup = mockk(relaxed = true),
             context = mockk(relaxed = true),
         ).also { created.add(it) }

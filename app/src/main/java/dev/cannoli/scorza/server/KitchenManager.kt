@@ -3,7 +3,10 @@ package dev.cannoli.scorza.server
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -35,6 +38,13 @@ object KitchenManager {
     }
 
     fun setCodeBypass(enabled: Boolean) { service?.setCodeBypass(enabled) }
+
+    private val _configSaved = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    /** Emits after Kitchen writes a config file, so the launcher can reload its menu. */
+    val configSaved: SharedFlow<Unit> = _configSaved.asSharedFlow()
+
+    internal fun onConfigSaved() { _configSaved.tryEmit(Unit) }
 
     internal fun onServiceCreated(s: KitchenService) { service = s }
 

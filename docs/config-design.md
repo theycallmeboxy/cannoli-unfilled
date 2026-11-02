@@ -1,6 +1,7 @@
 # Design: config files
 
-Status: **proposal**, not built yet.
+Status: **built (stages 1–5)**. Where the code ended up differing from this design, see
+[As built](#as-built). `CONFIG.md` is the user-facing reference.
 
 ## Why
 
@@ -260,7 +261,8 @@ These work as today:
 
 ## Kitchen
 
-`/api/config` serves the four real files plus `overrides.json`.
+`/api/config` serves the four real files plus `overrides.json`, and the three templates
+read-only.
 
 ## Decisions
 
@@ -292,6 +294,31 @@ Each stage builds, passes the tests, and is committed on its own.
    app-installed and core-installed marks.
 5. **Kitchen and docs:** `/api/config` serves the new files, and `CONFIG.md` and `FORK.md` are
    rewritten.
+
+## As built
+
+The code differs from the design above in these ways:
+
+- **Unplaced systems while editing:** "Not in the menu" is listed at the end of every START menu
+  on the main menu and in folders, and at the end of the list in reorder mode, rather than in a
+  separate folder-menu screen. The main menu's bottom bar shows `EDIT · N UNPLACED` beside the
+  START hint. The editing views mark a system whose default emulator's app isn't installed or
+  whose default core is reported missing, on its unplaced row and on the Default Emulator row.
+- **ROM folder adoption** asks before copying, and copies only the emulators that
+  `emulators.json` doesn't have yet. It then scans the folder and opens the place picker.
+- **Shortcuts and apps in the database:** apps and shortcuts placed in the directory each keep a
+  row in the `apps` table, so favorites and Recents can point at them. A shortcut's row uses
+  `shortcut:<name>` in place of a package name.
+- **No system rename on the device:** the menu has no Rename for a system; its name is set only
+  in `systems.json`.
+- **Save sync and ROM folders:** a game RomM hasn't linked yet is matched for save sync by its
+  ROM folder name, so for a system whose `roms` differs from its ID, only linked games sync.
+- **Templates** are rewritten whenever their text differs from the app's copy, not only on
+  update.
+- **Kitchen:** a template `PUT` returns 405. After a successful `PUT`, the launcher reloads its
+  menu and asks the emulators for their cores again, as it does on returning to Cannoli.
+- **Problems per file:** each file's problems are its own parse errors followed by the
+  cross-file ones, which is what Kitchen's `problems` returns.
 
 ## Open questions
 

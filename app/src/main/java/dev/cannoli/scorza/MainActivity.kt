@@ -28,7 +28,9 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -187,6 +189,19 @@ class MainActivity : ComponentActivity(), ActivityActions {
         })
 
         bootSequencer.advance()
+
+        // A config file saved through Kitchen: refresh as a return to the launcher would. While
+        // the launcher is in the background, onResume does the same once it is back.
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                dev.cannoli.scorza.server.KitchenManager.configSaved.collect {
+                    if (isReady) {
+                        reportLibraryConfig()
+                        launcherActions.get().refreshLauncherLists()
+                    }
+                }
+            }
+        }
 
         setContent {
             val boot by bootSequencer.state.collectAsState()

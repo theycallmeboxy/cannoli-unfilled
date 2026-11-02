@@ -85,6 +85,10 @@ class LibraryConfig(
         return if (target.exists()) target.readText() else file.emptyText
     }
 
+    /** The problems from the last read of [file], then the cross-file ones, as [replaceText] returns them. */
+    @Synchronized
+    fun problems(file: LibraryFile): List<String> = fileErrors[file].orEmpty() + crossErrors
+
     /**
      * Replaces [file] with [text] once it parses. Returns whether it was written and the problems
      * found, this file's and the cross-file ones; text that is not JSON is refused and the file is

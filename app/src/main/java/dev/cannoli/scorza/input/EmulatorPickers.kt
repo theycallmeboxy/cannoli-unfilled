@@ -9,6 +9,7 @@ import dev.cannoli.scorza.config.library.GameSystem
 import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.di.IoScope
+import dev.cannoli.scorza.launcher.ChoiceMark
 import dev.cannoli.scorza.launcher.EmulatorChoices
 import dev.cannoli.scorza.launcher.InstalledCoreService
 import dev.cannoli.scorza.launcher.isPackageInstalled
@@ -48,11 +49,27 @@ class EmulatorPickers @Inject constructor(
         return "$MENU_LAUNCH_WITH\t${library.choiceLabel(choice)}"
     }
 
-    /** The "Default Emulator" menu row for the system [tag], or null when it has no emulator. */
+    /**
+     * The "Default Emulator" menu row for the system [tag], or null when it has no emulator. Its
+     * value says when the default's app isn't installed or its core is missing.
+     */
     fun systemMenuRow(tag: String): String? {
         val system = systemWithEmulators(tag) ?: return null
-        return "$MENU_DEFAULT_EMULATOR\t${libraryConfig.library.choiceLabel(system.emulators.first())}"
+        val library = libraryConfig.library
+        val mark = when (defaultMark(system)) {
+            ChoiceMark.APP_MISSING -> " · " + context.getString(dev.cannoli.ui.R.string.value_not_installed)
+            ChoiceMark.CORE_MISSING -> " · " + context.getString(dev.cannoli.ui.R.string.value_core_missing)
+            ChoiceMark.NONE -> ""
+        }
+        return "$MENU_DEFAULT_EMULATOR\t${library.choiceLabel(system.emulators.first())}$mark"
     }
+
+    /** What would stop [system]'s default emulator from launching. */
+    fun defaultMark(system: GameSystem): ChoiceMark = EmulatorChoices.defaultMark(
+        libraryConfig.library, system,
+        isInstalled = context::isPackageInstalled,
+        coreStatus = installedCoreService::coreStatus,
+    )
 
     fun openForGame(rom: Rom, fromGameMenu: Boolean) {
         val system = systemWithEmulators(rom.platformTag) ?: return

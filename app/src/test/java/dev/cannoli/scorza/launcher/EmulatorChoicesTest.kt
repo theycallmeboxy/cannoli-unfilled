@@ -80,4 +80,16 @@ class EmulatorChoicesTest {
         val rows = build(current = null, installed = emptySet(), cores = mapOf("mgba_libretro" to CoreStatus.MISSING))
         assertEquals(ChoiceMark.APP_MISSING, rows.first().mark)
     }
+
+    @Test fun `the default's mark is the first row's, and unknown never marks it`() {
+        fun mark(installed: Set<String>, core: CoreStatus) = EmulatorChoices.defaultMark(
+            library, gba,
+            isInstalled = { it in installed },
+            coreStatus = { _, _ -> core },
+        )
+        assertEquals(ChoiceMark.APP_MISSING, mark(emptySet(), CoreStatus.PRESENT))
+        assertEquals(ChoiceMark.CORE_MISSING, mark(setOf("ra"), CoreStatus.MISSING))
+        assertEquals(ChoiceMark.NONE, mark(setOf("ra"), CoreStatus.UNKNOWN))
+        assertEquals(ChoiceMark.NONE, EmulatorChoices.defaultMark(library, gba.copy(emulators = emptyList()), { false }, { _, _ -> CoreStatus.MISSING }))
+    }
 }

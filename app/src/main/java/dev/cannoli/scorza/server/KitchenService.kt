@@ -32,6 +32,7 @@ class KitchenService : Service() {
     @Inject lateinit var apkInstaller: ApkInstaller
     @Inject lateinit var appsRepository: dev.cannoli.scorza.db.AppsRepository
     @Inject lateinit var atomicRename: dev.cannoli.scorza.util.AtomicRename
+    @Inject lateinit var libraryConfig: dev.cannoli.scorza.config.library.LibraryConfig
 
     private var server: KitchenHttpServer? = null
     private var wifiLock: WifiManager.WifiLock? = null
@@ -97,8 +98,7 @@ class KitchenService : Service() {
             appsRepository = appsRepository,
             settingsProvider = { SettingsResponse(settings.toolsName, settings.portsName) },
             artThumbnails = ArtThumbnails(File(cacheDir, "art-thumbs")),
-            // The config files are served again once Kitchen knows the new ones.
-            configFiles = emptyMap(),
+            configFiles = libraryConfigFiles(libraryConfig, onSaved = KitchenManager::onConfigSaved),
         )
         try {
             s.startServer()

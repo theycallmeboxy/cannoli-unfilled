@@ -1,5 +1,6 @@
 package dev.cannoli.scorza.launcher
 
+import dev.cannoli.scorza.config.library.EmulatorRef
 import dev.cannoli.scorza.config.library.GameSystem
 import dev.cannoli.scorza.config.library.Library
 import dev.cannoli.scorza.config.library.Placeholders
@@ -35,20 +36,35 @@ object EmulatorChoices {
         isInstalled: (String) -> Boolean,
         coreStatus: (packageName: String, core: String) -> CoreStatus,
     ): List<EmulatorChoice> = system.emulators.mapIndexed { index, ref ->
-        val pkg = library.emulators[ref.emulator]?.intent?.packageName
-        val core = ref.params[Placeholders.CORE]
-        val mark = when {
-            pkg == null -> ChoiceMark.NONE
-            !isInstalled(pkg) -> ChoiceMark.APP_MISSING
-            core != null && coreStatus(pkg, core) == CoreStatus.MISSING -> ChoiceMark.CORE_MISSING
-            else -> ChoiceMark.NONE
-        }
         EmulatorChoice(
             name = ref.choiceName,
             label = library.choiceLabel(ref),
             isDefault = index == 0,
             isCurrent = ref.choiceName == current,
-            mark = mark,
+            mark = markFor(library, ref, isInstalled, coreStatus),
         )
+    }
+
+    /** What would stop [system]'s default choice from launching, for the editing views to show. */
+    fun defaultMark(
+        library: Library,
+        system: GameSystem,
+        isInstalled: (String) -> Boolean,
+        coreStatus: (packageName: String, core: String) -> CoreStatus,
+    ): ChoiceMark = system.emulators.firstOrNull()?.let { markFor(library, it, isInstalled, coreStatus) } ?: ChoiceMark.NONE
+
+    private fun markFor(
+        library: Library,
+        ref: EmulatorRef,
+        isInstalled: (String) -> Boolean,
+        coreStatus: (packageName: String, core: String) -> CoreStatus,
+    ): ChoiceMark {
+        val pkg = library.emulators[ref.emulator]?.intent?.packageName ?: return ChoiceMark.NONE
+        val core = ref.params[Placeholders.CORE]
+        return when {
+            !isInstalled(pkg) -> ChoiceMark.APP_MISSING
+            core != null && coreStatus(pkg, core) == CoreStatus.MISSING -> ChoiceMark.CORE_MISSING
+            else -> ChoiceMark.NONE
+        }
     }
 }

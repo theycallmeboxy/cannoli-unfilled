@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cannoli.scorza.R
+import dev.cannoli.scorza.launcher.ChoiceMark
 import dev.cannoli.scorza.settings.ArtScale
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel
 import dev.cannoli.scorza.ui.viewmodel.SystemListViewModel.ListItem
@@ -295,11 +296,20 @@ fun SystemListScreen(
 
 }
 
-/** "Game Boy Advance · 214 games", or "Roms/Foo · 12 files" for a folder no system claims. */
+/**
+ * "Game Boy Advance · 214 games", or "Roms/Foo · 12 files" for a folder no system claims. A system
+ * whose default emulator can't launch says why, as in "… · 214 games · Core Missing".
+ */
 @Composable
 fun unplacedLabel(entry: SystemListViewModel.Unplaced): String = when (entry) {
-    is SystemListViewModel.Unplaced.System ->
-        pluralStringResource(R.plurals.unplaced_system_games, entry.games, entry.name, entry.games)
+    is SystemListViewModel.Unplaced.System -> {
+        val label = pluralStringResource(R.plurals.unplaced_system_games, entry.games, entry.name, entry.games)
+        when (entry.mark) {
+            ChoiceMark.APP_MISSING -> label + " · " + stringResource(R.string.value_not_installed)
+            ChoiceMark.CORE_MISSING -> label + " · " + stringResource(R.string.value_core_missing)
+            ChoiceMark.NONE -> label
+        }
+    }
     is SystemListViewModel.Unplaced.RomFolder ->
         pluralStringResource(R.plurals.unplaced_rom_folder_files, entry.files, entry.folder, entry.files)
 }

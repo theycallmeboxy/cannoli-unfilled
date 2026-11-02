@@ -6,6 +6,7 @@ import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.config.library.DirectoryEditor
 import dev.cannoli.scorza.config.library.DirectoryItem
+import dev.cannoli.scorza.config.library.GameSystem
 import dev.cannoli.scorza.config.library.Library
 import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.config.library.key
@@ -16,6 +17,10 @@ import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.db.ScanScheduler
 import dev.cannoli.scorza.di.CannoliPathsProvider
+import dev.cannoli.scorza.launcher.ChoiceMark
+import dev.cannoli.scorza.launcher.EmulatorChoices
+import dev.cannoli.scorza.launcher.InstalledCoreService
+import dev.cannoli.scorza.launcher.isPackageInstalled
 import dev.cannoli.scorza.model.Platform
 import dev.cannoli.scorza.model.SHORTCUT_PACKAGE_PREFIX
 import dev.cannoli.scorza.model.shortcutName
@@ -46,6 +51,7 @@ class SystemListViewModel @Inject constructor(
     private val scanScheduler: ScanScheduler,
     private val libraryConfig: LibraryConfig,
     private val directoryEditor: DirectoryEditor,
+    private val installedCoreService: InstalledCoreService,
     private val artworkLookup: dev.cannoli.scorza.util.ArtworkLookup,
     @ApplicationContext private val context: Context,
 ) {
@@ -132,7 +138,13 @@ class SystemListViewModel @Inject constructor(
      * Roms/ that holds files but that no system names as its ROM folder.
      */
     sealed interface Unplaced {
-        data class System(val id: String, val name: String, val games: Int) : Unplaced
+        /** [mark] says what would stop its default emulator from launching. */
+        data class System(
+            val id: String,
+            val name: String,
+            val games: Int,
+            val mark: ChoiceMark = ChoiceMark.NONE,
+        ) : Unplaced
         data class RomFolder(val folder: String, val files: Int) : Unplaced
     }
 
@@ -332,10 +344,16 @@ class SystemListViewModel @Inject constructor(
             .filter { it.id.uppercase() !in placed }
             .mapNotNull { system ->
                 val games = counts[system.id.uppercase()] ?: 0
-                if (games > 0) Unplaced.System(system.id, system.name, games) else null
+                if (games > 0) Unplaced.System(system.id, system.name, games, defaultMark(library, system)) else null
             }
             .sortedBy { it.name.lowercase() }
     }
+
+    private fun defaultMark(library: Library, system: GameSystem): ChoiceMark = EmulatorChoices.defaultMark(
+        library, system,
+        isInstalled = context::isPackageInstalled,
+        coreStatus = installedCoreService::coreStatus,
+    )
 
     // Counted again only when a folder's own listing changes, since the scan runs on every move
     // between folders.

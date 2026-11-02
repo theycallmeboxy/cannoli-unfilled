@@ -106,6 +106,7 @@ class SystemListFoldersTest {
             scanScheduler = scheduler,
             libraryConfig = config,
             directoryEditor = DirectoryEditor(config),
+            installedCoreService = mockk(relaxed = true),
             artworkLookup = artwork,
             context = mockk(relaxed = true),
         ).also { created.add(it) }
