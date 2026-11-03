@@ -21,3 +21,7 @@ RUN mkdir -p /opt/android-sdk/cmdline-tools \
  && rm /tmp/clt.zip \
  && yes | sdkmanager --licenses >/dev/null \
  && sdkmanager "platform-tools" "platforms;android-36.1" "platforms;android-36" "build-tools;36.0.0"
+
+# bun builds the Kitchen web page (CannoliHQ/kitchen) into app/src/main/assets/kitchen.
+RUN curl -fsSL https://bun.sh/install | BUN_INSTALL=/opt/bun bash
+ENV PATH=/opt/bun/bin:$PATH

@@ -113,6 +113,16 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   launched like any other; save sync leaves them out.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
 
+## Kitchen
+
+Kitchen's web page lives in `kitchen/`, copied from
+[CannoliHQ/kitchen](https://github.com/CannoliHQ/kitchen) at `efa67ff` (2026-09-06) and edited here
+from then on; both projects are GPL-3.0. The app build compiles it into
+`app/src/main/assets/kitchen` with bun (`scripts/build-kitchen.sh`, run by Gradle before each
+build). A build without bun on the PATH skips it and ships no page.
+
+This fork doesn't follow upstream Cannoli or Kitchen any more.
+
 ## Building
 
 ```
@@ -128,6 +138,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Kitchen web page source copied into kitchen/ and built with the app |
 | 2026-11-03 | RomM platform set per system; extensions decide which files are games |
 | 2026-11-03 | Quick Menu and Settings are main menu rows, not hotkeys |
 | 2026-11-02 | Absolute ROM folders for systems |
@@ -158,10 +169,10 @@ The fork starts from upstream commit `7755e376`.
       breaking each config file, nested folders, shortcuts, placing systems and adopting ROM
       folders from "Not in the menu", "Launch With" and "Default Emulator" with their marks, and
       saving files through Kitchen.
-- [ ] **Kitchen page for config files:** the API is there, but a page needs a fork of
-      CannoliHQ/kitchen, bun in the build container, and `release.yml` pointed at the fork. For
+- [ ] **Kitchen page for config files:** the API is there; `kitchen/` needs a page for it. For
       now, use Kitchen's Files tool or the API.
-- [ ] **Local builds include no Kitchen web assets:** only CI adds them.
+- [ ] **Kitchen pages for removed features:** upstream's page still has views for things this
+      fork removed (emulator mapping, cores, the updater). They need removing from `kitchen/`.
 - [ ] **Leftover Tools/Ports names:** Kitchen's `/api/apps` and settings response, and app origin
       labels in global search.
 - [ ] **Save sync for renamed ROM folders:** a game RomM hasn't linked yet is matched by its ROM

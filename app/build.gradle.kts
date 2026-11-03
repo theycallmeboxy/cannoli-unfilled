@@ -145,3 +145,16 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
+// The Kitchen web page is built from kitchen/ into the assets the APK serves. Builds without bun
+// (CI's unit-test job, an IDE on a bare machine) skip it and ship without the page.
+val buildKitchen by tasks.registering(Exec::class) {
+    val kitchenDir = rootProject.layout.projectDirectory.dir("kitchen")
+    inputs.dir(kitchenDir.dir("src"))
+    inputs.dir(kitchenDir.dir("public"))
+    inputs.files(kitchenDir.file("package.json"), kitchenDir.file("bun.lock"), kitchenDir.file("index.html"), kitchenDir.file("vite.config.ts"))
+    outputs.dir(layout.projectDirectory.dir("src/main/assets/kitchen"))
+    commandLine(rootProject.layout.projectDirectory.file("scripts/build-kitchen.sh").asFile.absolutePath)
+    val hasBun = System.getenv("PATH").orEmpty().split(File.pathSeparator).any { File(it, "bun").canExecute() }
+    onlyIf("bun is on the PATH") { hasBun }
+}
+tasks.named("preBuild") { dependsOn(buildKitchen) }

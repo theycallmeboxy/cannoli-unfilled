@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  KITCHEN_SRC: ../cannoli-kitchen
+  KITCHEN_SRC: kitchen
   KITCHEN_DEST: app/src/main/assets/kitchen
 
 tasks:
@@ -17,10 +17,6 @@ tasks:
       - python3 scripts/sync_credits.py
 
   kitchen:
-    desc: Build cannoli-kitchen and copy dist into app assets
-    dir: '{{.KITCHEN_SRC}}'
+    desc: Build kitchen/ and copy dist into app assets
     cmds:
-      # build-only skips vue-tsc, which cannot run under bun (Volar .vue resolution breaks); run `bun run type-check` under Node for the type gate
-      - bun run build-only
-      - rm -rf {{.USER_WORKING_DIR}}/{{.KITCHEN_DEST}}/*
-      - cp -R dist/. {{.USER_WORKING_DIR}}/{{.KITCHEN_DEST}}/
+      - scripts/build-kitchen.sh

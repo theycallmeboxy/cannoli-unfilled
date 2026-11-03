@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  /* Cannoli OS palette */
+  --color-background: #161618;
+  --color-foreground: #ffffff;
+  --color-card: #24211c;
+  --color-card-foreground: #ffffff;
+  --color-primary: #a3b87f;
+  --color-primary-light: #bccc9f;
+  --color-primary-dark: #87a065;
+  --color-primary-foreground: #161618;
+  --color-muted: #2a2620;
+  --color-muted-foreground: #d4d4d4;
+  --color-surface-sunken: #0e0e10;
+  --color-border: #322d24;
+  --color-input: #322d24;
+  --color-ring: #a3b87f;
+  --color-destructive: #e05872;
+  --color-accent: #d9a06a;
+  --color-accent-foreground: #161618;
+  --color-cream: #f5e6ca;
+  --color-cream-light: #faf0dc;
+  --color-tan: #d9a06a;
+  --color-tan-light: #e2b07e;
+  --radius-sm: 0.1875rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.5rem;
+}
+
+html {
+  font-size: 18px;
+}
+
+body {
+  @apply bg-background text-foreground antialiased;
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+
