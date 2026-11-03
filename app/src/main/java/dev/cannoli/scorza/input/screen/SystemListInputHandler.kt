@@ -41,6 +41,8 @@ class SystemListInputHandler @Inject constructor(
     private val folderEditor: FolderEditor,
     private val emulatorPickers: EmulatorPickers,
     private val rommConnectionStore: dev.cannoli.scorza.romm.RommConnectionStore,
+    // Lazy: the dialog handler depends on this handler, so it can't be injected directly.
+    private val dialogInputHandler: dagger.Lazy<dev.cannoli.scorza.input.DialogInputHandler>,
 ) : ScreenInputHandler {
 
     private var selectDown = false
@@ -108,18 +110,14 @@ class SystemListInputHandler @Inject constructor(
         selectDown = false
     }
 
-    override fun onNorth() {
+    private fun openSettings() {
         systemListViewModel.savePosition()
         settingsViewModel.load()
         nav.screenStack.add(LauncherScreen.Settings)
     }
 
     override fun onWest() {
-        if (systemListViewModel.state.value.items.isEmpty() && !systemListViewModel.isInFolder()) {
-            launcherActions.openKitchen()
-        } else if (!systemListViewModel.isReorderMode()) {
-            folderEditor.promptNewFolder()
-        }
+        if (!systemListViewModel.isReorderMode()) folderEditor.promptNewFolder()
     }
 
     private fun pageJump(direction: Int) {
@@ -146,6 +144,8 @@ class SystemListInputHandler @Inject constructor(
                     nav.navigating = false
                 }
             }
+            is SystemListViewModel.ListItem.QuickMenuItem -> dialogInputHandler.get().openQuickMenu()
+            is SystemListViewModel.ListItem.SettingsItem -> openSettings()
             is SystemListViewModel.ListItem.CollectionsFolder -> {
                 nav.navigating = true
                 gameListViewModel.loadCollectionsList {

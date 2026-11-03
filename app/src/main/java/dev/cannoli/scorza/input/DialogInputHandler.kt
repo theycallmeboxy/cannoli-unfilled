@@ -131,7 +131,7 @@ class DialogInputHandler @Inject constructor(
     // Single-flight: held Back / Menu key-repeat re-enters these branches before the
     // coroutine below completes. Without this guard a second rebuild can win the race
     // and overwrite fresher badge counts with stale ones (or, for Kitchen, double-rescan).
-    private fun openQuickMenu(selected: dev.cannoli.scorza.ui.quickmenu.QuickMenuRow? = null) {
+    fun openQuickMenu(selected: dev.cannoli.scorza.ui.quickmenu.QuickMenuRow? = null) {
         if (!quickMenuRebuild.compareAndSet(false, true)) return
         ioScope.launch {
             try {
@@ -159,17 +159,10 @@ class DialogInputHandler @Inject constructor(
             nav.dialogState.value = DialogState.RommActionsMenu(hasDownloads = true)
             return true
         }
-        if (isQuickMenuBlockedScreen()) return false
-        openQuickMenu()
-        return true
+        // The quick menu is a row on the main menu now, not a hotkey.
+        return false
     }
 
-    private fun isQuickMenuBlockedScreen(): Boolean = when (nav.currentScreen) {
-        is LauncherScreen.InputTester,
-        is LauncherScreen.EditButtons,
-        is LauncherScreen.OnboardingPermissions -> true
-        else -> false
-    }
 
     private fun isRommScreen(): Boolean = when (nav.currentScreen) {
         is LauncherScreen.RommPlatformList,

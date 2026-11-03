@@ -106,6 +106,9 @@ class SystemListViewModel @Inject constructor(
         data object RecentlyPlayedItem : ListItem()
         data object FavoritesItem : ListItem()
         data object CollectionsFolder : ListItem()
+        // Fixed rows at the end of the main menu, in place of the Menu and North hotkeys.
+        data object QuickMenuItem : ListItem()
+        data object SettingsItem : ListItem()
         data class PlatformItem(val platform: Platform) : ListItem()
         data class GameItem(val item: dev.cannoli.scorza.model.ListItem) : ListItem() {
             val displayName: String get() = when (val i = item) {
@@ -250,6 +253,10 @@ class SystemListViewModel @Inject constructor(
             }
             // The directory's own order is the menu order, on the main menu and in every folder.
             items.addAll(directoryRows(openItems, shownPath, platformsByTag, library))
+            if (shownPath.isEmpty()) {
+                items.add(ListItem.QuickMenuItem)
+                items.add(ListItem.SettingsItem)
+            }
             val unplaced = unplacedSystems(library, countsByTag) + unclaimedRomFolders()
 
             val current = _state.value

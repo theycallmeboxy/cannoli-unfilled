@@ -195,6 +195,8 @@ fun SystemListScreen(
                             is ListItem.RecentlyPlayedItem -> "recently_played"
                             is ListItem.FavoritesItem -> "favorites"
                             is ListItem.CollectionsFolder -> "collections"
+                            is ListItem.QuickMenuItem -> "quick_menu"
+                            is ListItem.SettingsItem -> "settings"
                             is ListItem.PlatformItem -> item.platform.tag
                             is ListItem.GameItem -> "game:${item.recentKey}"
                             is ListItem.FolderItem -> "folder:${item.name}"
@@ -207,6 +209,8 @@ fun SystemListScreen(
                         is ListItem.RecentlyPlayedItem -> recentlyPlayedLabel
                         is ListItem.FavoritesItem -> favoritesLabel
                         is ListItem.CollectionsFolder -> collectionsLabel
+                        is ListItem.QuickMenuItem -> stringResource(R.string.quick_menu_title)
+                        is ListItem.SettingsItem -> stringResource(R.string.settings_title)
                         is ListItem.PlatformItem -> item.platform.displayName
                         is ListItem.GameItem -> item.displayName
                         is ListItem.FolderItem -> item.name
@@ -264,9 +268,7 @@ fun SystemListScreen(
             }
             }
 
-            val rightItems = if (state.items.isEmpty() && state.folderPath.isEmpty()) {
-                listOf(buttonStyle.west to stringResource(R.string.label_kitchen))
-            } else if (state.items.isEmpty()) {
+            val rightItems = if (state.items.isEmpty()) {
                 emptyList()
             } else {
                 listOf(buttonStyle.confirm to stringResource(R.string.label_select))
@@ -274,11 +276,9 @@ fun SystemListScreen(
             val leftItems = buildList {
                 if (state.folderPath.isNotEmpty()) add(buttonStyle.back to stringResource(R.string.label_back))
                 else if (mainMenuQuit) add(buttonStyle.back to stringResource(R.string.label_quit))
-                add(buttonStyle.north to stringResource(R.string.label_settings))
-                // X makes a folder wherever the user is; on an empty main menu it opens Kitchen.
-                if (state.items.isNotEmpty() || state.folderPath.isNotEmpty()) {
-                    add(buttonStyle.west to stringResource(R.string.label_new))
-                }
+                // X makes a folder wherever the user is. Settings and the quick menu are rows on the
+                // main menu, which always has them, so Kitchen is reached from there too.
+                add(buttonStyle.west to stringResource(R.string.label_new))
                 // The main menu never lists what the directory leaves out; the hint says how much
                 // there is, and the edit menu lists it.
                 if (state.folderPath.isEmpty() && state.unplaced.isNotEmpty() && !state.reorderMode) {

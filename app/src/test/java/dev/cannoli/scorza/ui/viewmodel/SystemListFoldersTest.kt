@@ -134,8 +134,8 @@ class SystemListFoldersTest {
         val vm = viewModel()
         await { vm.scan(scanDisk = false, onReady = it) }
         assertEquals(
-            "PCE has no games, NES has no place",
-            listOf("platform:SNES", "folder:Nintendo", "app:Movies", "folder:Empty"),
+            "PCE has no games, NES has no place; Quick Menu and Settings always close the main menu",
+            listOf("platform:SNES", "folder:Nintendo", "app:Movies", "folder:Empty", "QuickMenuItem", "SettingsItem"),
             labels(vm),
         )
         assertFalse(vm.isInFolder())
@@ -202,7 +202,7 @@ class SystemListFoldersTest {
         vm.enterReorderMode()
         vm.reorderMoveDown()
         vm.confirmReorder()
-        assertEquals(listOf("folder:Nintendo", "platform:SNES", "app:Movies", "folder:Empty"), labels(vm))
+        assertEquals(listOf("folder:Nintendo", "platform:SNES", "app:Movies", "folder:Empty", "QuickMenuItem", "SettingsItem"), labels(vm))
         assertEquals(
             "PCE, hidden for want of games, goes after the rest",
             listOf("folder", "system", "shortcut", "folder", "system"),
