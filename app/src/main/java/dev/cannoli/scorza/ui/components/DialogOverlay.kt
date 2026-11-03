@@ -995,7 +995,7 @@ private const val SYNC_TIME_SCALE = 0.8f
 @Composable
 private fun SyncHistoryRowItem(row: SyncHistoryRow, isSelected: Boolean, fontSize: TextUnit, lineHeight: TextUnit, verticalPadding: Dp) {
     val colors = LocalCannoliColors.current
-    val textColor = if (isSelected) colors.highlightText else colors.text
+    val textColor = dev.cannoli.ui.components.rowTextColor(isSelected)
     val muted = textColor.copy(alpha = 0.55f)
     val glyph = when (row.direction) {
         SyncDirection.UPLOAD -> CannoliIcons.SyncUpload.glyph
@@ -1043,7 +1043,7 @@ private fun SyncHistoryRowItem(row: SyncHistoryRow, isSelected: Boolean, fontSiz
 @Composable
 private fun SyncErrorRowItem(err: dev.cannoli.scorza.romm.sync.SyncFailure, isSelected: Boolean, fontSize: TextUnit, lineHeight: TextUnit, verticalPadding: Dp) {
     val colors = LocalCannoliColors.current
-    val textColor = if (isSelected) colors.highlightText else colors.text
+    val textColor = dev.cannoli.ui.components.rowTextColor(isSelected)
     val muted = textColor.copy(alpha = 0.55f)
     dev.cannoli.ui.components.PillRow(
         isSelected = isSelected,
@@ -1076,7 +1076,7 @@ private fun SyncErrorRowItem(err: dev.cannoli.scorza.romm.sync.SyncFailure, isSe
 private fun DownloadRow(item: RommDownloadItem, isSelected: Boolean, fontSize: TextUnit, lineHeight: TextUnit, verticalPadding: Dp) {
     val colors = LocalCannoliColors.current
     val font = LocalCannoliFont.current
-    val text = if (isSelected) colors.highlightText else colors.text
+    val text = dev.cannoli.ui.components.rowTextColor(isSelected)
     val muted = text.copy(alpha = 0.55f)
     val context = androidx.compose.ui.platform.LocalContext.current
     val label = if (item.kind == RommDownloadKind.MANUAL)
@@ -1135,13 +1135,13 @@ private fun ConflictRowItem(
     verticalPadding: Dp,
 ) {
     val colors = LocalCannoliColors.current
-    val textColor = if (isSelected) colors.highlightText else colors.text
+    val textColor = dev.cannoli.ui.components.rowTextColor(isSelected)
     val local = row.localMillis
     val server = row.serverMillis
     val localOlder = local != null && server != null && local < server
     val serverOlder = local != null && server != null && server < local
     val sub = fontSize * 0.72f
-    val highlight = if (isSelected) {
+    val highlight = if (dev.cannoli.ui.components.rowHasPill(isSelected)) {
         Modifier.clip(RoundedCornerShape(12.dp)).background(colors.highlight)
     } else {
         Modifier

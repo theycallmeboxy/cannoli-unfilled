@@ -34,6 +34,10 @@ val LocalCannoliFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default
 val LocalCannoliIconFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
 // Center layout: list rows sit in the middle of the list instead of against its left edge.
 val LocalCenteredLists = staticCompositionLocalOf { false }
+
+/** How the selected list row stands out: the classic pill, or its text alone (optionally bold). */
+enum class HighlightStyle { PILL, TEXT, BOLD_TEXT }
+val LocalHighlightStyle = staticCompositionLocalOf { HighlightStyle.PILL }
 val LocalScaleFactor = staticCompositionLocalOf { 1f }
 
 // Pill geometry scales down with the text size but never up, so sizes below the default

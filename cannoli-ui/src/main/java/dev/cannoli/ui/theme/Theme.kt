@@ -22,12 +22,14 @@ fun CannoliTheme(
     fontFamily: FontFamily = FontFamily.Default,
     iconFontFamily: FontFamily = fontFamily,
     centeredLists: Boolean = false,
+    highlightStyle: HighlightStyle = HighlightStyle.PILL,
     content: @Composable () -> Unit,
 ) {
     CompositionLocalProvider(
         LocalCannoliFont provides fontFamily,
         LocalCannoliIconFont provides iconFontFamily,
         LocalCenteredLists provides centeredLists,
+        LocalHighlightStyle provides highlightStyle,
     ) {
         MaterialTheme(
             colorScheme = CannoliColorScheme,

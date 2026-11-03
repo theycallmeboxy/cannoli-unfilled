@@ -208,7 +208,7 @@ class MainActivity : ComponentActivity(), ActivityActions {
             val appSettings = if (boot is BootState.Ready) settingsViewModel.get().appSettings.collectAsState().value else null
             val themeFont = appSettings?.fontFamily ?: appFonts.plexMono
             dev.cannoli.scorza.i18n.ProvideLocalizedResources(appSettings?.languageTag) {
-            CannoliTheme(fontFamily = themeFont, iconFontFamily = appFonts.mplus1Code, centeredLists = appSettings?.centeredLists ?: true) {
+            CannoliTheme(fontFamily = themeFont, iconFontFamily = appFonts.mplus1Code, centeredLists = appSettings?.centeredLists ?: true, highlightStyle = appSettings?.highlightStyle ?: dev.cannoli.ui.theme.HighlightStyle.PILL) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CompositionLocalProvider(
                         LocalViewportInsets provides ViewportInsetsPx(

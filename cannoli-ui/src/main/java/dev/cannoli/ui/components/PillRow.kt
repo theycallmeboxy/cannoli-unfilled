@@ -40,6 +40,9 @@ import androidx.compose.ui.unit.sp
 import dev.cannoli.ui.theme.LocalCannoliColors
 import dev.cannoli.ui.theme.LocalCannoliIconFont
 import dev.cannoli.ui.theme.LocalCenteredLists
+import dev.cannoli.ui.theme.LocalHighlightStyle
+import dev.cannoli.ui.theme.HighlightStyle
+import androidx.compose.ui.text.font.FontWeight
 import dev.cannoli.ui.theme.LocalPillScale
 import dev.cannoli.ui.theme.LocalScaleFactor
 import dev.cannoli.ui.theme.Radius
@@ -104,6 +107,38 @@ fun pillItemHeight(lineHeight: TextUnit, verticalPadding: Dp): Dp {
     return with(LocalDensity.current) { lineHeight.toDp() } + verticalPadding * 2 + pillInset() * 2
 }
 
+/** Text color for a list row. With the pill off, the selected row takes the highlight color; if
+ *  that matches the text color, the other rows are dimmed so the selection still shows. */
+@Composable
+fun rowTextColor(isSelected: Boolean): Color {
+    val colors = LocalCannoliColors.current
+    if (LocalHighlightStyle.current == HighlightStyle.PILL) {
+        return if (isSelected) colors.highlightText else colors.text
+    }
+    return when {
+        isSelected -> colors.highlight
+        colors.highlight == colors.text -> colors.text.copy(alpha = UnselectedDimAlpha)
+        else -> colors.text
+    }
+}
+
+/** Value color (the right-hand side of a setting row). */
+@Composable
+fun rowValueColor(isSelected: Boolean): Color {
+    val colors = LocalCannoliColors.current
+    return if (isSelected) rowTextColor(true) else colors.accent
+}
+
+/** Bold for the selected row when the Bold Text highlight is chosen; otherwise the style as is. */
+@Composable
+fun TextStyle.forRow(isSelected: Boolean): TextStyle =
+    if (isSelected && LocalHighlightStyle.current == HighlightStyle.BOLD_TEXT) copy(fontWeight = FontWeight.Bold) else this
+
+@Composable
+fun rowHasPill(isSelected: Boolean): Boolean = isSelected && LocalHighlightStyle.current == HighlightStyle.PILL
+
+private const val UnselectedDimAlpha = 0.5f
+
 const val MarqueeInitialDelayMs = 800L
 
 @Composable
@@ -153,7 +188,7 @@ private fun PillBox(
     val heightMod = if (lineHeight != TextUnit.Unspecified) {
         Modifier.height(pillItemHeight(lineHeight, verticalPadding))
     } else Modifier
-    if (isSelected) {
+    if (rowHasPill(isSelected)) {
         Box(
             modifier = modifier
                 .then(heightMod)
@@ -195,11 +230,11 @@ fun PillRowText(
     val baseStyle = MaterialTheme.typography.bodyLarge
     val textStyle = remember(baseStyle, fontSize, lineHeight) {
         baseStyle.copy(fontSize = fontSize, lineHeight = lineHeight)
-    }
+    }.forRow(isSelected)
     val textColor = when {
-        isSelected -> colors.highlightText
+        isSelected -> rowTextColor(true)
         dimmed -> colors.text.copy(alpha = 0.5f)
-        else -> colors.text
+        else -> rowTextColor(false)
     }
 
     val scrollState = rememberScrollState()
@@ -238,7 +273,7 @@ fun PillRowText(
                         Text(
                             text = tagSuffix,
                             style = textStyle.copy(fontSize = (fontSize.value * 0.75f).sp),
-                            color = if (isSelected) colors.highlightText else colors.accent,
+                            color = rowValueColor(isSelected),
                             maxLines = 1,
                             softWrap = false
                         )
@@ -267,17 +302,17 @@ fun PillRowKeyValue(
     val baseValueStyle = MaterialTheme.typography.bodyMedium
     val textStyle = remember(baseStyle, fontSize, lineHeight) {
         baseStyle.copy(fontSize = fontSize, lineHeight = lineHeight)
-    }
+    }.forRow(isSelected)
     val valueStyle = remember(baseValueStyle, fontSize) {
         baseValueStyle.copy(fontSize = (fontSize.value * 0.72f).sp)
-    }
+    }.forRow(isSelected)
 
     val scrollState = rememberScrollState()
     MarqueeEffect(scrollState, isSelected)
 
-    val labelColor = if (isSelected) colors.highlightText else colors.text
-    val valueColor = if (isSelected) colors.highlightText else colors.accent
-    val borderColor = if (isSelected) colors.highlightText.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.3f)
+    val labelColor = rowTextColor(isSelected)
+    val valueColor = rowValueColor(isSelected)
+    val borderColor = if (rowHasPill(isSelected)) colors.highlightText.copy(alpha = 0.3f) else Color.White.copy(alpha = 0.3f)
 
     val centered = LocalCenteredLists.current
     PillRow(isSelected = isSelected, verticalPadding = verticalPadding, lineHeight = lineHeight, modifier = Modifier.fillMaxWidth()) {
@@ -360,8 +395,8 @@ fun PillRowInfo(
     val baseStyle = MaterialTheme.typography.bodyLarge
     val textStyle = remember(baseStyle, fontSize, lineHeight) {
         baseStyle.copy(fontSize = fontSize, lineHeight = lineHeight)
-    }
-    val textColor = if (isSelected) colors.highlightText else colors.text
+    }.forRow(isSelected)
+    val textColor = rowTextColor(isSelected)
 
     val scrollState = rememberScrollState()
     MarqueeEffect(scrollState, isSelected, key = label to isSelected)

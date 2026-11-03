@@ -159,6 +159,7 @@
     <!-- Library setting for the Five Game Handheld collection. Keep "5GH" as-is. -->
     <string name="setting_show_recently_played">Recents</string>
     <string name="setting_layout" tools:ignore="MissingTranslation">Layout</string>
+    <string name="setting_highlight" tools:ignore="MissingTranslation">Highlight</string>
     <!-- Library setting: show or hide the Favorites entry on the main list. -->
     <string name="setting_show_favorites">Favorites</string>
     <string name="setting_bg_tint">Background Tint</string>
@@ -344,6 +345,9 @@
     <string name="value_games_only" tools:ignore="MissingTranslation">Games Only</string>
     <string name="value_center" tools:ignore="MissingTranslation">Center</string>
     <string name="value_left" tools:ignore="MissingTranslation">Left</string>
+    <string name="value_pill" tools:ignore="MissingTranslation">Pill</string>
+    <string name="value_text" tools:ignore="MissingTranslation">Text</string>
+    <string name="value_bold_text" tools:ignore="MissingTranslation">Bold Text</string>
     <string name="value_none">None</string>
     <string name="value_cannoli_root">Cannoli Root</string>
     <!-- Content Mode value: the default platform view. -->

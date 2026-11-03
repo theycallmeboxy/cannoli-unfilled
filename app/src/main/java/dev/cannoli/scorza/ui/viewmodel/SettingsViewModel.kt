@@ -135,6 +135,7 @@ class SettingsViewModel @Inject constructor(
         val artWidth: Int = 40,
         val artScale: ArtScale = ArtScale.DEFAULT,
         val centeredLists: Boolean = true,
+        val highlightStyle: dev.cannoli.ui.theme.HighlightStyle = dev.cannoli.ui.theme.HighlightStyle.PILL,
         val portraitMarginPx: Int = 0,
         val screenGeometryWidth: Int = 100,
         val screenGeometryHeight: Int = 100,
@@ -174,6 +175,7 @@ class SettingsViewModel @Inject constructor(
         artWidth = settings.artWidth,
         artScale = settings.artScale,
         centeredLists = settings.centeredLists,
+        highlightStyle = settings.highlightStyle,
         portraitMarginPx = settings.portraitMarginPx,
         screenGeometryWidth = settings.screenGeometryWidth,
         screenGeometryHeight = settings.screenGeometryHeight,
@@ -220,6 +222,7 @@ class SettingsViewModel @Inject constructor(
         val artWidth: Int,
         val artScale: ArtScale,
         val centeredLists: Boolean,
+        val highlightStyle: dev.cannoli.ui.theme.HighlightStyle,
         val portraitMarginPx: Int,
         val screenGeometryWidth: Int,
         val screenGeometryHeight: Int,
@@ -429,6 +432,11 @@ class SettingsViewModel @Inject constructor(
                 settings.artWidth = steps[((cur + direction) % steps.size + steps.size) % steps.size]
             }
             "layout" -> settings.centeredLists = !settings.centeredLists
+            "highlight" -> {
+                val entries = dev.cannoli.ui.theme.HighlightStyle.entries
+                val cur = entries.indexOf(settings.highlightStyle).coerceAtLeast(0)
+                settings.highlightStyle = entries[((cur + direction) % entries.size + entries.size) % entries.size]
+            }
             "art_scale" -> {
                 val entries = ArtScale.entries
                 val cur = entries.indexOf(settings.artScale).coerceAtLeast(0)
@@ -643,6 +651,7 @@ class SettingsViewModel @Inject constructor(
         artWidth = settings.artWidth,
         artScale = settings.artScale,
         centeredLists = settings.centeredLists,
+        highlightStyle = settings.highlightStyle,
         portraitMarginPx = settings.portraitMarginPx,
         screenGeometryWidth = settings.screenGeometryWidth,
         screenGeometryHeight = settings.screenGeometryHeight,
@@ -679,6 +688,7 @@ class SettingsViewModel @Inject constructor(
         settings.artWidth = snap.artWidth
         settings.artScale = snap.artScale
         settings.centeredLists = snap.centeredLists
+        settings.highlightStyle = snap.highlightStyle
         settings.portraitMarginPx = snap.portraitMarginPx
         settings.screenGeometryWidth = snap.screenGeometryWidth
         settings.screenGeometryHeight = snap.screenGeometryHeight
@@ -714,6 +724,12 @@ class SettingsViewModel @Inject constructor(
             val currentFont = fontOptions.firstOrNull { it.key == settings.font } ?: fontOptions.first()
             add(SettingsItem("font", R.string.setting_font, valueText = currentFont.label))
             add(SettingsItem("layout", R.string.setting_layout, valueRes = if (settings.centeredLists) R.string.value_center else R.string.value_left))
+            val highlightRes = when (settings.highlightStyle) {
+                dev.cannoli.ui.theme.HighlightStyle.PILL -> R.string.value_pill
+                dev.cannoli.ui.theme.HighlightStyle.TEXT -> R.string.value_text
+                dev.cannoli.ui.theme.HighlightStyle.BOLD_TEXT -> R.string.value_bold_text
+            }
+            add(SettingsItem("highlight", R.string.setting_highlight, valueRes = highlightRes))
             add(SettingsItem("text_size", R.string.setting_text_size, valueText = "${settings.textSize.sp}sp"))
             val artScaleRes = when (settings.artScale) {
                 ArtScale.FIT -> R.string.value_fit

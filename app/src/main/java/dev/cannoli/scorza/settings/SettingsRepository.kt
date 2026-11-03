@@ -283,6 +283,12 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         get() = jsonRead { optBoolean(KEY_CENTERED_LISTS, true) }
         set(value) = jsonWrite { put(KEY_CENTERED_LISTS, value) }
 
+    /** How the selected list row stands out. Pill is upstream's look. */
+    var highlightStyle: dev.cannoli.ui.theme.HighlightStyle
+        get() = jsonRead { optString(KEY_HIGHLIGHT_STYLE, "") }
+            .let { v -> dev.cannoli.ui.theme.HighlightStyle.entries.firstOrNull { it.name == v } ?: dev.cannoli.ui.theme.HighlightStyle.PILL }
+        set(value) = jsonWrite { put(KEY_HIGHLIGHT_STYLE, value.name) }
+
     var artWidth: Int
         get() = jsonRead { optInt(KEY_ART_WIDTH, 40) }
         set(value) = jsonWrite { put(KEY_ART_WIDTH, value) }
@@ -425,6 +431,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
         private const val KEY_SHOW_RECENTLY_PLAYED = "show_recently_played"
         private const val KEY_SHOW_APPS_IN_RECENT = "show_apps_in_recent"
         private const val KEY_CENTERED_LISTS = "centered_lists"
+        private const val KEY_HIGHLIGHT_STYLE = "highlight_style"
         private const val KEY_SHOW_FAVORITES = "show_favorites"
         private const val KEY_SCAN_LIBRARY_AUTOMATICALLY = "scan_library_automatically"
         private const val KEY_TOOLS_NAME = "tools_name"
