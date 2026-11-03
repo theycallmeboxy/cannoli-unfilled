@@ -6,12 +6,14 @@ import dev.cannoli.scorza.config.library.Library
 import dev.cannoli.scorza.config.library.LaunchPlan
 import dev.cannoli.scorza.model.Platform
 import dev.cannoli.scorza.util.RomLayout
+import dev.cannoli.scorza.util.RomPaths
 import org.json.JSONObject
 
 /**
  * The game systems the launcher knows, read from Config/systems.json through [library]. A
  * platform tag is a system ID in upper case, the form the database and the rest of the app use,
- * so lookups ignore case. Each system names its own folder under Roms/, which defaults to its ID.
+ * so lookups ignore case. Each system names its own folder under Roms/, which defaults to its ID,
+ * or an absolute folder anywhere on the device (see [RomPaths]).
  *
  * Two systems whose IDs differ only by case share a tag, and two that name the same ROM folder
  * share that folder; in both cases the first one in the file wins.
@@ -29,7 +31,9 @@ class PlatformConfig(private val library: () -> Library) : RomLayout {
         val byTag = LinkedHashMap<String, GameSystem>()
         for (system in current.systems.values) byTag.putIfAbsent(system.id.uppercase(), system)
         val byFolder = HashMap<String, String>()
-        for ((tag, system) in byTag) byFolder.putIfAbsent(system.roms.lowercase(), tag)
+        for ((tag, system) in byTag) {
+            if (!RomPaths.isAbsolute(system.roms)) byFolder.putIfAbsent(system.roms.lowercase(), tag)
+        }
         return Index(current, byTag, byFolder).also { index = it }
     }
 
@@ -44,19 +48,30 @@ class PlatformConfig(private val library: () -> Library) : RomLayout {
 
     fun getDisplayName(tag: String): String = systemFor(tag)?.name ?: tag
 
-    /** The system's folder under Roms/, or [tag] itself for a tag no system claims. */
+    /**
+     * The system's folder under Roms/, or its absolute folder when it starts with "/", or [tag]
+     * itself for a tag no system claims.
+     */
     override fun folderFor(tag: String): String = systemFor(tag)?.roms ?: tag
 
     override fun extensionsFor(tag: String): Set<String>? = systemFor(tag)?.extensions
 
-    /** Every system's folder under Roms/. */
-    fun romFolders(): List<String> = getAllTags().map(::folderFor).distinct()
+    override fun absoluteFolders(): Set<String> = absoluteFolderTags().map(::folderFor).toSet()
 
-    /** The tag of the system whose ROM folder is [folder], ignoring case, or null for none. */
+    /** Every system's folder under Roms/, leaving out absolute folders. */
+    fun romFolders(): List<String> = getAllTags().map(::folderFor).filterNot(RomPaths::isAbsolute).distinct()
+
+    /** The tags of the systems whose folder is absolute, in systems.json order. */
+    fun absoluteFolderTags(): List<String> = getAllTags().filter { RomPaths.isAbsolute(folderFor(it)) }
+
+    /**
+     * The tag of the system whose ROM folder under Roms/ is [folder], ignoring case, or null for
+     * none. Systems with an absolute folder are never matched.
+     */
     fun tagForFolder(folder: String): String? = index().byFolder[folder.lowercase()]
 
     /**
-     * How the game at [romPath] (relative to Roms/, as the database stores it) launches: its
+     * How the game at [romPath] (its key, as the database stores it; see [RomPaths]) launches: its
      * override from overrides.json, else the system's first emulator. Null when the system is
      * unknown or lists no emulator.
      */

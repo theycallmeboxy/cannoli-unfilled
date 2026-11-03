@@ -68,6 +68,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   translation for now). Its setting has three values: Show, Games Only (no apps) and Hide.
 - **Default font:** IBM Plex Mono. The old default, M+ 1 Code, is still in the font list, and
   Cannoli still falls back to it for languages Plex doesn't cover (Chinese, Japanese and Korean).
+- **Highlight:** Settings → Display → Highlight picks Pill (the default), Text or Bold Text. Without
+  the pill, the selected row takes the Highlight color, and other rows dim when both colors match.
 - **Layout:** the Center layout is the default: list rows centered, the screen title centered, the
   clock at the top left and the other status icons at the top right. Settings → Display → Layout
   switches back to Left, upstream's layout.
@@ -99,6 +101,9 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
 - **Kitchen config API:** `/api/config` lists, reads and saves the five config files, and serves
   the three templates read-only. A saved file is checked first (invalid JSON is refused with
   422), and the launcher reloads its menu at once.
+- **ROM folders anywhere:** a system's `roms` in `systems.json` can be a full path, such as a
+  folder on an SD card, instead of a folder under `Roms/`. Its games are scanned, watched and
+  launched like any other; save sync leaves them out.
 - **Build container:** `.boxen/Dockerfile` has JDK 21 and the Android SDK.
 
 ## Building
@@ -116,6 +121,8 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-02 | Absolute ROM folders for systems |
+| 2026-11-02 | Highlight setting: Pill, Text or Bold Text |
 | 2026-11-02 | Kitchen serves the new config files; CONFIG.md rewritten |
 | 2026-11-02 | Launch With and Default Emulator pickers |
 | 2026-11-02 | Menu and folders come from directory.json; shortcuts; unplaced systems while editing |

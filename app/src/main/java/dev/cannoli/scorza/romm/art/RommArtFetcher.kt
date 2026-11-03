@@ -8,6 +8,7 @@ import dev.cannoli.scorza.romm.RommGame
 import dev.cannoli.scorza.romm.cache.RommDatabase
 import dev.cannoli.scorza.romm.download.RommDownloader
 import dev.cannoli.scorza.util.ArtworkLookup
+import dev.cannoli.scorza.util.RomPaths
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -85,8 +86,7 @@ class RommArtFetcher(
             for (rom in roms.allRomsForPlatform(tag)) {
                 val file: File = rom.path
                 val hasArt = artwork.find(tag, file) != null
-                val relative = file.absolutePath
-                    .removePrefix(romRoot.absolutePath).removePrefix(File.separator)
+                val relative = RomPaths.keyFor(file, romRoot)
                 val linkedId = links.rommIdForPath(relative)
                 when (val outcome = RommArtMatcher.decide(hasArt, file.name, linkedId, byFsName, byId)) {
                     is ArtOutcome.AlreadyHasArt -> alreadyHadArt++

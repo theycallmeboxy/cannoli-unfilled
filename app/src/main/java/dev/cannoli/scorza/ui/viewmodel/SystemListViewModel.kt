@@ -359,10 +359,13 @@ class SystemListViewModel @Inject constructor(
     // between folders.
     private val romFolderCounts = java.util.concurrent.ConcurrentHashMap<String, Pair<Long, Int>>()
 
+    // Only folders directly under Roms/ are offered; a system's absolute folder is never listed,
+    // even when it happens to sit under Roms/.
     private fun unclaimedRomFolders(): List<Unplaced> {
         val dirs = romDirectory.listFiles { f -> f.isDirectory && !f.name.startsWith(".") } ?: return emptyList()
+        val absolute = platformConfig.absoluteFolders()
         return dirs
-            .filter { platformConfig.tagForFolder(it.name) == null }
+            .filter { platformConfig.tagForFolder(it.name) == null && it.absolutePath !in absolute }
             .mapNotNull { dir ->
                 val mtime = dir.lastModified()
                 val files = romFolderCounts[dir.name]?.takeIf { it.first == mtime }?.second
@@ -424,11 +427,13 @@ class SystemListViewModel @Inject constructor(
         reconcileOrphans: Boolean = false,
         onProgress: (suspend (String, Int, Int) -> Unit)? = null,
     ) {
-        if (!romDirectory.exists()) return
-        val tagDirs = romDirectory.listFiles { f -> f.isDirectory && !f.name.startsWith(".") } ?: return
-        // A folder counts when some system in systems.json names it as its ROM folder.
-        val onDisk = tagDirs.mapNotNull { platformConfig.tagForFolder(it.name) }
-        val orphaned = if (reconcileOrphans) romsRepository.platformCounts().keys.map { it.uppercase() } else emptyList()
+        val tagDirs = romDirectory.listFiles { f -> f.isDirectory && !f.name.startsWith(".") }
+        val absoluteOnDisk = platformConfig.absoluteFolderTags().filter { File(platformConfig.folderFor(it)).isDirectory }
+        if (tagDirs == null && absoluteOnDisk.isEmpty()) return
+        // A folder counts when some system in systems.json names it as its ROM folder, under Roms/
+        // or as an absolute folder.
+        val onDisk = tagDirs.orEmpty().mapNotNull { platformConfig.tagForFolder(it.name) } + absoluteOnDisk
+        val orphaned = if (reconcileOrphans && tagDirs != null) romsRepository.platformCounts().keys.map { it.uppercase() } else emptyList()
         val known = (onDisk + orphaned).distinct().filter { platformConfig.isKnownTag(it) }
         known.forEachIndexed { i, tag ->
             onProgress?.invoke(tag, i, known.size)

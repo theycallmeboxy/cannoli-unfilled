@@ -12,12 +12,17 @@ internal fun KitchenHttpServer.handleTags(): Response {
     val canonical = allPlatformTags()
         .filter { it !in KitchenHttpServer.RESERVED_APP_TAGS }
         .associateBy { it.lowercase(java.util.Locale.ROOT) }
-    val romsDir = romsRootProvider()
-    val tags = romsDir.listFiles { f -> f.isDirectory }
-        ?.mapNotNull { canonical[it.name.lowercase(java.util.Locale.ROOT)] }
-        ?.distinct()
-        ?.sorted()
-        ?: emptyList()
+    // The walker knows each system's own folder, under Roms/ or absolute.
+    val walker = romDirectoryWalker
+    val tags = if (walker != null) {
+        canonical.values.filter { walker.resolveTagDir(it)?.isDirectory == true }.sorted()
+    } else {
+        romsRootProvider().listFiles { f -> f.isDirectory }
+            ?.mapNotNull { canonical[it.name.lowercase(java.util.Locale.ROOT)] }
+            ?.distinct()
+            ?.sorted()
+            ?: emptyList()
+    }
     return jsonResponse(200, TagsResponse.serializer(), TagsResponse(tags))
 }
 

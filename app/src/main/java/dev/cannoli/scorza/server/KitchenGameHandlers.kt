@@ -1,5 +1,6 @@
 package dev.cannoli.scorza.server
 
+import dev.cannoli.scorza.util.RomPaths
 import fi.iki.elonen.NanoHTTPD
 import fi.iki.elonen.NanoHTTPD.Response
 import java.io.File
@@ -41,9 +42,9 @@ internal fun KitchenHttpServer.gameRomFiles(rom: dev.cannoli.scorza.model.Rom): 
     romDirectoryWalker?.gameFiles(rom.path) ?: listOf(rom.path)
 
 internal fun KitchenHttpServer.gameRomsResponse(rom: dev.cannoli.scorza.model.Rom): Response {
-    val romsRootPrefix = "${romsRootProvider().absolutePath}${File.separator}"
+    val romsRoot = romsRootProvider()
     val items = gameRomFiles(rom).map { f ->
-        val rel = f.absolutePath.removePrefix(romsRootPrefix).replace(File.separatorChar, '/')
+        val rel = RomPaths.keyFor(f, romsRoot).replace(File.separatorChar, '/')
         val size = if (f.exists()) f.length() else 0L
         RomFileEntry(name = f.name, path = rel, size = size, modified = f.lastModified())
     }
@@ -52,7 +53,7 @@ internal fun KitchenHttpServer.gameRomsResponse(rom: dev.cannoli.scorza.model.Ro
 
 internal fun KitchenHttpServer.resolveRomFile(rom: dev.cannoli.scorza.model.Rom, fileParam: String?): File? {
     if (fileParam.isNullOrBlank()) return rom.path
-    val target = File(romsRootProvider(), fileParam)
+    val target = RomPaths.resolve(romsRootProvider(), fileParam)
     if (!isSecure(target)) return null
     return gameRomFiles(rom).firstOrNull { it.absolutePath == target.absolutePath }
 }
@@ -313,6 +314,12 @@ internal fun KitchenHttpServer.handleGames(
                 while (platformDir.parentFile != null && platformDir.parentFile != romsRoot) {
                     platformDir = platformDir.parentFile!!
                 }
+                // Not under Roms/: the game is in a system's absolute folder, or nowhere it may go.
+                if (platformDir.parentFile == null) {
+                    platformDir = romDirectoryWalker?.let { w ->
+                        w.tagDirFor(platformTag).takeIf { it.absolutePath in w.absoluteFolders() }
+                    } ?: return errorResponse(403, "forbidden")
+                }
                 val destDir = if (folder.isBlank()) platformDir else File(platformDir, folder)
                 if (!destDir.isDirectory) return errorResponse(400, "destination folder not found")
                 val target = File(destDir, unit.name)
@@ -321,7 +328,7 @@ internal fun KitchenHttpServer.handleGames(
                 if (target.exists()) return errorResponse(409, "a game with that name already exists in the destination")
                 if (!unit.renameTo(target)) return errorResponse(500, "move failed")
                 val newPrimary = if (gameDir == null) target else File(target, rom.path.name)
-                val newRelPath = newPrimary.absolutePath.removePrefix("${romsRoot.absolutePath}${File.separator}")
+                val newRelPath = RomPaths.keyFor(newPrimary, romsRoot)
                 repo.updateRomPath(rom.id, newRelPath)
                 scanPlatform?.invoke(platformTag)
                 okResponse()
@@ -339,8 +346,7 @@ internal fun KitchenHttpServer.handleGames(
                     result.success -> {
                         val newPrimary = result.newPrimary
                         if (newPrimary != null) {
-                            val romsRoot = romsRootProvider()
-                            val newRelPath = newPrimary.absolutePath.removePrefix("${romsRoot.absolutePath}${File.separator}")
+                            val newRelPath = RomPaths.keyFor(newPrimary, romsRootProvider())
                             repo.updateRomPath(rom.id, newRelPath)
                         }
                         scanPlatform?.invoke(platformTag)

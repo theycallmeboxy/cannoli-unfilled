@@ -95,6 +95,7 @@ class GameMoveHandlerTest {
 
         val walker = mockk<RomDirectoryWalker>()
         every { walker.gameDirectory(m3u) } returns gameFolder
+        every { walker.absoluteFolders() } returns emptySet()
 
         val server = makeServer(tmp.root, repo, walker)
         val response = server.handleGames(

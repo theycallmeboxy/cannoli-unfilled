@@ -313,6 +313,9 @@ The code differs from the design above in these ways:
   in `systems.json`.
 - **Save sync and ROM folders:** a game RomM hasn't linked yet is matched for save sync by its
   ROM folder name, so for a system whose `roms` differs from its ID, only linked games sync.
+- **Absolute ROM folders:** a system's `roms` may start with `/` to name a folder anywhere on
+  the device. Its games are stored, and keyed in `overrides.json`, by their absolute path. Save
+  sync skips them, and such a folder is never created or listed as a ROM folder with no system.
 - **Templates** are rewritten whenever their text differs from the app's copy, not only on
   update.
 - **Kitchen:** a template `PUT` returns 405. After a successful `PUT`, the launcher reloads its

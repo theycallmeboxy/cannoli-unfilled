@@ -2,11 +2,12 @@ package dev.cannoli.scorza.romm.sync
 
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.config.library.Placeholders
+import dev.cannoli.scorza.util.RomPaths
 import java.io.File
 
 object RomKeys {
-    fun relativeKey(rom: File, romRoot: File): String =
-        rom.absolutePath.removePrefix(romRoot.absolutePath).removePrefix(File.separator)
+    /** [rom]'s game key (see [RomPaths]): its path under [romRoot], or its absolute path outside it. */
+    fun relativeKey(rom: File, romRoot: File): String = RomPaths.keyFor(rom, romRoot)
 
     /**
      * The emulator name sent with a save: the choice's own name when it has one, else its core,

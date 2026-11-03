@@ -3,6 +3,7 @@ package dev.cannoli.scorza.scanner
 import android.os.FileObserver
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.ScanScheduler
+import dev.cannoli.scorza.util.RomPaths
 import dev.cannoli.scorza.util.ScanLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,13 +35,14 @@ class RomDirectoryWatcher @Inject constructor(
 
     private val debounceMs = 750L
 
+    /** Watches Roms/ for new system folders, and each of [platformTags]' folders, under Roms/ or absolute. */
     fun start(romDir: File, platformTags: List<String>) {
         stop()
-        if (!romDir.exists()) {
+        if (romDir.exists()) {
+            startRootObserver(romDir)
+        } else {
             ScanLog.write("RomDirectoryWatcher: rom dir does not exist: ${romDir.absolutePath}")
-            return
         }
-        startRootObserver(romDir)
         for (tag in platformTags) startPlatformObserver(romDir, tag.uppercase())
     }
 
@@ -81,7 +83,7 @@ class RomDirectoryWatcher @Inject constructor(
 
     @Suppress("DEPRECATION")
     private fun startPlatformObserver(romDir: File, tag: String) {
-        val dir = File(romDir, platformConfig.folderFor(tag))
+        val dir = RomPaths.resolve(romDir, platformConfig.folderFor(tag))
         if (!dir.isDirectory) return
         val obs = object : FileObserver(dir.absolutePath, perPlatformMask) {
             override fun onEvent(event: Int, path: String?) {

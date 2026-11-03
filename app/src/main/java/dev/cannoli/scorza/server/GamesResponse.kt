@@ -3,6 +3,7 @@ package dev.cannoli.scorza.server
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.model.Rom
 import dev.cannoli.scorza.util.RomDirectoryWalker
+import dev.cannoli.scorza.util.RomPaths
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -158,7 +159,7 @@ object GamesResponse {
     ): GameJson {
         val romFile = rom.path
         val baseName = romFile.nameWithoutExtension
-        val relativeRomPath = romFile.absolutePath.removePrefix("${romsRoot.absolutePath}${File.separator}")
+        val relativeRomPath = RomPaths.keyFor(romFile, romsRoot)
         val artFile = index.artFor(baseName)
         val folderStr = if (walker == null) {
             ""

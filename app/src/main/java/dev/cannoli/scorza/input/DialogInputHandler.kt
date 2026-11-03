@@ -1673,10 +1673,6 @@ class DialogInputHandler @Inject constructor(
                 val tag = gameListViewModel.state.value.platformTag
                 val dir = File(romDirectoryWalker.tagDirFor(tag), item.path)
                 val prefix = relativeRomPath(dir)
-                if (prefix == null) {
-                    nav.dialogState.value = DialogState.None
-                    return
-                }
                 ioScope.launch {
                     dir.deleteRecursively()
                     romsRepository.deleteRomsUnderPrefix(tag, prefix)
@@ -2079,10 +2075,7 @@ class DialogInputHandler @Inject constructor(
                 val oldPrefix = relativeRomPath(oldDir)
                 val ok = oldDir.renameTo(newDir)
                 if (ok) {
-                    val newPrefix = relativeRomPath(newDir)
-                    if (oldPrefix != null && newPrefix != null) {
-                        romsRepository.updateRomPathsUnderPrefix(tag, oldPrefix, newPrefix)
-                    }
+                    romsRepository.updateRomPathsUnderPrefix(tag, oldPrefix, relativeRomPath(newDir))
                 } else {
                     withContext(Dispatchers.Main) {
                         nav.dialogState.value = DialogState.RenameResult(false, context.getString(dev.cannoli.scorza.R.string.rename_error_directory))
@@ -2261,14 +2254,8 @@ class DialogInputHandler @Inject constructor(
     private fun romDir(): File =
         settings.romDirectory.takeIf { it.isNotEmpty() }?.let { File(it) } ?: File(File(settings.sdCardRoot), "Roms")
 
-    private fun relativeRomPath(file: File): String? {
-        val romDir = romDir()
-        return try {
-            val relative = file.relativeTo(romDir).path
-            if (relative.startsWith("..")) null else relative
-        } catch (_: IllegalArgumentException) {
-            null
-        }
-    }
+    // The key the database stores for [file]: its path under Roms/, or its absolute path for a
+    // system with an absolute folder (RomPaths).
+    private fun relativeRomPath(file: File): String = dev.cannoli.scorza.util.RomPaths.keyFor(file, romDir())
 
 }

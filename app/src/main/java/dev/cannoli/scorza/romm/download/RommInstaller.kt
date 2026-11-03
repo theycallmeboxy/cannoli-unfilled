@@ -1,11 +1,16 @@
 package dev.cannoli.scorza.romm.download
 
 import dev.cannoli.scorza.romm.RommGame
+import dev.cannoli.scorza.util.RomPaths
 import java.io.File
 
 data class InstallResult(val linkRelativePath: String, val artBaseName: String)
 
-/** [folderFor] gives a platform's folder under Roms/, which is the tag unless systems.json says otherwise. */
+/**
+ * [folderFor] gives a platform's folder under Roms/, which is the tag unless systems.json says
+ * otherwise, or its absolute folder. A game installed into an absolute folder is linked by its
+ * absolute path, its key in the database (see [RomPaths]).
+ */
 class RommInstaller(private val folderFor: (String) -> String = { it }) {
 
     fun isMultiPart(game: RommGame): Boolean = game.files.size > 1
@@ -13,9 +18,10 @@ class RommInstaller(private val folderFor: (String) -> String = { it }) {
     /** Installs [source] for [game] under [romDir] in [tag]'s folder. [source] is a downloaded file for single-part games and a staged directory for multi-part games. Deletes [source]. */
     fun install(game: RommGame, tag: String, source: File, romDir: File): InstallResult {
         val folder = folderFor(tag)
-        val tagDir = File(romDir, folder)
-        return if (isMultiPart(game)) installMultiPart(game, folder, tagDir, source)
-        else installSingle(game, folder, tagDir, source)
+        val tagDir = RomPaths.resolve(romDir, folder)
+        val key = RomPaths.systemKey(romDir, folder)
+        return if (isMultiPart(game)) installMultiPart(game, key, tagDir, source)
+        else installSingle(game, key, tagDir, source)
     }
 
     private fun installSingle(game: RommGame, folder: String, tagDir: File, temp: File): InstallResult {

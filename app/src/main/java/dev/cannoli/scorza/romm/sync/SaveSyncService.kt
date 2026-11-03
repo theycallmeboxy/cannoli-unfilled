@@ -68,6 +68,9 @@ class SaveSyncService(
         if (!syncEnabled()) return null
         if (!RommCapabilities.isSupported(connStore.serverVersion)) return null
         if (registrar.deviceId().isNullOrEmpty()) return null
+        // Sync matches a game by its system's folder under Roms/, so a game in a system with an
+        // absolute folder is left out.
+        if (dev.cannoli.scorza.util.RomPaths.isAbsolute(gameKey)) return null
         links.rommIdForPath(gameKey)?.let { return it }
         val tag = gameKey.substringBefore('/')
         val fileName = java.io.File(gameKey).name

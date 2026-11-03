@@ -30,6 +30,17 @@ class RommInstallerTest {
         assertTrue(!temp.exists())
     }
 
+    @Test fun `a system with an absolute folder installs there and links the absolute path`() {
+        val romDir = tmp.newFolder("Roms")
+        val sd = tmp.newFolder("sd", "SNES")
+        val temp = File(tmp.newFolder(), "tmp.bin").apply { writeText("rom") }
+        val g = game("Chrono Trigger", "Chrono Trigger (USA).sfc", listOf(f("Chrono Trigger (USA).sfc")))
+        val result = RommInstaller { sd.absolutePath }.install(g, "SNES", temp, romDir)
+        assertEquals(File(sd, "Chrono Trigger (USA).sfc").absolutePath, result.linkRelativePath)
+        assertTrue(File(sd, "Chrono Trigger (USA).sfc").readText() == "rom")
+        assertTrue(romDir.listFiles().orEmpty().isEmpty())
+    }
+
     @Test fun `multi-part renames the single top-level rom to the folder name and links it`() {
         val romDir = tmp.newFolder("Roms")
         val staging = tmp.newFolder("staging")

@@ -5,13 +5,16 @@ import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import java.io.File
 
-/** Where each platform's ROMs live under Roms/ and which files count as games. */
+/** Where each platform's ROMs live and which files count as games. */
 interface RomLayout {
-    /** The platform's folder under Roms/. */
+    /** The platform's folder under Roms/, or an absolute folder when it starts with "/" (see [RomPaths]). */
     fun folderFor(tag: String): String = tag
 
     /** Lower case, no dot. Null accepts every file but the global ignore list. */
     fun extensionsFor(tag: String): Set<String>? = null
+
+    /** Every platform folder that is absolute rather than under Roms/. */
+    fun absoluteFolders(): Set<String> = emptySet()
 }
 
 /**
@@ -67,8 +70,9 @@ class RomDirectoryWalker(
         val tag = platformTag.uppercase()
         val tagDir = resolveTagDir(tag) ?: return null
         // Paths are keyed by the configured folder name, which for a system whose folder is its
-        // own ID is the tag, as before.
-        val prefix = "${layout.folderFor(tag)}${File.separator}"
+        // own ID is the tag, as before; a system with an absolute folder keys its games by their
+        // absolute path (RomPaths).
+        val prefix = "${RomPaths.systemKey(romDirectory, layout.folderFor(tag))}${File.separator}"
         val rekeys = mutableListOf<RekeyMove>()
         organizeDir(tagDir, prefix, tag, rekeys, depth = 0)
         val out = mutableListOf<ScannedRom>()
@@ -76,16 +80,23 @@ class RomDirectoryWalker(
         return WalkResult(tagDir = tagDir, roms = out, rekeys = rekeys)
     }
 
-    /** The platform's folder under Roms/, matched without regard to case. Null when it is absent. */
+    /**
+     * The platform's folder under Roms/, matched without regard to case, or its absolute folder,
+     * matched exactly. Null when it is absent.
+     */
     fun resolveTagDir(tag: String): File? {
         val folder = layout.folderFor(tag)
-        val direct = File(romDirectory, folder)
+        val direct = RomPaths.resolve(romDirectory, folder)
         if (direct.exists()) return direct
+        if (RomPaths.isAbsolute(folder)) return null
         return romDirectory.listFiles()?.firstOrNull { it.isDirectory && it.name.equals(folder, ignoreCase = true) }
     }
 
     /** Where the platform's folder is or would be, for callers that create it. */
-    fun tagDirFor(tag: String): File = resolveTagDir(tag) ?: File(romDirectory, layout.folderFor(tag))
+    fun tagDirFor(tag: String): File = resolveTagDir(tag) ?: RomPaths.resolve(romDirectory, layout.folderFor(tag))
+
+    /** Every platform folder that is absolute rather than under Roms/. */
+    fun absoluteFolders(): Set<String> = layout.absoluteFolders()
 
     fun invalidateNameMap(tagDir: File) = arcadeTitleLookup.invalidate(tagDir)
 
@@ -133,6 +144,7 @@ class RomDirectoryWalker(
     fun gameDirectory(primaryFile: File): File? {
         val parent = primaryFile.parentFile ?: return null
         if (parent.parentFile == romDirectory) return null
+        if (parent.absolutePath in layout.absoluteFolders()) return null
         val launch = findDirLaunchFile(parent) ?: return null
         return if (launch.file == primaryFile) parent else null
     }

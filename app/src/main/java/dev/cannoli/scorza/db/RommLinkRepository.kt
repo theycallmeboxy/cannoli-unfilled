@@ -1,5 +1,6 @@
 package dev.cannoli.scorza.db
 
+import dev.cannoli.scorza.util.RomPaths
 import java.io.File
 
 class RommLinkRepository(
@@ -27,7 +28,7 @@ class RommLinkRepository(
         val romDir = romDirProvider()
         return db.queryAll("SELECT romm_id, relative_path FROM romm_links") {
             it.getInt(0) to it.getText(1)
-        }.filter { (_, rel) -> File(romDir, rel).exists() }
+        }.filter { (_, rel) -> RomPaths.resolve(romDir, rel).exists() }
             .map { it.first }
             .toSet()
     }

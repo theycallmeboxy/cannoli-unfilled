@@ -15,7 +15,8 @@ import org.json.JSONObject
 class EmulatorChoiceEditor(private val config: LibraryConfig) {
 
     /**
-     * Makes the game at [romPath] (under Roms/) launch with [choice] from [system]'s list. The
+     * Makes the game at [romPath] (its key: the path under Roms/, or the absolute path in a system
+     * whose folder is absolute) launch with [choice] from [system]'s list. The
      * system's default removes the game's override instead, so it follows the system again.
      */
     fun setGameChoice(system: GameSystem, romPath: String, choice: String): String? {

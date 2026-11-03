@@ -37,7 +37,7 @@ data class EmulatorRef(
 data class GameSystem(
     val id: String,
     val name: String,
-    /** Its folder under Roms/. */
+    /** Its folder under Roms/, or an absolute folder anywhere on the device when it starts with "/". */
     val roms: String,
     /** Lower case, no dot. Null accepts every file but the global ignore list. */
     val extensions: Set<String>?,
@@ -128,7 +128,10 @@ data class Library(
         walk(directory, emptyList())
     }
 
-    /** The choice for [romPath] (under Roms/): its override when one still matches, else the default. */
+    /**
+     * The choice for [romPath], the game's key (its path under Roms/, or its absolute path in a
+     * system whose folder is absolute): its override when one still matches, else the default.
+     */
     fun choiceFor(system: GameSystem, romPath: String): EmulatorRef? {
         val override = overrides[romPath]
         return override?.let { name -> system.emulators.firstOrNull { it.matches(name) } }

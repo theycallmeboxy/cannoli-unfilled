@@ -78,7 +78,7 @@ class LibraryParserTest {
                           "emulators": [ { "emulator": "retroarch", "core": "mgba_libretro", "_note": "skip me" },
                                          { "emulator": "retroarch", "core": "vba_next_libretro", "name": "VBA" },
                                          "pizzaboy" ] },
-                 "MAME": { "arcade": true, "roms": "/Arcade/MAME/" } }"""
+                 "MAME": { "arcade": true, "roms": "Arcade/MAME/" } }"""
         )
         assertTrue(p.errors.toString(), p.errors.isEmpty())
         val gba = p.value.getValue("GBA")
@@ -201,6 +201,36 @@ class LibraryParserTest {
         assertEquals(1, p.errors.size)
     }
 
+    @Test fun `an absolute roms folder keeps its leading slash and loses trailing ones`() {
+        val p = LibraryParser.parseSystems(
+            """{ "GBA": { "roms": "/storage/1234-ABCD/GBA/" },
+                 "GB": { "roms": " //storage//1234-ABCD/./GB " } }"""
+        )
+        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertEquals("/storage/1234-ABCD/GBA", p.value.getValue("GBA").roms)
+        assertEquals("/storage/1234-ABCD/GB", p.value.getValue("GB").roms)
+    }
+
+    @Test fun `a relative roms folder is trimmed as before`() {
+        val p = LibraryParser.parseSystems(
+            """{ "GBA": { "roms": "Game Boy Advance/" }, "GB": { "roms": "" }, "PS": { "roms": "Sony/PS" } }"""
+        )
+        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertEquals("Game Boy Advance", p.value.getValue("GBA").roms)
+        assertEquals("GB", p.value.getValue("GB").roms)
+        assertEquals("Sony/PS", p.value.getValue("PS").roms)
+    }
+
+    @Test fun `a roms folder with dot-dot or only the device root is skipped`() {
+        val p = LibraryParser.parseSystems(
+            """{ "A": { "roms": "../Elsewhere" }, "B": { "roms": "GBA/../../x" },
+                 "C": { "roms": "/storage/../data" }, "D": { "roms": "/" }, "E": { "roms": "E" } }"""
+        )
+        assertEquals(setOf("E"), p.value.keys)
+        assertEquals(4, p.errors.size)
+        assertTrue(p.errors.toString(), p.errors.first().contains(".."))
+    }
+
     // ---- overrides.json ----
 
     @Test fun `overrides parse and skip comments and bad values`() {
@@ -208,7 +238,8 @@ class LibraryParserTest {
             """{ "_about": "x", "games": { "_note": "n", "GBA/Pokemon Emerald.gba": "pizzaboy", "/GB/a.gb": "retroarch",
                  "GB/b.gb": 3, "GB/c.gb": "" } }"""
         )
-        assertEquals(mapOf("GBA/Pokemon Emerald.gba" to "pizzaboy", "GB/a.gb" to "retroarch"), p.value)
+        // A key starting with "/" is an absolute path, for a system whose folder is absolute.
+        assertEquals(mapOf("GBA/Pokemon Emerald.gba" to "pizzaboy", "/GB/a.gb" to "retroarch"), p.value)
         assertEquals(2, p.errors.size)
     }
 

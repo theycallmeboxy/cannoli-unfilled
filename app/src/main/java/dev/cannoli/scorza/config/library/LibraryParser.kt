@@ -71,7 +71,8 @@ object LibraryParser {
             val out = LinkedHashMap<String, String>()
             for (key in games.keys()) {
                 if (isComment(key)) continue
-                val path = key.trim().removePrefix("/")
+                // A key starting with "/" is the absolute path of a game in an absolute-folder system.
+                val path = key.trim()
                 val value = games.opt(key)
                 if (path.isEmpty()) {
                     errors.add("$source: $GAMES.\"$key\" skipped: needs a ROM path")
@@ -124,7 +125,7 @@ object LibraryParser {
 
     private fun parseSystem(id: String, obj: JSONObject, source: String, errors: MutableList<String>): GameSystem {
         val name = obj.optString("name", "").trim().ifEmpty { id }
-        val roms = obj.optString("roms", "").trim().trim('/').ifEmpty { id }
+        val roms = romsFolder(obj.optString("roms", "").trim(), id)
         val extensions = if (!obj.has("extensions")) null else {
             val arr = obj.optJSONArray("extensions")
                 ?: throw IllegalArgumentException("\"extensions\" must be a list of file types")
@@ -150,6 +151,25 @@ object LibraryParser {
             }
         }
         return GameSystem(id, name, roms, extensions, obj.optBoolean("arcade", false), refs)
+    }
+
+    /**
+     * A system's ROM folder: a path under Roms/, or an absolute folder when [raw] starts with "/".
+     * Empty and "." segments and trailing slashes are dropped; a relative folder loses its leading
+     * slashes too, an absolute one keeps one. Defaults to [id]. Throws on "..".
+     */
+    private fun romsFolder(raw: String, id: String): String {
+        val absolute = raw.startsWith("/")
+        val segments = raw.ifEmpty { id }.split('/').filter { it.isNotEmpty() && it != "." }
+        require(segments.none { it == ".." }) { "\"roms\" can't contain \"..\"" }
+        require(segments.isNotEmpty() || !absolute) { "\"roms\" can't be the device's root folder" }
+        val path = segments.joinToString("/")
+        return when {
+            absolute -> "/$path"
+            path.isNotEmpty() -> path
+            raw.isNotEmpty() -> romsFolder("", id)
+            else -> throw IllegalArgumentException("needs a \"roms\" folder")
+        }
     }
 
     private fun parseRef(item: Any, where: String, errors: MutableList<String>): EmulatorRef = when (item) {

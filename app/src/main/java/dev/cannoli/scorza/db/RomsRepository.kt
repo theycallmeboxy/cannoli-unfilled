@@ -8,6 +8,8 @@ import dev.cannoli.scorza.model.Rom
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.util.ArtworkLookup
 import dev.cannoli.scorza.util.NaturalSort
+import dev.cannoli.scorza.util.RomLayout
+import dev.cannoli.scorza.util.RomPaths
 import dev.cannoli.scorza.util.RomNaming
 import dev.cannoli.scorza.util.TextNormalizer
 import java.io.File
@@ -16,6 +18,7 @@ class RomsRepository(
     private val pathsProvider: CannoliPathsProvider,
     private val db: CannoliDatabase,
     private val artwork: ArtworkLookup,
+    private val layout: RomLayout = object : RomLayout {},
 ) {
     private val romDirectory: File get() = pathsProvider.romDir
 
@@ -26,9 +29,10 @@ class RomsRepository(
         return subfolderItemsFrom(nested, subfolder) + matching.map { ListItem.RomItem(it) }
     }
 
+    /** The game whose file is [absolutePath], under Roms/ or in a system with an absolute folder. */
     fun gameByPath(absolutePath: String): Rom? {
-        val relative = relativizePath(absolutePath) ?: return null
-        return db.queryOne("$BASE_SELECT WHERE path = ?", relative, mapper = ::rowToRom)
+        val key = RomPaths.keyFor(File(absolutePath), romDirectory)
+        return db.queryOne("$BASE_SELECT WHERE path = ?", key, mapper = ::rowToRom)
     }
 
     fun gameById(romId: Long): Rom? = db.queryOne(
@@ -161,7 +165,7 @@ class RomsRepository(
     private fun rowToRom(stmt: SQLiteStatement): Rom {
         val relativePath = stmt.getText(1)
         val platformTag = stmt.getText(2)
-        val absoluteFile = File(romDirectory, relativePath)
+        val absoluteFile = RomPaths.resolve(romDirectory, relativePath)
         return Rom(
             id = stmt.getLong(0),
             path = absoluteFile,
@@ -176,16 +180,12 @@ class RomsRepository(
         )
     }
 
+    // The path below the system's own folder, which is the configured folder under Roms/ (the tag
+    // unless systems.json names another) or the system's absolute folder.
     private fun Rom.relativeAfterPlatform(): String {
-        val rel = path.absolutePath.removePrefix(romDirectory.absolutePath).removePrefix(File.separator)
-        val platformPrefix = "$platformTag${File.separator}"
+        val rel = RomPaths.keyFor(path, romDirectory)
+        val platformPrefix = "${RomPaths.systemKey(romDirectory, layout.folderFor(platformTag))}${File.separator}"
         return if (rel.startsWith(platformPrefix, ignoreCase = true)) rel.substring(platformPrefix.length) else rel
-    }
-
-    private fun relativizePath(absolutePath: String): String? {
-        val romsRoot = romDirectory.absolutePath + File.separator
-        if (!absolutePath.startsWith(romsRoot)) return null
-        return absolutePath.removePrefix(romsRoot)
     }
 
     private companion object {

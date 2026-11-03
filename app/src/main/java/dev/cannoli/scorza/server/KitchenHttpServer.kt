@@ -327,9 +327,11 @@ class KitchenHttpServer internal constructor(
     internal fun canonicalTag(raw: String): String? =
         allPlatformTags().firstOrNull { it.equals(raw, ignoreCase = true) }
 
+    /** Cannoli's own folder, Roms/, and every system folder systems.json gives as an absolute path. */
     internal fun defaultRoots(): List<File> {
         val roms = try { romsRootProvider() } catch (_: Exception) { null }
-        return listOfNotNull(cannoliRoot, roms)
+        val absolute = romDirectoryWalker?.absoluteFolders().orEmpty().map(::File)
+        return listOfNotNull(cannoliRoot, roms) + absolute
     }
 
     internal fun isSecure(file: File): Boolean = isSecure(file, defaultRoots())

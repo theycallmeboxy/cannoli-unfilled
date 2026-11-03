@@ -118,7 +118,11 @@ each system fills in `{core}`.
   system using the same ID as the templates (`GBA`, `PS`...) matches as before.
 - **`name`:** the display name. Defaults to the key. It's set only here: there's no rename on
   the device.
-- **`roms`:** its folder under `Roms/`. Defaults to the key.
+- **`roms`:** its folder under `Roms/`. Defaults to the key. A value starting with `/` is a
+  folder anywhere on the device instead, such as `"/storage/1234-ABCD/GBA"` for a folder on an SD
+  card. Slashes at the end are ignored, and a value with `..` in it is skipped as an error. Cannoli
+  never creates such a folder, doesn't list it under "Not in the menu", and doesn't sync saves
+  for its games with RomM.
 - **`extensions`:** the file types it accepts, without the dot. Without it, every file is
   accepted. Either way, files in the ignore lists (`Config/ignore_extensions_roms.txt` and
   `Config/ignore_files_roms.txt`) are skipped. An empty list is ignored, since it would hide
@@ -217,7 +221,9 @@ the top-level `Nintendo` folder, and `Art/Folders/Nintendo/Hacks.png` for `Hacks
 }
 ```
 
-- **Key:** the game's path under `Roms/`, starting with its system's ROM folder.
+- **Key:** the game's path under `Roms/`, starting with its system's ROM folder. For a system
+  whose `roms` starts with `/`, it's the game's full path instead, such as
+  `"/storage/1234-ABCD/GBA/Golden Sun.gba"`.
 - **Value:** one item from that system's `emulators` list: its `name` if it has one, or else its
   emulator's key.
 
