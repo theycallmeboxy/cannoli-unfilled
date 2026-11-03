@@ -1,9 +1,11 @@
 package dev.cannoli.scorza.config.library
 
 import androidx.test.core.app.ApplicationProvider
+import dev.cannoli.scorza.config.PlatformConfig
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -152,5 +154,21 @@ class LibraryConfigTest {
         val v = LibraryValidator.validate(emulators, systems, emptyMap(), emptyList(), emptyMap())
         assertTrue(v.errors.toString(), v.errors.isEmpty())
         assertEquals("mgba_libretro", systems.getValue("GBA").emulators.first().params["core"])
+    }
+
+    @Test fun `the system template matches RomM slugs and lists file types`() {
+        val emulators = LibraryParser.parseEmulators(template("emulators.template.json")).value
+        val systems = LibraryParser.parseSystems(template("systems.template.json")).value
+        val library = LibraryValidator.validate(emulators, systems, emptyMap(), emptyList(), emptyMap()).library
+        val config = PlatformConfig { library }
+        val expected = mapOf(
+            "snes" to "SNES", "sfc" to "SNES", "genesis" to "MD", "psx" to "PS", "ms" to "SMS",
+            "arcade" to "MAME", "fbneo" to "FBN", "switch" to "NSW",
+        )
+        for ((slug, tag) in expected) assertEquals(slug, tag, config.tagForRommSlug(slug))
+        assertEquals(setOf("7z", "bs", "fig", "sfc", "smc", "st", "swc", "zip"), systems.getValue("SNES").extensions)
+        assertTrue(systems.getValue("MAME").extensions!!.contains("zip"))
+        assertTrue("RetroArch opens archives for any core", systems.getValue("GBA").extensions!!.contains("zip"))
+        assertNull(systems.getValue("PC").extensions)
     }
 }

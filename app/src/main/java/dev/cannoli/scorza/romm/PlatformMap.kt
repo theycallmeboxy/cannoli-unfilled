@@ -1,13 +1,13 @@
 package dev.cannoli.scorza.romm
 
-class PlatformMap(
-    private val slugMap: RommSlugMap,
-    private val isSupported: (tag: String) -> Boolean,
-) {
+/**
+ * Turns RomM's platforms into the ones Cannoli shows: each matched to a system by its slug
+ * (systems.json `romm`), and dropped when no system claims it.
+ */
+class PlatformMap(private val tagForSlug: (slug: String) -> String?) {
     fun toDomain(dtos: List<PlatformDto>): List<RommPlatform> =
         dtos.mapNotNull { dto ->
-            val tag = slugMap.tagForSlug(dto.fsSlug.ifEmpty { dto.slug }) ?: return@mapNotNull null
-            if (!isSupported(tag)) return@mapNotNull null
+            val tag = tagForSlug(dto.fsSlug.ifEmpty { dto.slug }) ?: return@mapNotNull null
             RommPlatform(
                 id = dto.id,
                 slug = dto.slug,

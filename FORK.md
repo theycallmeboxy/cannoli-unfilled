@@ -31,6 +31,9 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   picker, BIOS status, the per-game overrides list and Reset, and the Installed Cores screen. A
   game's "Emulator Override" entry is replaced by "Launch With", and renaming a platform from
   the menu is gone: a system's name is set in `systems.json`.
+- **ROM ignore lists:** `Config/ignore_extensions_roms.txt` and `Config/ignore_files_roms.txt`
+  are no longer created or read. A system's `extensions` in `systems.json` decides which files
+  are games; hidden files and folders are still skipped.
 - **Unused strings:** 136 strings for the removed features, plus 50 for Emulator Mapping and the
   Emulation settings, in every language.
 
@@ -75,6 +78,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
 - **Layout:** the Center layout is the default: list rows centered, the screen title centered, the
   clock at the top left and the other status icons at the top right. Settings → Display → Layout
   switches back to Left, upstream's layout.
+- **RomM platforms:** a RomM platform belongs to the system whose `romm` in `systems.json` lists
+  its slug, instead of a built-in slug list, so a system with an ID of your own can match too.
 
 ### Added
 
@@ -123,6 +128,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | RomM platform set per system; extensions decide which files are games |
 | 2026-11-03 | Quick Menu and Settings are main menu rows, not hotkeys |
 | 2026-11-02 | Absolute ROM folders for systems |
 | 2026-11-02 | Highlight setting: Pill, Text or Bold Text |
@@ -160,7 +166,5 @@ The fork starts from upstream commit `7755e376`.
       labels in global search.
 - [ ] **Save sync for renamed ROM folders:** a game RomM hasn't linked yet is matched by its ROM
       folder name, so for a system whose `roms` differs from its ID only linked games sync.
-- [ ] **RomM and made-up system IDs:** RomM matches by system ID, so a system with an ID of your
-      own gets no RomM match. To revisit.
 - [ ] **Folder art is left behind** when a folder is deleted.
 - [ ] **Upstream lint errors:** 46 of them.

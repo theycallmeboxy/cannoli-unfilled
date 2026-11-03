@@ -90,7 +90,7 @@ The templates sit next to the real files, ready to copy from.
 - **`name`:** the display name.
 - **`roms`:** its folder under `Roms/`. Defaults to the ID.
 - **`extensions`:** the file types it accepts. Without it, every file is accepted except the global
-  ignore list, as today.
+  ignore list, as today. (As built: there is no ignore list; see below.)
 - **`arcade`:** `true` for arcade romsets.
 - **`emulators`:** the emulators that can run it, in order. **The first one is the default.** An
   entry is either:
@@ -320,6 +320,12 @@ The code differs from the design above in these ways:
   update.
 - **Kitchen:** a template `PUT` returns 405. After a successful `PUT`, the launcher reloads its
   menu and asks the emulators for their cores again, as it does on returning to Cannoli.
+- **No ignore lists:** `ignore_extensions_roms.txt` and `ignore_files_roms.txt` are gone. A
+  system's `extensions` alone decides which files are games (an `.m3u` also counts when one of
+  its discs is a listed type); without it every file but hidden ones counts. The templates take
+  each system's `extensions` from its RetroArch core's supported types.
+- **RomM by slug:** a system's `romm` lists the RomM platform slugs that are its games, replacing
+  the app's built-in slug list. A slug claimed twice stays with the first system and is reported.
 - **Problems per file:** each file's problems are its own parse errors followed by the
   cross-file ones, which is what Kitchen's `problems` returns.
 

@@ -150,7 +150,20 @@ object LibraryParser {
                 errors.add("$where skipped: ${e.message}")
             }
         }
-        return GameSystem(id, name, roms, extensions, obj.optBoolean("arcade", false), refs)
+        return GameSystem(id, name, roms, extensions, obj.optBoolean("arcade", false), refs, rommSlugs(obj))
+    }
+
+    /** `romm`: one RomM platform slug or a list of them, lower case, without repeats. */
+    private fun rommSlugs(obj: JSONObject): List<String> {
+        val raw = when (val value = obj.opt("romm")) {
+            null -> return emptyList()
+            is String -> listOf(value)
+            is JSONArray -> (0 until value.length()).map {
+                value.opt(it) as? String ?: throw IllegalArgumentException("\"romm\" must be a slug or a list of slugs")
+            }
+            else -> throw IllegalArgumentException("\"romm\" must be a slug or a list of slugs")
+        }
+        return raw.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.distinct()
     }
 
     /**

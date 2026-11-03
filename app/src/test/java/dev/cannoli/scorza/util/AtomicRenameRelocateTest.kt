@@ -1,6 +1,5 @@
 package dev.cannoli.scorza.util
 
-import android.content.res.AssetManager
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import io.mockk.Runs
 import io.mockk.every
@@ -13,7 +12,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.io.FileNotFoundException
 
 class AtomicRenameRelocateTest {
 
@@ -23,8 +21,6 @@ class AtomicRenameRelocateTest {
 
     private fun renamer(root: File): AtomicRename {
         val romsDir = File(root, "Roms").also { it.mkdirs() }
-        val assets = mockk<AssetManager>()
-        every { assets.open(any()) } throws FileNotFoundException()
         val paths = mockk<CannoliPathsProvider>()
         every { paths.root } returns root
         every { paths.romDir } returns romsDir
@@ -32,7 +28,7 @@ class AtomicRenameRelocateTest {
         every { arcade.mapFor(any(), any()) } returns emptyMap()
         every { arcade.invalidate(any()) } just Runs
         val artwork = ArtworkLookup(paths)
-        return AtomicRename(root, RomDirectoryWalker(paths, assets, arcade), artwork)
+        return AtomicRename(root, RomDirectoryWalker(paths, arcade), artwork)
     }
 
     @Test fun `relocate moves state dir inner files and srm to new base`() {

@@ -16,11 +16,17 @@ import org.json.JSONObject
  * or an absolute folder anywhere on the device (see [RomPaths]).
  *
  * Two systems whose IDs differ only by case share a tag, and two that name the same ROM folder
- * share that folder; in both cases the first one in the file wins.
+ * share that folder; in both cases the first one in the file wins. A system's `romm` slugs say
+ * which RomM platforms are its games.
  */
 class PlatformConfig(private val library: () -> Library) : RomLayout {
 
-    private class Index(val library: Library, val byTag: Map<String, GameSystem>, val byFolder: Map<String, String>)
+    private class Index(
+        val library: Library,
+        val byTag: Map<String, GameSystem>,
+        val byFolder: Map<String, String>,
+        val byRommSlug: Map<String, String>,
+    )
 
     @Volatile private var index: Index? = null
 
@@ -34,12 +40,17 @@ class PlatformConfig(private val library: () -> Library) : RomLayout {
         for ((tag, system) in byTag) {
             if (!RomPaths.isAbsolute(system.roms)) byFolder.putIfAbsent(system.roms.lowercase(), tag)
         }
-        return Index(current, byTag, byFolder).also { index = it }
+        val byRommSlug = HashMap<String, String>()
+        for ((tag, system) in byTag) for (slug in system.romm) byRommSlug.putIfAbsent(slug, tag)
+        return Index(current, byTag, byFolder, byRommSlug).also { index = it }
     }
 
     fun systemFor(tag: String): GameSystem? = index().byTag[tag.uppercase()]
 
     fun isKnownTag(tag: String): Boolean = systemFor(tag) != null
+
+    /** The tag of the system whose `romm` lists [slug], ignoring case, or null for none. */
+    fun tagForRommSlug(slug: String): String? = index().byRommSlug[slug.lowercase()]
 
     fun isArcade(tag: String): Boolean = systemFor(tag)?.arcade == true
 

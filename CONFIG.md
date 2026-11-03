@@ -104,7 +104,8 @@ each system fills in `{core}`.
   "GBA": {
     "name": "Game Boy Advance",
     "roms": "GBA",
-    "extensions": ["gba", "zip", "7z"],
+    "extensions": ["gb", "gba", "gbc", "zip"],
+    "romm": "gba",
     "emulators": [
       { "emulator": "retroarch", "core": "mgba_libretro" },
       { "emulator": "retroarch", "core": "gpsp_libretro", "name": "gpSP" },
@@ -114,8 +115,7 @@ each system fills in `{core}`.
 }
 ```
 
-- **Key:** the system's ID. `directory.json` uses it, and RomM matches games by it, so a
-  system using the same ID as the templates (`GBA`, `PS`...) matches as before.
+- **Key:** the system's ID. `directory.json` uses it.
 - **`name`:** the display name. Defaults to the key. It's set only here: there's no rename on
   the device.
 - **`roms`:** its folder under `Roms/`. Defaults to the key. A value starting with `/` is a
@@ -123,10 +123,19 @@ each system fills in `{core}`.
   card. Slashes at the end are ignored, and a value with `..` in it is skipped as an error. Cannoli
   never creates such a folder, doesn't list it under "Not in the menu", and doesn't sync saves
   for its games with RomM.
-- **`extensions`:** the file types it accepts, without the dot. Without it, every file is
-  accepted. Either way, files in the ignore lists (`Config/ignore_extensions_roms.txt` and
-  `Config/ignore_files_roms.txt`) are skipped. An empty list is ignored, since it would hide
-  every game.
+- **`extensions`:** the file types that are games, without the dot; case doesn't matter. Only
+  files of these types are listed, so saves, notes and scraper files in the folder stay out.
+  Archives count only when `zip` or `7z` is listed. A disc folder or multi-disc set counts when
+  its `.m3u` or `.cue` is a listed type, and an `.m3u` also counts when one of its discs is.
+  Without `extensions`, every file is a game. Either way, hidden files and folders (names
+  starting with `.`) are skipped. An empty list is ignored, since it would hide every game. The
+  templates list the types each system's RetroArch core takes, plus `zip` and `7z`, which
+  RetroArch opens for any core; systems with no core have a `_note` instead, for you to fill in.
+- **`romm`:** the RomM platform slug whose games are this system's, such as `"gba"`, or a list
+  of them, such as `["snes", "sfc", "super-famicom"]`: the platform's folder slug in RomM
+  (`fs_slug`), or its slug when it has none. Case doesn't matter. A system without `romm` gets
+  nothing from RomM. A slug two systems list belongs to the first one in the file; the other is
+  reported as a problem. The templates list the slugs RomM uses for each system.
 - **`arcade`:** `true` for arcade romsets.
 - **`emulators`:** the emulators that can run it, in order. **The first one is the default.**
   Each item is either:

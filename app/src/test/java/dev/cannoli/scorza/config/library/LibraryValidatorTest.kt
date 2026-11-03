@@ -46,6 +46,17 @@ class LibraryValidatorTest {
         assertTrue(v.errors.toString(), v.errors.any { "\"NoCore\"" in it && "{core}" in it && "\"core\"" in it })
     }
 
+    @Test fun `a RomM slug two systems claim stays with the first`() {
+        val claims = LibraryParser.parseSystems(
+            """{ "SNES": { "romm": [ "snes", "sfc" ] }, "SFC": { "romm": [ "SFC", "super-famicom" ] } }"""
+        ).value
+        val v = LibraryValidator.validate(emptyMap(), claims, emptyMap(), emptyList(), emptyMap())
+        assertEquals(listOf("snes", "sfc"), v.library.systems.getValue("SNES").romm)
+        assertEquals(listOf("super-famicom"), v.library.systems.getValue("SFC").romm)
+        assertEquals(v.errors.toString(), 1, v.errors.size)
+        assertTrue(v.errors.single(), "SFC.romm \"sfc\"" in v.errors.single() && "SNES" in v.errors.single())
+    }
+
     @Test fun `dangling directory systems and shortcuts are dropped`() {
         val v = validate()
         assertEquals(

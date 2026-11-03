@@ -39,11 +39,13 @@ data class GameSystem(
     val name: String,
     /** Its folder under Roms/, or an absolute folder anywhere on the device when it starts with "/". */
     val roms: String,
-    /** Lower case, no dot. Null accepts every file but the global ignore list. */
+    /** The file types that count as games: lower case, no dot. Null accepts every file. */
     val extensions: Set<String>?,
     val arcade: Boolean,
     /** In order; the first is the default. */
     val emulators: List<EmulatorRef>,
+    /** The RomM platform slugs whose games belong to this system, lower case. */
+    val romm: List<String> = emptyList(),
 )
 
 /** One entry of Config/shortcuts.json: a custom intent shown like an app. It takes no game. */

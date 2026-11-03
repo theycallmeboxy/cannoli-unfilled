@@ -1,6 +1,5 @@
 package dev.cannoli.scorza.server
 
-import android.content.res.AssetManager
 import dev.cannoli.scorza.db.RomsRepository
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import dev.cannoli.scorza.model.LaunchTarget
@@ -21,7 +20,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.io.FileNotFoundException
 
 class GamesResponseTest {
 
@@ -290,15 +288,13 @@ class GamesResponseTest {
         val repo = mockk<RomsRepository>()
         every { repo.allRomsForPlatform("PS") } returns listOf(romInFolder, romLoose)
 
-        val assets = mockk<AssetManager>()
-        every { assets.open(any()) } throws FileNotFoundException()
         val paths = mockk<CannoliPathsProvider>()
         every { paths.root } returns tmp.root
         every { paths.romDir } returns File(tmp.root, "Roms")
         val arcade = mockk<ArcadeTitleLookup>()
         every { arcade.mapFor(any(), any()) } returns emptyMap()
         every { arcade.invalidate(any()) } just Runs
-        val walker = RomDirectoryWalker(paths, assets, arcade)
+        val walker = RomDirectoryWalker(paths, arcade)
 
         val json = GamesResponse.buildList(repo, tmp.root, File(tmp.root, "Roms"), "PS", "PlayStation", walker)
         val parsed = JSONObject(json)

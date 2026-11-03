@@ -1,4 +1,0 @@
-map.txt
-systeminfo.txt
-gamelist.xml
-gameslist.xml

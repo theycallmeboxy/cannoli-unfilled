@@ -3,7 +3,6 @@ package dev.cannoli.scorza.util
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.content.res.AssetManager
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.config.library.EmulatorChoiceEditor
 import dev.cannoli.scorza.config.library.LibraryConfig
@@ -36,7 +35,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
-import java.io.FileNotFoundException
 
 /**
  * A system whose `roms` starts with "/" reads its games from that folder anywhere on the device,
@@ -79,12 +77,10 @@ class AbsoluteRomFolderTest {
         val paths = mockk<CannoliPathsProvider>()
         every { paths.root } returns File(tmp.root, "Cannoli")
         every { paths.romDir } returns romDir
-        val assets = mockk<AssetManager>()
-        every { assets.open(any()) } throws FileNotFoundException()
         val arcade = mockk<ArcadeTitleLookup>()
         every { arcade.mapFor(any(), any()) } returns emptyMap()
         every { arcade.invalidate(any()) } just Runs
-        walker = RomDirectoryWalker(paths, assets, arcade, platformConfig)
+        walker = RomDirectoryWalker(paths, arcade, platformConfig)
         every { apkLauncher.launchWithRom(any(), any(), any(), any()) } returns LaunchResult.Success
     }
 

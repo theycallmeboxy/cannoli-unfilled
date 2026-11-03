@@ -16,7 +16,8 @@ data class Validated(val library: Library, val errors: List<String>)
  * - a system's emulator must be in emulators.json, and the system must give a value for every
  *   placeholder that emulator uses beyond the built-in ones;
  * - the directory's systems and shortcuts must be in systems.json and shortcuts.json;
- * - an override must be under some system's ROM folder and name one of that system's choices.
+ * - an override must be under some system's ROM folder and name one of that system's choices;
+ * - a RomM slug belongs to one system: the first in the file keeps it.
  */
 object LibraryValidator {
 
@@ -31,6 +32,7 @@ object LibraryValidator {
         val goodSystems = systems.mapValuesTo(LinkedHashMap()) { (id, system) ->
             system.copy(emulators = system.emulators.filter { ref -> checkRef(id, ref, emulators, errors) })
         }
+        claimRommSlugs(goodSystems, errors)
         val goodDirectory = checkItems(directory, emptyList(), goodSystems, shortcuts, errors)
         val goodOverrides = LinkedHashMap<String, String>()
         for ((path, choice) in overrides) {
@@ -47,6 +49,20 @@ object LibraryValidator {
             }
         }
         return Validated(Library(emulators, goodSystems, shortcuts, goodDirectory, goodOverrides), errors)
+    }
+
+    /** Drops each RomM slug a system shares with one earlier in the file. */
+    private fun claimRommSlugs(systems: MutableMap<String, GameSystem>, errors: MutableList<String>) {
+        val owners = HashMap<String, String>()
+        for (entry in systems.entries) {
+            val system = entry.value
+            val kept = system.romm.filter { slug ->
+                val owner = owners.putIfAbsent(slug, system.id) ?: return@filter true
+                errors.add("$SYSTEMS: ${system.id}.romm \"$slug\" skipped: $owner already uses it")
+                false
+            }
+            if (kept.size != system.romm.size) entry.setValue(system.copy(romm = kept))
+        }
     }
 
     private fun checkRef(

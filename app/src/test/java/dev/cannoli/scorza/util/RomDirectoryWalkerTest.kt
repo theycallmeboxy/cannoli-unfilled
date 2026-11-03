@@ -1,6 +1,5 @@
 package dev.cannoli.scorza.util
 
-import android.content.res.AssetManager
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import io.mockk.Runs
 import io.mockk.every
@@ -14,7 +13,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.io.FileNotFoundException
 
 class RomDirectoryWalkerTest {
 
@@ -30,8 +28,6 @@ class RomDirectoryWalkerTest {
         root = tempFolder.root
         romsDir = File(root, "Roms").apply { mkdirs() }
 
-        val assets = mockk<AssetManager>()
-        every { assets.open(any()) } throws FileNotFoundException()
 
         val paths = mockk<CannoliPathsProvider>()
         every { paths.root } returns root
@@ -41,7 +37,7 @@ class RomDirectoryWalkerTest {
         every { arcade.mapFor(any(), any()) } returns emptyMap()
         every { arcade.invalidate(any()) } just Runs
 
-        walker = RomDirectoryWalker(paths, assets, arcade)
+        walker = RomDirectoryWalker(paths, arcade)
     }
 
     private fun write(relativePath: String, content: String = "") {

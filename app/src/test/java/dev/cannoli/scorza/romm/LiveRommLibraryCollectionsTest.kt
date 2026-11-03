@@ -9,8 +9,7 @@ import org.junit.Test
 
 class LiveRommLibraryCollectionsTest {
 
-    private val slugMap = RommSlugMap.parse("""{}""")
-    private val platformMap = PlatformMap(slugMap, isSupported = { true })
+    private val platformMap = PlatformMap { null }
 
     private fun client(server: MockWebServer): RommClient {
         val ok = OkHttpClient()

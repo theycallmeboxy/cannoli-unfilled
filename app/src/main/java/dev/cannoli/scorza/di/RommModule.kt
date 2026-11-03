@@ -18,7 +18,6 @@ import dev.cannoli.scorza.romm.RommConnectionStore
 import dev.cannoli.scorza.romm.RommHttp
 import dev.cannoli.scorza.romm.RommImageLoader
 import dev.cannoli.scorza.romm.RommLibrary
-import dev.cannoli.scorza.romm.RommSlugMap
 import dev.cannoli.scorza.romm.cache.CachedRommLibrary
 import dev.cannoli.scorza.romm.cache.RommDatabase
 import dev.cannoli.scorza.romm.cache.RommSyncCoordinator
@@ -63,12 +62,8 @@ object RommModule {
         )
 
     @Provides @Singleton
-    fun provideRommSlugMap(@ApplicationContext context: Context): RommSlugMap =
-        RommSlugMap.load(context.assets)
-
-    @Provides @Singleton
-    fun providePlatformMap(slugMap: RommSlugMap, platformConfig: PlatformConfig): PlatformMap =
-        PlatformMap(slugMap, isSupported = { platformConfig.isKnownTag(it) })
+    fun providePlatformMap(platformConfig: PlatformConfig): PlatformMap =
+        PlatformMap(platformConfig::tagForRommSlug)
 
     @Provides @Singleton
     fun provideRommDatabase(paths: CannoliPathsProvider): RommDatabase =

@@ -10,17 +10,34 @@ This writes, under app/src/main/assets/templates/:
   systems.template.json    every platform, with RetroArch first when it has a core
   shortcuts.template.json  a few worked examples of custom intents
 
+Each system also gets:
+  "extensions"  the file types its RetroArch core takes, from scripts/data/core_extensions.json
+                (each libretro core's supported_extensions); left out, with a _note, for a system
+                with no core
+  "romm"        the RomM platform slugs it matches, from scripts/data/romm_platforms.json
+                (RomM slug -> platform tag)
+
 Cannoli copies these into Config/ on every start and never reads them as config. Run it again
-whenever platforms.json changes:  python3 scripts/gen_config_templates.py
+whenever platforms.json or the data files change:  python3 scripts/gen_config_templates.py
 """
 
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "app" / "src" / "main" / "assets"
 SOURCE = ASSETS / "platforms.json"
 OUT = ASSETS / "templates"
+DATA = Path(__file__).resolve().parent / "data"
+CORE_EXTENSIONS = DATA / "core_extensions.json"
+ROMM_PLATFORMS = DATA / "romm_platforms.json"
+
+# A file type as systems.json takes it. Core info files also list "/" (the core loads a folder).
+FILE_TYPE = re.compile(r"^[a-z0-9][a-z0-9._+-]*$")
+
+NO_CORE_NOTE = ("No RetroArch core to take file types from: add an \"extensions\" list, "
+                "or every file in the folder counts as a game.")
 
 RETROARCH = "retroarch"
 
@@ -116,7 +133,8 @@ SYSTEMS_ABOUT = [
     "Every system Cannoli knows. This file is rewritten on every update and never read as config.",
     "To use one, copy its entry into systems.json, and the emulators it lists from emulators.template.json into emulators.json.",
     "Then place the system in directory.json, e.g. { \"system\": \"GBA\" }, to show it on the menu.",
-    "\"roms\" is its folder under Roms/ (defaults to the key). \"extensions\" limits the file types; leave it out to accept every file.",
+    "\"roms\" is its folder under Roms/ (defaults to the key). \"extensions\" are the file types that count as games; leave it out to accept every file.",
+    "\"romm\" is the RomM platform slug, or a list of them, whose games belong to this system.",
     "\"emulators\" lists what can run it, the first being the default: an emulator name, or an object with \"emulator\" plus values for its placeholders, such as \"core\".",
     "An object can also take a \"name\", which overrides.json and the picker use when the same emulator is listed twice.",
 ]
@@ -206,12 +224,37 @@ def unique_names(packages):
     return out
 
 
+def file_types(cores, core_extensions):
+    """Every file type the cores take, lower case and sorted; empty when none of them is known."""
+    if isinstance(cores, str):
+        cores = [cores]
+    exts = {e.lower().lstrip(".") for core in cores or [] for e in core_extensions.get(core, [])}
+    # RetroArch opens zip and 7z archives itself for any core, so every RetroArch system takes them.
+    if exts:
+        exts |= {"zip", "7z"}
+    return sorted(e for e in exts if FILE_TYPE.match(e))
+
+
+def romm_slugs(romm_platforms):
+    """Platform tag -> its RomM slug, or sorted list of slugs with the one equal to the tag first."""
+    by_tag = {}
+    for slug, tag in romm_platforms.items():
+        by_tag.setdefault(tag, set()).add(slug.lower())
+    out = {}
+    for tag, slugs in by_tag.items():
+        ordered = sorted(slugs, key=lambda s: (s != tag.lower(), s))
+        out[tag] = ordered[0] if len(ordered) == 1 else ordered
+    return out
+
+
 def canonical(intent):
     return json.dumps(intent, sort_keys=True)
 
 
 def main():
     platforms = json.loads(SOURCE.read_text())
+    core_extensions = json.loads(CORE_EXTENSIONS.read_text())
+    romm = romm_slugs(json.loads(ROMM_PLATFORMS.read_text()))
     templates = platforms.get("apps", {})
     if RETROARCH not in templates:
         raise SystemExit("platforms.json has no apps.retroarch template")
@@ -267,9 +310,16 @@ def main():
     for tag, entry in platforms.items():
         if tag == "apps":
             continue
-        system = {"name": entry.get("name", tag), "roms": tag}
-        if "extensions" in entry:
-            system["extensions"] = entry["extensions"]
+        system = {}
+        exts = entry.get("extensions") or file_types(entry.get("core"), core_extensions)
+        if not exts:
+            system["_note"] = NO_CORE_NOTE
+        system["name"] = entry.get("name", tag)
+        system["roms"] = tag
+        if exts:
+            system["extensions"] = exts
+        if tag in romm:
+            system["romm"] = romm[tag]
         if entry.get("arcade"):
             system["arcade"] = True
         ems = []

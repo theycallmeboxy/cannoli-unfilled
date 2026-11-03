@@ -1,10 +1,8 @@
 package dev.cannoli.scorza.di
 
-import android.content.Context
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import dev.cannoli.scorza.config.PlatformConfig
 import dev.cannoli.scorza.db.AppsRepository
@@ -40,9 +38,8 @@ object DatabaseModule {
     fun provideRomDirectoryWalker(
         paths: CannoliPathsProvider,
         arcadeTitleLookup: ArcadeTitleLookup,
-        @ApplicationContext context: Context,
         platformConfig: PlatformConfig,
-    ): RomDirectoryWalker = RomDirectoryWalker(paths, context.assets, arcadeTitleLookup, platformConfig)
+    ): RomDirectoryWalker = RomDirectoryWalker(paths, arcadeTitleLookup, platformConfig)
 
     @Provides @Singleton
     fun provideRomScanner(

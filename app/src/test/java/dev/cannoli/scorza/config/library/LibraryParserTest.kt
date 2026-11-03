@@ -118,6 +118,21 @@ class LibraryParserTest {
         assertTrue(p.errors.any { "\"rom_path\" ignored" in it })
     }
 
+    @Test fun `romm takes one slug or a list, lower cased, and defaults to none`() {
+        val p = LibraryParser.parseSystems(
+            """{ "GBA": { "romm": " GBA " },
+                 "SNES": { "romm": [ "snes", "SFC", "snes", "" ] },
+                 "NES": { },
+                 "BAD": { "romm": 5 }, "BAD2": { "romm": [ "x", 3 ] } }"""
+        )
+        assertEquals(listOf("gba"), p.value.getValue("GBA").romm)
+        assertEquals(listOf("snes", "sfc"), p.value.getValue("SNES").romm)
+        assertTrue(p.value.getValue("NES").romm.isEmpty())
+        assertFalse("BAD" in p.value || "BAD2" in p.value)
+        assertEquals(p.errors.toString(), 2, p.errors.size)
+        assertTrue(p.errors.toString(), p.errors.all { "\"romm\"" in it })
+    }
+
     // ---- shortcuts.json ----
 
     @Test fun `shortcuts default to MAIN and no mime type`() {

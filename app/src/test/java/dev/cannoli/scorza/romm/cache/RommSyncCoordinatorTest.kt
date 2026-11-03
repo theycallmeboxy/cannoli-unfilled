@@ -2,7 +2,6 @@ package dev.cannoli.scorza.romm.cache
 
 import dev.cannoli.scorza.romm.PlatformMap
 import dev.cannoli.scorza.romm.RommClient
-import dev.cannoli.scorza.romm.RommSlugMap
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
@@ -34,7 +33,7 @@ class RommSyncCoordinatorTest {
     // The slug map maps snes -> SNES; isSupported accepts every tag.
     private fun coordinator(): RommSyncCoordinator {
         val client = RommClient({ server.url("/").toString().trimEnd('/') }, { OkHttpClient() })
-        val platformMap = PlatformMap(RommSlugMap.parse("""{"snes":"SNES"}""")) { true }
+        val platformMap = PlatformMap { slug -> "SNES".takeIf { slug == "snes" } }
         return RommSyncCoordinator(client, platformMap, db)
     }
 

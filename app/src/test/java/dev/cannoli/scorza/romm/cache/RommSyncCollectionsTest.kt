@@ -3,7 +3,6 @@ package dev.cannoli.scorza.romm.cache
 import dev.cannoli.scorza.romm.PlatformMap
 import dev.cannoli.scorza.romm.RommClient
 import dev.cannoli.scorza.romm.RommCollectionGroup
-import dev.cannoli.scorza.romm.RommSlugMap
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
@@ -36,7 +35,7 @@ class RommSyncCollectionsTest {
 
     private fun coordinator(groups: Set<RommCollectionGroup> = setOf(RommCollectionGroup.USER)): RommSyncCoordinator {
         val client = RommClient({ server.url("/").toString().trimEnd('/') }, { OkHttpClient() })
-        val platformMap = PlatformMap(RommSlugMap.parse("""{"snes":"SNES"}""")) { true }
+        val platformMap = PlatformMap { slug -> "SNES".takeIf { slug == "snes" } }
         return RommSyncCoordinator(client, platformMap, db, enabledGroups = { groups })
     }
 

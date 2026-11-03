@@ -10,8 +10,7 @@ import org.junit.Test
 
 class LiveRommLibraryTest {
 
-    private val slugMap = RommSlugMap.parse("""{"snes":"SNES"}""")
-    private val platformMap = PlatformMap(slugMap, isSupported = { true })
+    private val platformMap = PlatformMap { slug -> "SNES".takeIf { slug == "snes" } }
 
     @Test fun `platforms maps and filters client dtos`() = runTest {
         val client = mockk<RommClient>()

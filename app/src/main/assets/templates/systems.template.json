@@ -3,13 +3,22 @@
     "Every system Cannoli knows. This file is rewritten on every update and never read as config.",
     "To use one, copy its entry into systems.json, and the emulators it lists from emulators.template.json into emulators.json.",
     "Then place the system in directory.json, e.g. { \"system\": \"GBA\" }, to show it on the menu.",
-    "\"roms\" is its folder under Roms/ (defaults to the key). \"extensions\" limits the file types; leave it out to accept every file.",
+    "\"roms\" is its folder under Roms/ (defaults to the key). \"extensions\" are the file types that count as games; leave it out to accept every file.",
+    "\"romm\" is the RomM platform slug, or a list of them, whose games belong to this system.",
     "\"emulators\" lists what can run it, the first being the default: an emulator name, or an object with \"emulator\" plus values for its placeholders, such as \"core\".",
     "An object can also take a \"name\", which overrides.json and the picker use when the same emulator is listed twice."
   ],
   "GB": {
     "name": "Game Boy",
     "roms": "GB",
+    "extensions": [
+      "7z",
+      "dmg",
+      "gb",
+      "gbc",
+      "zip"
+    ],
+    "romm": "gb",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -26,6 +35,14 @@
   "GBC": {
     "name": "Game Boy Color",
     "roms": "GBC",
+    "extensions": [
+      "7z",
+      "dmg",
+      "gb",
+      "gbc",
+      "zip"
+    ],
+    "romm": "gbc",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -42,6 +59,14 @@
   "GBA": {
     "name": "Game Boy Advance",
     "roms": "GBA",
+    "extensions": [
+      "7z",
+      "gb",
+      "gba",
+      "gbc",
+      "zip"
+    ],
+    "romm": "gba",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -59,6 +84,18 @@
   "NES": {
     "name": "Nintendo Entertainment System",
     "roms": "NES",
+    "extensions": [
+      "7z",
+      "fds",
+      "nes",
+      "unf",
+      "unif",
+      "zip"
+    ],
+    "romm": [
+      "nes",
+      "famicom"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -72,6 +109,15 @@
   "FDS": {
     "name": "Famicom Disk System",
     "roms": "FDS",
+    "extensions": [
+      "7z",
+      "fds",
+      "nes",
+      "unf",
+      "unif",
+      "zip"
+    ],
+    "romm": "fds",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -85,6 +131,22 @@
   "SNES": {
     "name": "Super Nintendo Entertainment System",
     "roms": "SNES",
+    "extensions": [
+      "7z",
+      "bs",
+      "fig",
+      "sfc",
+      "smc",
+      "st",
+      "swc",
+      "zip"
+    ],
+    "romm": [
+      "snes",
+      "sfam",
+      "sfc",
+      "super-famicom"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -94,8 +156,10 @@
     ]
   },
   "N64": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "Nintendo 64",
     "roms": "N64",
+    "romm": "n64",
     "emulators": [
       "fzurita-pro",
       "fzurita",
@@ -107,6 +171,14 @@
   "NDS": {
     "name": "Nintendo DS",
     "roms": "NDS",
+    "extensions": [
+      "7z",
+      "dsi",
+      "ids",
+      "nds",
+      "zip"
+    ],
+    "romm": "nds",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -123,6 +195,30 @@
   "GG": {
     "name": "Game Gear",
     "roms": "GG",
+    "extensions": [
+      "68k",
+      "7z",
+      "bin",
+      "bms",
+      "chd",
+      "cue",
+      "gen",
+      "gg",
+      "iso",
+      "m3u",
+      "md",
+      "mdx",
+      "sg",
+      "sgd",
+      "smd",
+      "sms",
+      "zip"
+    ],
+    "romm": [
+      "gg",
+      "game-gear",
+      "gamegear"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -136,6 +232,31 @@
   "SMS": {
     "name": "Master System",
     "roms": "SMS",
+    "extensions": [
+      "68k",
+      "7z",
+      "bin",
+      "bms",
+      "chd",
+      "cue",
+      "gen",
+      "gg",
+      "iso",
+      "m3u",
+      "md",
+      "mdx",
+      "sg",
+      "sgd",
+      "smd",
+      "sms",
+      "zip"
+    ],
+    "romm": [
+      "sms",
+      "master-system",
+      "mastersystem",
+      "ms"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -150,6 +271,30 @@
   "MD": {
     "name": "Sega Genesis",
     "roms": "MD",
+    "extensions": [
+      "68k",
+      "7z",
+      "bin",
+      "bms",
+      "chd",
+      "cue",
+      "gen",
+      "gg",
+      "iso",
+      "m3u",
+      "md",
+      "mdx",
+      "sg",
+      "sgd",
+      "smd",
+      "sms",
+      "zip"
+    ],
+    "romm": [
+      "md",
+      "genesis",
+      "megadrive"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -163,6 +308,29 @@
   "SG1000": {
     "name": "Sega SG-1000",
     "roms": "SG1000",
+    "extensions": [
+      "68k",
+      "7z",
+      "bin",
+      "bms",
+      "chd",
+      "cue",
+      "gen",
+      "gg",
+      "iso",
+      "m3u",
+      "md",
+      "mdx",
+      "sg",
+      "sgd",
+      "smd",
+      "sms",
+      "zip"
+    ],
+    "romm": [
+      "sg1000",
+      "sg-1000"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -174,6 +342,31 @@
   "32X": {
     "name": "Sega 32X",
     "roms": "32X",
+    "extensions": [
+      "32x",
+      "68k",
+      "7z",
+      "bin",
+      "chd",
+      "cue",
+      "gen",
+      "gg",
+      "iso",
+      "m3u",
+      "md",
+      "pco",
+      "sc",
+      "sg",
+      "sgd",
+      "smd",
+      "sms",
+      "zip"
+    ],
+    "romm": [
+      "32x",
+      "sega32",
+      "sega32x"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -184,6 +377,29 @@
   "SEGACD": {
     "name": "Sega CD",
     "roms": "SEGACD",
+    "extensions": [
+      "68k",
+      "7z",
+      "bin",
+      "bms",
+      "chd",
+      "cue",
+      "gen",
+      "gg",
+      "iso",
+      "m3u",
+      "md",
+      "mdx",
+      "sg",
+      "sgd",
+      "smd",
+      "sms",
+      "zip"
+    ],
+    "romm": [
+      "segacd",
+      "sega-cd"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -197,6 +413,16 @@
   "SATURN": {
     "name": "Sega Saturn",
     "roms": "SATURN",
+    "extensions": [
+      "7z",
+      "ccd",
+      "chd",
+      "cue",
+      "m3u",
+      "toc",
+      "zip"
+    ],
+    "romm": "saturn",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -210,6 +436,28 @@
   "PS": {
     "name": "PlayStation",
     "roms": "PS",
+    "extensions": [
+      "7z",
+      "bin",
+      "cbn",
+      "ccd",
+      "chd",
+      "cue",
+      "exe",
+      "img",
+      "iso",
+      "m3u",
+      "mdf",
+      "pbp",
+      "toc",
+      "zip"
+    ],
+    "romm": [
+      "ps",
+      "playstation",
+      "ps1",
+      "psx"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -223,6 +471,17 @@
   "PSP": {
     "name": "PSP",
     "roms": "PSP",
+    "extensions": [
+      "7z",
+      "chd",
+      "cso",
+      "elf",
+      "iso",
+      "pbp",
+      "prx",
+      "zip"
+    ],
+    "romm": "psp",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -235,6 +494,23 @@
   "DC": {
     "name": "Dreamcast",
     "roms": "DC",
+    "extensions": [
+      "7z",
+      "bin",
+      "cdi",
+      "chd",
+      "cue",
+      "dat",
+      "elf",
+      "gdi",
+      "lst",
+      "m3u",
+      "zip"
+    ],
+    "romm": [
+      "dc",
+      "dreamcast"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -247,6 +523,14 @@
   "LYNX": {
     "name": "Atari Lynx",
     "roms": "LYNX",
+    "extensions": [
+      "7z",
+      "lnx",
+      "lyx",
+      "o",
+      "zip"
+    ],
+    "romm": "lynx",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -258,6 +542,18 @@
   "JAGUAR": {
     "name": "Atari Jaguar",
     "roms": "JAGUAR",
+    "extensions": [
+      "7z",
+      "abs",
+      "bin",
+      "cof",
+      "j64",
+      "jag",
+      "prg",
+      "rom",
+      "zip"
+    ],
+    "romm": "jaguar",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -269,6 +565,13 @@
   "ATARI2600": {
     "name": "Atari 2600",
     "roms": "ATARI2600",
+    "extensions": [
+      "7z",
+      "a26",
+      "bin",
+      "zip"
+    ],
+    "romm": "atari2600",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -280,6 +583,23 @@
   "ATARI5200": {
     "name": "Atari 5200",
     "roms": "ATARI5200",
+    "extensions": [
+      "7z",
+      "a52",
+      "atr",
+      "atx",
+      "bin",
+      "car",
+      "cas",
+      "com",
+      "dcm",
+      "m3u",
+      "rom",
+      "xex",
+      "xfd",
+      "zip"
+    ],
+    "romm": "atari5200",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -290,6 +610,14 @@
   "ATARI7800": {
     "name": "Atari 7800",
     "roms": "ATARI7800",
+    "extensions": [
+      "7z",
+      "a78",
+      "bin",
+      "cdf",
+      "zip"
+    ],
+    "romm": "atari7800",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -300,6 +628,21 @@
   "PCE": {
     "name": "PC Engine",
     "roms": "PCE",
+    "extensions": [
+      "7z",
+      "ccd",
+      "chd",
+      "cue",
+      "m3u",
+      "pce",
+      "toc",
+      "zip"
+    ],
+    "romm": [
+      "pce",
+      "tg16",
+      "turbografx16"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -311,6 +654,18 @@
   "PCFX": {
     "name": "PC-FX",
     "roms": "PCFX",
+    "extensions": [
+      "7z",
+      "ccd",
+      "chd",
+      "cue",
+      "toc",
+      "zip"
+    ],
+    "romm": [
+      "pcfx",
+      "pc-fx"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -319,8 +674,14 @@
     ]
   },
   "PICO8": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "PICO-8",
     "roms": "PICO8",
+    "romm": [
+      "pico8",
+      "pico",
+      "pico-8"
+    ],
     "emulators": [
       "pico8"
     ]
@@ -328,6 +689,18 @@
   "NGP": {
     "name": "Neo Geo Pocket",
     "roms": "NGP",
+    "extensions": [
+      "7z",
+      "ngc",
+      "ngp",
+      "ngpc",
+      "npc",
+      "zip"
+    ],
+    "romm": [
+      "ngp",
+      "neo-geo-pocket"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -339,6 +712,18 @@
   "NGPC": {
     "name": "Neo Geo Pocket Color",
     "roms": "NGPC",
+    "extensions": [
+      "7z",
+      "ngc",
+      "ngp",
+      "ngpc",
+      "npc",
+      "zip"
+    ],
+    "romm": [
+      "ngpc",
+      "neo-geo-pocket-color"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -350,6 +735,18 @@
   "WS": {
     "name": "WonderSwan",
     "roms": "WS",
+    "extensions": [
+      "7z",
+      "pc2",
+      "pcv2",
+      "ws",
+      "wsc",
+      "zip"
+    ],
+    "romm": [
+      "ws",
+      "wonderswan"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -361,6 +758,18 @@
   "WSC": {
     "name": "WonderSwan Color",
     "roms": "WSC",
+    "extensions": [
+      "7z",
+      "pc2",
+      "pcv2",
+      "ws",
+      "wsc",
+      "zip"
+    ],
+    "romm": [
+      "wsc",
+      "wonderswan-color"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -372,6 +781,18 @@
   "NEOGEO": {
     "name": "Neo Geo",
     "roms": "NEOGEO",
+    "extensions": [
+      "7z",
+      "ccd",
+      "cue",
+      "zip"
+    ],
+    "romm": [
+      "neogeo",
+      "neo-geo",
+      "neogeoaes",
+      "neogeomvs"
+    ],
     "arcade": true,
     "emulators": [
       {
@@ -386,6 +807,14 @@
   "MAME": {
     "name": "Arcade",
     "roms": "MAME",
+    "extensions": [
+      "7z",
+      "zip"
+    ],
+    "romm": [
+      "mame",
+      "arcade"
+    ],
     "arcade": true,
     "emulators": [
       {
@@ -401,6 +830,17 @@
   "FBN": {
     "name": "Arcade",
     "roms": "FBN",
+    "extensions": [
+      "7z",
+      "ccd",
+      "cue",
+      "zip"
+    ],
+    "romm": [
+      "fbn",
+      "fba",
+      "fbneo"
+    ],
     "arcade": true,
     "emulators": [
       {
@@ -416,6 +856,17 @@
   "VIRTUALBOY": {
     "name": "Virtual Boy",
     "roms": "VIRTUALBOY",
+    "extensions": [
+      "7z",
+      "bin",
+      "vb",
+      "vboy",
+      "zip"
+    ],
+    "romm": [
+      "virtualboy",
+      "virtual-boy"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -427,6 +878,15 @@
   "POKEMINI": {
     "name": "Pokemon Mini",
     "roms": "POKEMINI",
+    "extensions": [
+      "7z",
+      "min",
+      "zip"
+    ],
+    "romm": [
+      "pokemini",
+      "pokemon-mini"
+    ],
     "emulators": [
       {
         "emulator": "retroarch",
@@ -437,6 +897,22 @@
   "COLECOVISION": {
     "name": "ColecoVision",
     "roms": "COLECOVISION",
+    "extensions": [
+      "7z",
+      "cas",
+      "col",
+      "dsk",
+      "m3u",
+      "mx1",
+      "mx2",
+      "ri",
+      "rom",
+      "sc",
+      "sf",
+      "sg",
+      "zip"
+    ],
+    "romm": "colecovision",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -450,6 +926,13 @@
   "VECTREX": {
     "name": "Vectrex",
     "roms": "VECTREX",
+    "extensions": [
+      "7z",
+      "bin",
+      "vec",
+      "zip"
+    ],
+    "romm": "vectrex",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -460,6 +943,14 @@
   "INTELLIVISION": {
     "name": "Intellivision",
     "roms": "INTELLIVISION",
+    "extensions": [
+      "7z",
+      "bin",
+      "int",
+      "rom",
+      "zip"
+    ],
+    "romm": "intellivision",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -470,6 +961,16 @@
   "SUPERGRAFX": {
     "name": "PC Engine SuperGrafx",
     "roms": "SUPERGRAFX",
+    "extensions": [
+      "7z",
+      "ccd",
+      "chd",
+      "cue",
+      "pce",
+      "sgx",
+      "zip"
+    ],
+    "romm": "supergrafx",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -481,6 +982,27 @@
   "DOS": {
     "name": "DOS",
     "roms": "DOS",
+    "extensions": [
+      "7z",
+      "bat",
+      "chd",
+      "com",
+      "conf",
+      "cue",
+      "dosz",
+      "exe",
+      "ima",
+      "img",
+      "ins",
+      "iso",
+      "jrc",
+      "m3u",
+      "m3u8",
+      "tc",
+      "vhd",
+      "zip"
+    ],
+    "romm": "dos",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -493,6 +1015,12 @@
   "SCUMMVM": {
     "name": "ScummVM",
     "roms": "SCUMMVM",
+    "extensions": [
+      "7z",
+      "scummvm",
+      "zip"
+    ],
+    "romm": "scummvm",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -504,6 +1032,30 @@
   "AMIGA": {
     "name": "Amiga",
     "roms": "AMIGA",
+    "extensions": [
+      "7z",
+      "adf",
+      "adz",
+      "ccd",
+      "chd",
+      "cue",
+      "dms",
+      "fdi",
+      "hdf",
+      "hdz",
+      "info",
+      "ipf",
+      "iso",
+      "lha",
+      "m3u",
+      "mds",
+      "nrg",
+      "rp9",
+      "slave",
+      "uae",
+      "zip"
+    ],
+    "romm": "amiga",
     "emulators": [
       {
         "emulator": "retroarch",
@@ -512,6 +1064,7 @@
     ]
   },
   "PC": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "PC",
     "roms": "PC",
     "emulators": [
@@ -520,62 +1073,91 @@
     ]
   },
   "PS2": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "PlayStation 2",
     "roms": "PS2",
+    "romm": "ps2",
     "emulators": [
       "aethersx2-android",
       "armsx2"
     ]
   },
   "GC": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "GameCube",
     "roms": "GC",
+    "romm": [
+      "gamecube",
+      "ngc"
+    ],
     "emulators": [
       "dolphinemu",
       "mmjr"
     ]
   },
   "WII": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "Wii",
     "roms": "WII",
+    "romm": "wii",
     "emulators": [
       "dolphinemu",
       "mmjr"
     ]
   },
   "3DS": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "Nintendo 3DS",
     "roms": "3DS",
+    "romm": [
+      "3ds",
+      "new-nintendo-3ds"
+    ],
     "emulators": [
       "azahar"
     ]
   },
   "WIIU": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "Wii U",
     "roms": "WIIU",
+    "romm": [
+      "wiiu",
+      "wii-u"
+    ],
     "emulators": [
       "cemu"
     ]
   },
   "PSVITA": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "PS Vita",
     "roms": "PSVITA",
+    "romm": [
+      "psvita",
+      "psv",
+      "vita"
+    ],
     "emulators": [
       "vita3k-emulator",
       "ikhoeyzx"
     ]
   },
   "PS3": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "PlayStation 3",
     "roms": "PS3",
+    "romm": "ps3",
     "emulators": [
       "aps3e-premium",
       "aps3e"
     ]
   },
   "NSW": {
+    "_note": "No RetroArch core to take file types from: add an \"extensions\" list, or every file in the folder counts as a game.",
     "name": "Nintendo Switch",
     "roms": "NSW",
+    "romm": "switch",
     "emulators": [
       "eden-emulator",
       "eden-emulator-nightly"

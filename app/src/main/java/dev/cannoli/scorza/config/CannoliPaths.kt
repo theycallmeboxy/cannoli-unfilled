@@ -41,8 +41,6 @@ class CannoliPaths(val root: File) {
     val rommDatabase: File get() = File(configDir, "romm.db")
     val settingsJson: File get() = File(configDir, "settings.json")
     val arcadeMapFile: File get() = File(configDir, "arcade_map.txt")
-    val ignoreExtensionsRoms: File get() = File(configDir, "ignore_extensions_roms.txt")
-    val ignoreFilesRoms: File get() = File(configDir, "ignore_files_roms.txt")
     val recentlyPlayedFile: File get() = File(configState, "recently_played.txt")
     val guidePositionsFile: File get() = File(configState, "guide_positions.ini")
     val raGameIdsFile: File get() = File(configRetroAchievements, "ra_game_ids.txt")

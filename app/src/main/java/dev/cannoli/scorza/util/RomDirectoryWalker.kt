@@ -1,6 +1,5 @@
 package dev.cannoli.scorza.util
 
-import android.content.res.AssetManager
 import dev.cannoli.scorza.config.CannoliPaths
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import java.io.File
@@ -10,7 +9,7 @@ interface RomLayout {
     /** The platform's folder under Roms/, or an absolute folder when it starts with "/" (see [RomPaths]). */
     fun folderFor(tag: String): String = tag
 
-    /** Lower case, no dot. Null accepts every file but the global ignore list. */
+    /** The file types that count as games: lower case, no dot. Null accepts every file. */
     fun extensionsFor(tag: String): Set<String>? = null
 
     /** Every platform folder that is absolute rather than under Roms/. */
@@ -20,13 +19,13 @@ interface RomLayout {
 /**
  * Walks a ROM directory and returns the in-memory list of ROMs that should exist for a platform.
  * Reorganizes loose multi-disc sets into per-game subfolders with a generated `<base>.m3u` so
- * libretro cores resolve disc paths correctly. Honors ignore lists, m3u/cue/stem-matching-rom
- * dir launches (collapsing only when all top-level files share the folder's name), disc grouping,
- * name-map overrides, and tag/region splitting.
+ * libretro cores resolve disc paths correctly. Honors each system's file types, skips hidden
+ * (dot) files and folders, and handles m3u/cue/stem-matching-rom dir launches (collapsing only
+ * when all top-level files share the folder's name), disc grouping, name-map overrides, and
+ * tag/region splitting.
  */
 class RomDirectoryWalker(
     private val pathsProvider: CannoliPathsProvider,
-    private val assets: AssetManager,
     private val arcadeTitleLookup: ArcadeTitleLookup,
     private val layout: RomLayout = object : RomLayout {},
 ) {
@@ -40,10 +39,6 @@ class RomDirectoryWalker(
 
     private val categoryFolderCache = java.util.concurrent.ConcurrentHashMap<String, CachedFolders>()
 
-    @Volatile private var ignoredExtensions: Set<String> = emptySet()
-    @Volatile private var ignoredFiles: Set<String> = emptySet()
-    @Volatile private var ignoreListsLoaded = false
-
     data class ScannedRom(
         val relativePath: String,
         val displayName: String,
@@ -54,19 +49,8 @@ class RomDirectoryWalker(
      *  referenced (the first disc's path), `newRelPath` is the generated m3u. */
     data class RekeyMove(val oldRelPath: String, val newRelPath: String)
 
-    private fun ensureIgnoreLists() {
-        if (ignoreListsLoaded) return
-        val paths = CannoliPaths(cannoliRoot)
-        seedFromAsset(assets, "ignore_extensions_roms.txt", paths.ignoreExtensionsRoms)
-        seedFromAsset(assets, "ignore_files_roms.txt", paths.ignoreFilesRoms)
-        ignoredExtensions = readSetLowercase(paths.ignoreExtensionsRoms) { it.removePrefix(".") }
-        ignoredFiles = readSetLowercase(paths.ignoreFilesRoms) { it }
-        ignoreListsLoaded = true
-    }
-
     /** Returns null when the platform directory does not exist. */
     fun walk(platformTag: String, isArcade: Boolean): WalkResult? {
-        ensureIgnoreLists()
         val tag = platformTag.uppercase()
         val tagDir = resolveTagDir(tag) ?: return null
         // Paths are keyed by the configured folder name, which for a system whose folder is its
@@ -122,7 +106,6 @@ class RomDirectoryWalker(
     }
 
     private fun walkCategoryFolders(tagDir: File, isArcade: Boolean): List<String> {
-        ensureIgnoreLists()
         val out = mutableListOf<String>()
         fun walk(dir: File, prefix: String, depth: Int) {
             if (depth > MAX_DEPTH) return
@@ -267,7 +250,7 @@ class RomDirectoryWalker(
         depth: Int,
     ) {
         if (depth > MAX_DEPTH) return
-        val entries = dir.listFiles()?.filter { !it.name.startsWith(".") && !isIgnored(it) } ?: return
+        val entries = dir.listFiles()?.filter { !it.name.startsWith(".") } ?: return
         val (subdirs, files) = entries.partition { it.isDirectory }
 
         for (subdir in subdirs) {
@@ -285,7 +268,7 @@ class RomDirectoryWalker(
 
         if (files.isEmpty()) return
 
-        val romFiles = files.filter { !isIgnoredExtension(it) && accepts(it, extensions) }
+        val romFiles = files.filter { accepts(it, extensions) }
         val discCandidates = romFiles.filter { discRegex.containsMatchIn(it.nameWithoutExtension) }
         val discGroups = discCandidates.groupBy { discRegex.replace(it.nameWithoutExtension, "").trim() }
         val m3uByBase = romFiles
@@ -320,10 +303,10 @@ class RomDirectoryWalker(
     }
 
     private fun findDirLaunchFile(dir: File): DirLaunch? {
-        File(dir, "${dir.name}.m3u").takeIf { it.exists() && !isIgnored(it) }?.let { return DirLaunch(it) }
-        File(dir, "${dir.name}.cue").takeIf { it.exists() && !isIgnored(it) }?.let { return DirLaunch(it) }
-        dir.listFiles()?.firstOrNull { it.extension.equals("cue", ignoreCase = true) && !isIgnored(it) }?.let { return DirLaunch(it) }
-        val children = dir.listFiles()?.filter { it.isFile && !isIgnored(it) } ?: return null
+        File(dir, "${dir.name}.m3u").takeIf { it.exists() }?.let { return DirLaunch(it) }
+        File(dir, "${dir.name}.cue").takeIf { it.exists() }?.let { return DirLaunch(it) }
+        dir.listFiles()?.firstOrNull { it.extension.equals("cue", ignoreCase = true) }?.let { return DirLaunch(it) }
+        val children = dir.listFiles()?.filter { it.isFile } ?: return null
         val discs = children.filter { discRegex.containsMatchIn(it.nameWithoutExtension) }
         if (discs.size > 1) {
             return DirLaunch(discs.sortedBy { it.name }.first())
@@ -343,14 +326,13 @@ class RomDirectoryWalker(
         depth: Int,
     ) {
         if (depth > MAX_DEPTH) return
-        val entries = dir.listFiles()?.filter { !it.name.startsWith(".") && !isIgnored(it) } ?: return
-        val (subdirs, files) = entries.partition { it.isDirectory }
+        val entries = dir.listFiles()?.filter { !it.name.startsWith(".") } ?: return
+        val (subdirs, romFiles) = entries.partition { it.isDirectory }
 
         for (subdir in subdirs) {
             organizeDir(subdir, "$relPrefix${subdir.name}${File.separator}", tag, moves, depth + 1)
         }
 
-        val romFiles = files.filterNot { isIgnoredExtension(it) }
         val m3uByBase = romFiles.filter { it.extension.equals("m3u", ignoreCase = true) }
             .associateBy { it.nameWithoutExtension }
 
@@ -689,30 +671,16 @@ class RomDirectoryWalker(
         }
     }
 
-    private fun isIgnored(file: File): Boolean =
-        file.name.lowercase() in ignoredFiles ||
-            (file.isFile && file.extension.lowercase() in ignoredExtensions)
-
-    // A system's own file types, when it lists them. A .p8.png cartridge counts as .png.
-    private fun accepts(file: File, extensions: Set<String>?): Boolean =
-        extensions == null || file.extension.lowercase() in extensions
-
-    private fun isIgnoredExtension(file: File): Boolean =
-        file.extension.lowercase() in ignoredExtensions
-
-    private fun seedFromAsset(assets: AssetManager, name: String, target: File) {
-        if (target.exists()) return
-        try {
-            target.parentFile?.mkdirs()
-            assets.open(name).use { input -> target.outputStream().use { input.copyTo(it) } }
-        } catch (_: Throwable) { }
-    }
-
-    private fun readSetLowercase(file: File, transform: (String) -> String): Set<String> {
-        if (!file.exists()) return emptySet()
-        return try {
-            file.readLines().map { transform(it.trim().lowercase()) }.filter { it.isNotEmpty() }.toSet()
-        } catch (_: Throwable) { emptySet() }
+    // A system's own file types, when it lists them; without them every file counts. A .p8.png
+    // cartridge counts as .png. An m3u the system doesn't list still counts when one of its discs
+    // does, so the playlists the organizer writes for multi-disc sets keep working.
+    private fun accepts(file: File, extensions: Set<String>?): Boolean {
+        if (extensions == null) return true
+        val ext = file.extension.lowercase()
+        if (ext in extensions) return true
+        if (ext != "m3u") return false
+        val parent = file.parentFile ?: return false
+        return readM3uEntries(file).any { File(parent, it).extension.lowercase() in extensions }
     }
 
     private companion object {

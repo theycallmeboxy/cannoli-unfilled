@@ -28,9 +28,9 @@ class PlatformConfigSystemsTest {
 
     private val systems = """
         {
-          "GBA": { "name": "Game Boy Advance", "roms": "Game Boy Advance", "extensions": ["gba", "zip"],
+          "GBA": { "name": "Game Boy Advance", "roms": "Game Boy Advance", "extensions": ["gba", "zip"], "romm": "gba",
             "emulators": [ { "emulator": "retroarch", "core": "mgba_libretro" }, "pizzaboy" ] },
-          "mame": { "name": "Arcade", "arcade": true, "emulators": [ { "emulator": "retroarch", "core": "mame_libretro" } ] },
+          "mame": { "name": "Arcade", "arcade": true, "romm": ["mame", "arcade"], "emulators": [ { "emulator": "retroarch", "core": "mame_libretro" } ] },
           "NES": { }
         }
     """.trimIndent()
@@ -52,6 +52,15 @@ class PlatformConfigSystemsTest {
         assertTrue(c.isKnownTag("gba"))
         assertTrue(c.isKnownTag("MAME"))
         assertFalse(c.isKnownTag("SNES"))
+    }
+
+    @Test fun `a RomM slug resolves to its system's tag, ignoring case`() {
+        val c = config()
+        assertEquals("GBA", c.tagForRommSlug("gba"))
+        assertEquals("MAME", c.tagForRommSlug("Arcade"))
+        assertEquals("MAME", c.tagForRommSlug("mame"))
+        assertNull(c.tagForRommSlug("nes"))
+        assertNull(c.tagForRommSlug("snes"))
     }
 
     @Test fun `an empty systems file knows no platforms`() {

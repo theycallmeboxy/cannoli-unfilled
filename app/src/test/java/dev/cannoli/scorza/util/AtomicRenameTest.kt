@@ -1,6 +1,5 @@
 package dev.cannoli.scorza.util
 
-import android.content.res.AssetManager
 import dev.cannoli.scorza.di.CannoliPathsProvider
 import io.mockk.Runs
 import io.mockk.every
@@ -15,7 +14,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import java.io.File
-import java.io.FileNotFoundException
 
 class AtomicRenameTest {
 
@@ -34,13 +32,11 @@ class AtomicRenameTest {
 
     private fun buildWalker(root: File): RomDirectoryWalker {
         val romsDir = File(root, "Roms").also { it.mkdirs() }
-        val assets = mockk<AssetManager>()
-        every { assets.open(any()) } throws FileNotFoundException()
         val paths = buildPaths(root)
         val arcade = mockk<ArcadeTitleLookup>()
         every { arcade.mapFor(any(), any()) } returns emptyMap()
         every { arcade.invalidate(any()) } just Runs
-        return RomDirectoryWalker(paths, assets, arcade)
+        return RomDirectoryWalker(paths, arcade)
     }
 
     @Before fun setUp() {
