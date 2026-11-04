@@ -9,8 +9,6 @@ export default {
   noPlatforms: 'No platforms found. Add ROMs to get started.',
   noMatch: 'No platforms match "{query}".',
   wallpapers: 'Wallpapers',
-  shaders: 'Shaders',
-  overlays: 'Overlays',
   footerIconsPrefix: 'Platform icons courtesy of ',
   footerIconsSuffix: ' (CC BY 4.0).',
   footerPico8Prefix: 'PICO-8 logo courtesy of ',

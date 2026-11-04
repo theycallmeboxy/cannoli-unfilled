@@ -3,8 +3,7 @@ import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { listFiles, listFilesRecursive, uploadFiles, createFolder, deleteFile, moveFile, downloadToDisk, getApps, type FileEntry } from '@/api/client'
-import { isAppTag } from '@/api/platforms'
-import { useLauncherSettings } from '@/composables/useLauncherSettings'
+import { isAppTag, platformName } from '@/api/platforms'
 import { confirm } from '@/lib/confirm'
 import { formatSize, stripExtension, isPreviewable } from '@/lib/format'
 import Button from '@/components/ui/Button.vue'
@@ -13,8 +12,7 @@ import Progress from '@/components/ui/Progress.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import Breadcrumbs, { type Crumb } from '@/components/layout/Breadcrumbs.vue'
 import GamePickerDialog from '@/components/file/GamePickerDialog.vue'
-import ShaderUploadDialog from '@/components/file/ShaderUploadDialog.vue'
-import { ArrowLeft, Upload, File as FileIcon, Folder, FolderPlus, FolderUp, CheckCircle, Trash2, MoveRight, Pencil, ChevronRight, ImagePlus, XCircle, Ban, Loader2, Download, Eye } from 'lucide-vue-next'
+import { ArrowLeft, Upload, File as FileIcon, Folder, FolderPlus, CheckCircle, Trash2, MoveRight, Pencil, ChevronRight, ImagePlus, XCircle, Ban, Loader2, Download, Eye } from 'lucide-vue-next'
 
 const props = defineProps<{
   resource: string
@@ -49,6 +47,7 @@ const moveBrowsePath = ref<string[]>([])
 const moveFolders = ref<string[]>([])
 const moveLoading = ref(false)
 const moveError = ref('')
+const actionError = ref('')
 const renamingEntry = ref<string | null>(null)
 const renameValue = ref('')
 const renameError = ref('')
@@ -58,13 +57,6 @@ const gamePickerLoading = ref(false)
 const gamePickerMode = ref<'folder' | 'upload' | 'art'>('folder')
 const pendingUploadFiles = ref<globalThis.File[]>([])
 const bulkArtInput = ref<HTMLInputElement>()
-const showShaderUpload = ref(false)
-const existingDirNames = computed(() => entries.value.filter(e => e.type === 'dir').map(e => e.name))
-
-function onShaderUploaded() {
-  showShaderUpload.value = false
-  reload()
-}
 
 /** Current subpath segments parsed from route query */
 const subpath = computed<string[]>(() => {
@@ -80,8 +72,8 @@ const resourceLabel = computed(() => {
   if (props.resource === 'fs') return (route.query.label as string) || props.tag || 'fs'
   const labels: Record<string, string> = {
     roms: t('browse.resourceLabel.roms'), art: t('browse.resourceLabel.art'), saves: t('browse.resourceLabel.saves'),
-    states: t('browse.resourceLabel.states'), bios: t('browse.resourceLabel.bios'), wallpapers: t('browse.resourceLabel.wallpapers'),
-    guides: t('browse.resourceLabel.guides'), overlays: t('browse.resourceLabel.overlays'), shaders: t('browse.resourceLabel.shaders'),
+    bios: t('browse.resourceLabel.bios'), wallpapers: t('browse.resourceLabel.wallpapers'),
+    guides: t('browse.resourceLabel.guides'),
   }
   return labels[props.resource] ?? props.resource
 })
@@ -162,12 +154,19 @@ async function pickGame(name: string) {
   }
 
   creatingFolder.value = true
+  actionError.value = ''
   try {
     await createFolder(props.resource, ...apiSegments.value, name)
     openFolder(name)
+  } catch (e) {
+    actionError.value = t('browse.createFolderFailed', { error: errorText(e) })
   } finally {
     creatingFolder.value = false
   }
+}
+
+function errorText(e: unknown): string {
+  return e instanceof Error ? e.message : String(e)
 }
 
 async function load(showLoading = true) {
@@ -202,14 +201,9 @@ function navigateTo(pathSegments: string[]) {
   router.push(routeFor(pathSegments))
 }
 
-const { settings: launcherSettings, load: loadLauncherSettings } = useLauncherSettings()
-loadLauncherSettings()
-
 const tagLabel = computed(() => {
   if (!props.tag) return ''
-  if (props.tag === 'TOOLS') return launcherSettings.value.toolsName
-  if (props.tag === 'PORTS') return launcherSettings.value.portsName
-  return props.tag
+  return isAppTag(props.tag) ? platformName(props.tag) : props.tag
 })
 
 const rootLabel = computed(() => props.resource === 'fs'
@@ -261,6 +255,7 @@ async function doUpload(files: globalThis.File[]) {
   if (!files.length) return
 
   uploading.value = true
+  actionError.value = ''
   uploadCancelled.value = false
   uploadProgress.value = 0
   uploadResult.value = []
@@ -294,16 +289,17 @@ async function doUpload(files: globalThis.File[]) {
         const result = await promise
         uploaded.push(...result.files)
         uploadQueue.value[i]!.status = 'done'
-      } catch {
+      } catch (e) {
         if (uploadCancelled.value) {
           uploadQueue.value[i]!.status = 'cancelled'
           for (let j = i + 1; j < uploadQueue.value.length; j++) {
             uploadQueue.value[j]!.status = 'cancelled'
           }
-        } else {
-          uploadQueue.value[i]!.status = 'failed'
+          break
         }
-        break
+        // One bad file shouldn't stop the rest of a batch.
+        uploadQueue.value[i]!.status = 'failed'
+        actionError.value = t('browse.uploadFailed', { name: file.name, error: errorText(e) })
       } finally {
         abortUpload.value = null
       }
@@ -329,9 +325,12 @@ async function handleDelete(entry: FileEntry) {
     if (!await confirm({ title, confirmLabel: t('common.delete'), destructive: true })) return
   }
   deleting.value = entry.name
+  actionError.value = ''
   try {
     await deleteFile(props.resource, ...apiSegments.value, entry.name)
     await reload()
+  } catch (e) {
+    actionError.value = t('browse.deleteFailed', { name: entry.name, error: errorText(e) })
   } finally {
     deleting.value = null
   }
@@ -339,8 +338,11 @@ async function handleDelete(entry: FileEntry) {
 
 async function handleDownload(name: string) {
   downloading.value = name
+  actionError.value = ''
   try {
     await downloadToDisk(props.resource, [...apiSegments.value, name], name)
+  } catch (e) {
+    actionError.value = t('browse.downloadFailed', { name, error: errorText(e) })
   } finally {
     downloading.value = null
   }
@@ -398,8 +400,8 @@ async function confirmMove() {
     await moveFile(props.resource, fromSegments, destPath)
     cancelMove()
     await reload()
-  } catch {
-    moveError.value = t('browse.moveFailed')
+  } catch (e) {
+    moveError.value = `${t('browse.moveFailed')} (${errorText(e)})`
   }
 }
 
@@ -426,8 +428,8 @@ async function confirmRename() {
     await moveFile(props.resource, fromSegments, destPath)
     cancelRename()
     await reload()
-  } catch {
-    renameError.value = t('browse.renameFailed')
+  } catch (e) {
+    renameError.value = `${t('browse.renameFailed')} (${errorText(e)})`
   }
 }
 
@@ -459,11 +461,14 @@ async function handleCreateFolder() {
   if (!name) return
 
   creatingFolder.value = true
+  actionError.value = ''
   try {
     await createFolder(props.resource, ...apiSegments.value, name)
     newFolderName.value = ''
     showNewFolder.value = false
     openFolder(name)
+  } catch (e) {
+    actionError.value = t('browse.createFolderFailed', { error: errorText(e) })
   } finally {
     creatingFolder.value = false
   }
@@ -488,11 +493,7 @@ onMounted(load)
         <Breadcrumbs :items="crumbs" />
       </div>
       <!-- Right-aligned page action(s) -->
-      <Button v-if="props.resource === 'shaders'" variant="outline" size="sm" class="shrink-0" @click="showShaderUpload = true">
-        <FolderUp class="h-4 w-4" />
-        {{ $t('browse.addShader') }}
-      </Button>
-      <Button v-else-if="!['guides', 'states', 'art', 'bios', 'saves', 'wallpapers', 'shaders'].includes(props.resource)" variant="outline" size="sm" class="shrink-0" @click="showNewFolder = !showNewFolder">
+      <Button v-if="!['guides', 'art', 'bios', 'saves', 'wallpapers'].includes(props.resource)" variant="outline" size="sm" class="shrink-0" @click="showNewFolder = !showNewFolder">
         <FolderPlus class="h-4 w-4" />
         {{ $t('common.newFolder') }}
       </Button>
@@ -509,15 +510,17 @@ onMounted(load)
       </template>
     </div>
 
-    <!-- Empty-state CTA: guides/states with no game selected -->
+    <!-- Empty-state CTA: guides with no game selected -->
     <div
-      v-if="['guides', 'states'].includes(props.resource) && props.tag && !subpath.length"
+      v-if="props.resource === 'guides' && props.tag && !subpath.length"
       class="rounded-xl border-2 border-dashed p-8 text-center cursor-pointer transition-all duration-150 border-border hover:border-accent/50 hover:bg-accent/5"
       @click="openGamePicker('folder')"
     >
       <FolderPlus class="h-8 w-8 mx-auto text-muted-foreground" />
-      <p class="mt-3 text-sm font-medium text-muted-foreground">{{ props.resource === 'guides' ? $t('browse.addGuidesForGame') : $t('browse.addSaveStatesForGame') }}</p>
+      <p class="mt-3 text-sm font-medium text-muted-foreground">{{ $t('browse.addGuidesForGame') }}</p>
     </div>
+
+    <p v-if="actionError" class="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">{{ actionError }}</p>
 
     <!-- New folder input -->
     <div v-if="showNewFolder" class="flex items-center gap-2">
@@ -537,7 +540,7 @@ onMounted(load)
 
     <!-- Upload area -->
     <div
-      v-if="props.resource !== 'shaders' && !(['guides', 'states'].includes(props.resource) && props.tag && !subpath.length) && !(props.resource === 'art' && props.tag)"
+      v-if="!(props.resource === 'guides' && props.tag && !subpath.length) && !(props.resource === 'art' && props.tag)"
       class="rounded-xl border-2 border-dashed p-6 text-center transition-all duration-150"
       :class="dragOver ? 'border-accent bg-accent/5' : 'border-border'"
       @dragover.prevent="dragOver = true"
@@ -607,7 +610,7 @@ onMounted(load)
 
     <!-- File list -->
     <div v-if="loading" class="text-sm text-muted-foreground py-8 text-center">{{ $t('common.loading') }}</div>
-    <div v-else-if="!entries.length && !(['guides', 'states'].includes(props.resource) && props.tag && !subpath.length)" class="text-sm text-muted-foreground py-8 text-center">{{ $t('browse.noFilesYet') }}</div>
+    <div v-else-if="!entries.length && !(props.resource === 'guides' && props.tag && !subpath.length)" class="text-sm text-muted-foreground py-8 text-center">{{ $t('browse.noFilesYet') }}</div>
 
     <!-- Standard file list -->
     <div v-else class="rounded-xl border border-border overflow-hidden">
@@ -755,15 +758,6 @@ onMounted(load)
       @cancel="cancelGamePicker"
       @pick="pickGame"
       @confirm-art="onConfirmArt"
-    />
-
-    <!-- Shader folder uploader -->
-    <ShaderUploadDialog
-      :open="showShaderUpload"
-      :base-segments="apiSegments"
-      :existing-names="existingDirNames"
-      @close="showShaderUpload = false"
-      @uploaded="onShaderUploaded"
     />
   </div>
 </template>

@@ -30,14 +30,6 @@ internal fun KitchenHttpServer.gameGuidesResponse(platformTag: String, base: Str
     return jsonResponse(200, FilesResponse.serializer(), FilesResponse(items))
 }
 
-internal fun KitchenHttpServer.gameCheatsResponse(platformTag: String, base: String): Response {
-    val dir = File(cannoliRoot, "Cheats/$platformTag/$base")
-    val files = dir.listFiles { f -> f.isFile && f.extension.equals("cht", ignoreCase = true) }
-        ?.sortedBy { it.name.lowercase(java.util.Locale.ROOT) } ?: emptyList()
-    val items = files.map { f -> FileEntry(f.name, f.length(), f.lastModified()) }
-    return jsonResponse(200, FilesResponse.serializer(), FilesResponse(items))
-}
-
 internal fun KitchenHttpServer.gameRomFiles(rom: dev.cannoli.scorza.model.Rom): List<File> =
     romDirectoryWalker?.gameFiles(rom.path) ?: listOf(rom.path)
 
@@ -89,7 +81,6 @@ internal fun KitchenHttpServer.handleGames(
     method: String,
     segments: List<String>,
     query: Map<String, String>,
-    headers: Map<String, String>,
     session: NanoHTTPD.IHTTPSession,
 ): Response {
     val repo = romsRepository
@@ -130,9 +121,7 @@ internal fun KitchenHttpServer.handleGames(
                     File(cannoliRoot, "Saves/$platformTag").listFiles { f ->
                         f.isFile && f.nameWithoutExtension.equals(base, ignoreCase = true)
                     }?.forEach { it.delete() }
-                    File(cannoliRoot, "Save States/$platformTag/$base").deleteRecursively()
                     File(cannoliRoot, "Guides/$platformTag/$base").deleteRecursively()
-                    File(cannoliRoot, "Cheats/$platformTag/$base").deleteRecursively()
                     rom.artFile?.let { if (isSecure(it)) it.delete() }
                 }
                 repo.deleteRom(rom.id)
@@ -261,49 +250,6 @@ internal fun KitchenHttpServer.handleGames(
                     else -> errorResponse(405, "method not allowed")
                 }
             }
-            "cheats" -> {
-                val cheatDir = File(cannoliRoot, "Cheats/$platformTag/$base")
-                when (method) {
-                    "GET" -> {
-                        val fileName = query["file"]
-                        if (fileName.isNullOrBlank()) {
-                            gameCheatsResponse(platformTag, base)
-                        } else {
-                            val target = File(cheatDir, File(fileName).name)
-                            if (!isSecure(target) || !target.exists()) {
-                                return errorResponse(404, "not found")
-                            }
-                            fileResponse(target, "application/octet-stream")
-                        }
-                    }
-                    "POST" -> {
-                        val name = query["name"]
-                        if (name.isNullOrBlank()) return errorResponse(400, "name param required")
-                        if (!name.lowercase(java.util.Locale.ROOT).endsWith(".cht")) {
-                            return errorResponse(400, "cheat files must have a .cht extension")
-                        }
-                        val dest = File(cheatDir, File(name).name)
-                        if (!isSecure(dest)) return errorResponse(403, "forbidden")
-                        streamUploadToFile(dest, session)?.let { return it }
-                        okResponse()
-                    }
-                    "DELETE" -> {
-                        val fileName = query["file"]
-                        if (fileName.isNullOrBlank()) return errorResponse(400, "file param required")
-                        val target = File(cheatDir, File(fileName).name)
-                        if (!isSecure(target)) return errorResponse(403, "forbidden")
-                        if (!target.exists()) return errorResponse(404, "not found")
-                        target.delete()
-                        okResponse()
-                    }
-                    else -> errorResponse(405, "method not allowed")
-                }
-            }
-            "states" -> {
-                if (method != "GET") return errorResponse(405, "method not allowed")
-                val gameDir = File(cannoliRoot, "Save States/$platformTag/$base")
-                handleSlotsList(gameDir, base)
-            }
             "move" -> {
                 if (method != "POST") return errorResponse(405, "method not allowed")
                 val folder = query["folder"] ?: ""
@@ -358,50 +304,6 @@ internal fun KitchenHttpServer.handleGames(
                 }
             }
             else -> errorResponse(404, "not found")
-        }
-        4 -> {
-            if (segments[2] != "states") return errorResponse(404, "not found")
-            val gameDir = File(cannoliRoot, "Save States/$platformTag/$base")
-            if (segments[3] == "zip") {
-                if (method != "GET") return errorResponse(405, "method not allowed")
-                if (!isSecure(gameDir)) return errorResponse(403, "forbidden")
-                val bytes = SlotsZip.build(gameDir, base)
-                    ?: return errorResponse(404, "no states")
-                return corsResponse(200, "application/zip", bytes)
-            }
-            val slot = segments[3].toIntOrNull()
-            if (slot == null || slot < 0 || slot > 10) {
-                return errorResponse(400, "slot must be 0-10")
-            }
-            if (!isSecure(gameDir)) return errorResponse(403, "forbidden")
-            return when (method) {
-                "GET" -> {
-                    val stateFile = File(gameDir, raStateName(base, slot))
-                    if (!isSecure(stateFile) || !stateFile.exists()) {
-                        return errorResponse(404, "not found")
-                    }
-                    fileResponse(stateFile, "application/octet-stream")
-                }
-                "POST" -> handleSlotUpload(gameDir, base, slot, session)
-                "DELETE" -> handleSlotDelete(gameDir, base, slot)
-                else -> errorResponse(405, "method not allowed")
-            }
-        }
-        5 -> {
-            if (segments[2] != "states" || segments[4] != "thumbnail") {
-                return errorResponse(404, "not found")
-            }
-            if (method != "GET") return errorResponse(405, "method not allowed")
-            val slot = segments[3].toIntOrNull()
-            if (slot == null || slot < 0 || slot > 10) {
-                return errorResponse(400, "slot must be 0-10")
-            }
-            val gameDir = File(cannoliRoot, "Save States/$platformTag/$base")
-            val thumbFile = File(gameDir, "${raStateName(base, slot)}.png")
-            if (!isSecure(thumbFile) || !thumbFile.exists()) {
-                return errorResponse(404, "not found")
-            }
-            return fileResponse(thumbFile, "image/png")
         }
         else -> return errorResponse(404, "not found")
     }

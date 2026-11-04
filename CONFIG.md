@@ -381,5 +381,11 @@ Kitchen serves the config files through its API, with the same PIN as its other 
 A saved file takes effect at once: the launcher reloads its menu as it does when you return to
 it. Only the files listed are reachable, by name.
 
-Kitchen doesn't have a page for these files yet. Meanwhile, its Files tool can download and
-upload them.
+Kitchen's **Config Files** page (Tools → Config Files) uses this API. It edits a file as text,
+checks the JSON before saving and shows where it's broken, and lists the file's problems after
+it loads and after each save. A template opens read-only, with a list of its entries: tick the
+ones you want and they're copied into the real file (entries the file already has are left as
+they are, and listed as skipped). Copying systems also offers the emulators they use that
+`emulators.json` doesn't have yet, and places the new systems at the end of `directory.json`'s
+top-level `items` unless you untick that. A file Kitchen changes this way is rewritten with
+two-space indents.

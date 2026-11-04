@@ -4,10 +4,9 @@ import { useRouter } from 'vue-router'
 import { getTags, getApps } from '@/api/client'
 import { platformName, platformIcon, groupPlatforms, type PlatformGroup } from '@/api/platforms'
 import Input from '@/components/ui/Input.vue'
-import { Wallpaper, Search, Gamepad2, ArrowDownAZ, CalendarDays, Layers, StarsIcon } from 'lucide-vue-next'
+import { Wallpaper, Search, Gamepad2, ArrowDownAZ, CalendarDays } from 'lucide-vue-next'
 import ToolsTab from '@/components/tools/ToolsTab.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
-import { useLauncherSettings } from '@/composables/useLauncherSettings'
 
 const props = defineProps<{ tab?: string }>()
 const router = useRouter()
@@ -19,7 +18,6 @@ const sortMode = ref<'era' | 'alpha'>(
   localStorage.getItem('cannoli_sort_mode') === 'alpha' ? 'alpha' : 'era',
 )
 watch(sortMode, v => localStorage.setItem('cannoli_sort_mode', v))
-const { settings: launcherSettings, load: loadLauncherSettings } = useLauncherSettings()
 const activeTab = computed<'content' | 'customization' | 'tools'>(() => {
   if (props.tab === 'customization') return 'customization'
   if (props.tab === 'tools') return 'tools'
@@ -36,10 +34,7 @@ watch(() => props.tab, t => {
   if (t && !VALID_TABS.includes(t)) router.replace('/dashboard/games')
 }, { immediate: true })
 
-/** Tools and Ports carry the row names the user chose in the launcher, so they cannot come from PLATFORM_NAMES. */
 function displayNameFor(tag: string): string {
-  if (tag === 'TOOLS') return launcherSettings.value.toolsName
-  if (tag === 'PORTS') return launcherSettings.value.portsName
   return platformName(tag)
 }
 
@@ -60,7 +55,6 @@ const groups = computed<PlatformGroup[]>(() => groupPlatforms(filteredTags.value
 const alphabeticalGroups = computed<PlatformGroup[]>(() => groupPlatforms(filteredTags.value, true, servedGroups.value))
 
 onMounted(async () => {
-  loadLauncherSettings()
   try {
     const [tagList, apps] = await Promise.all([getTags(), getApps()])
     tags.value = tagList.tags
@@ -225,30 +219,6 @@ function browseFlat(resource: string) {
     <template v-if="activeTab === 'customization'">
       <div class="space-y-4 flex-1">
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <button
-              type="button"
-              class="text-left rounded-xl border border-border bg-card p-5 transition-all duration-150 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-background hover:shadow-md hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              @click="browseFlat('overlays')"
-          >
-            <div class="flex items-center gap-3">
-              <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-muted">
-                <Layers class="h-5 w-5 text-accent" />
-              </div>
-              <span class="font-semibold">{{ $t('dashboard.overlays') }}</span>
-            </div>
-          </button>
-          <button
-              type="button"
-              class="text-left rounded-xl border border-border bg-card p-5 transition-all duration-150 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-background hover:shadow-md hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-              @click="browseFlat('shaders')"
-          >
-            <div class="flex items-center gap-3">
-              <div class="flex items-center justify-center h-10 w-10 rounded-lg bg-muted">
-                <StarsIcon class="h-5 w-5 text-accent" />
-              </div>
-              <span class="font-semibold">{{ $t('dashboard.shaders') }}</span>
-            </div>
-          </button>
           <button
             type="button"
             class="text-left rounded-xl border border-border bg-card p-5 transition-all duration-150 cursor-pointer hover:ring-2 hover:ring-primary hover:ring-offset-2 hover:ring-offset-background hover:shadow-md hover:shadow-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"

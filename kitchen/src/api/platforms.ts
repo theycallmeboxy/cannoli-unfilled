@@ -1,4 +1,4 @@
-/** Platform name lookup from Scorza's platforms.json */
+/** Display names for well-known system IDs. An ID not listed here shows as itself. */
 export const PLATFORM_NAMES: Record<string, string> = {
   GB: 'Game Boy',
   GBC: 'Game Boy Color',
@@ -71,8 +71,10 @@ export const PLATFORM_NAMES: Record<string, string> = {
   PSVITA: 'PS Vita',
   PS3: 'PlayStation 3',
   NSW: 'Nintendo Switch',
-  TOOLS: 'Tools',
-  PORTS: 'Ports',
+  // Apps placed in directory.json. Older installs may still have apps filed as Ports, kept apart
+  // because their box art lives in Art/PORTS.
+  TOOLS: 'Apps',
+  PORTS: 'Apps (old Ports)',
 }
 
 /**
@@ -91,7 +93,7 @@ const PLATFORM_GROUPS: Record<string, string[]> = {
   Arcade: ['MAME', 'FBN', 'CPS1', 'CPS2', 'CPS3', 'ATOMISWAVE'],
   Computer: ['DOS', 'AMIGA', 'CD32', 'CDTV', 'MSX', 'C64', 'AMSTRADCPC', 'ATARIST', 'X68000', 'ZX81', 'SCUMMVM', 'PC'],
   Other: ['INTELLIVISION', 'COLECOVISION', 'VECTREX', '3DO', 'ODYSSEY2', 'GAMEANDWATCH', 'PICO8'],
-  'Android Apps': ['TOOLS', 'PORTS'],
+  Apps: ['TOOLS', 'PORTS'],
 }
 
 /** Tag to group, from the built-in table. Fallback only; the launcher is the source of truth. */
@@ -174,8 +176,3 @@ export function isGamesOnlyTag(tag: string): boolean {
   return GAMES_ONLY_TAGS.includes(tag)
 }
 
-const FBNEO_SAMPLE_TAGS = ['FBN']
-
-export function supportsFbneoSamples(tag: string): boolean {
-  return FBNEO_SAMPLE_TAGS.includes(tag)
-}

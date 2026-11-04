@@ -153,10 +153,7 @@ export interface GameRow {
   hasArt: boolean
   artUrl?: string
   savesCount: number
-  statesCount: number
   guidesCount: number
-  cheatsCount: number
-  raGameId?: number
   lastPlayedAt?: number
   multiDisc: boolean
 }
@@ -329,63 +326,6 @@ export async function deleteGameGuide(tag: string, id: number, name: string): Pr
   if (!res.ok) throw new Error(`deleteGameGuide ${res.status}`)
 }
 
-export async function listGameCheats(tag: string, id: number): Promise<GameFile[]> {
-  const res = await request(`${gameBase(tag, id)}/cheats`)
-  if (!res.ok) throw new Error(`listGameCheats ${res.status}`)
-  return (await res.json()).files
-}
-
-export async function downloadGameCheat(tag: string, id: number, name: string): Promise<void> {
-  await downloadFile(`${gameBase(tag, id)}/cheats?file=${encodeURIComponent(name)}`, name)
-}
-
-export async function uploadGameCheat(tag: string, id: number, file: File): Promise<void> {
-  const res = await request(`${gameBase(tag, id)}/cheats?name=${encodeURIComponent(file.name)}`, {
-    method: 'POST',
-    body: file,
-  })
-  if (!res.ok) throw new Error(`uploadGameCheat ${res.status}`)
-}
-
-export async function deleteGameCheat(tag: string, id: number, name: string): Promise<void> {
-  const res = await request(`${gameBase(tag, id)}/cheats?file=${encodeURIComponent(name)}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error(`deleteGameCheat ${res.status}`)
-}
-
-export async function listGameStates(tag: string, id: number): Promise<SlotList> {
-  const res = await request(`${gameBase(tag, id)}/states`)
-  if (!res.ok) throw new Error(`listGameStates ${res.status}`)
-  return res.json()
-}
-
-export async function gameStateThumbnailBlob(tag: string, id: number, slot: number): Promise<string | null> {
-  const res = await request(`${gameBase(tag, id)}/states/${slot}/thumbnail`)
-  if (!res.ok) return null
-  return URL.createObjectURL(await res.blob())
-}
-
-export async function uploadGameState(tag: string, id: number, slot: number, file: File): Promise<{ ok: boolean }> {
-  const form = new FormData()
-  form.append('file', file)
-  const res = await request(`${gameBase(tag, id)}/states/${slot}`, { method: 'POST', body: form })
-  if (!res.ok) throw new Error(`uploadGameState ${res.status}`)
-  return res.json()
-}
-
-export async function deleteGameState(tag: string, id: number, slot: number): Promise<{ ok: boolean }> {
-  const res = await request(`${gameBase(tag, id)}/states/${slot}`, { method: 'DELETE' })
-  if (!res.ok) throw new Error(`deleteGameState ${res.status}`)
-  return res.json()
-}
-
-export async function downloadGameState(tag: string, id: number, slot: number, filename: string): Promise<void> {
-  await downloadFile(`${gameBase(tag, id)}/states/${slot}`, filename)
-}
-
-export async function downloadGameStatesZip(tag: string, id: number, filename: string): Promise<void> {
-  await downloadFile(`${gameBase(tag, id)}/states/zip`, filename)
-}
-
 export async function listFiles(resource: string, ...subpath: (string | undefined)[]): Promise<ListResponse> {
   const path = buildPath(resource, ...subpath)
   const res = await request(path)
@@ -398,9 +338,30 @@ export async function listFilesRecursive(resource: string, ...subpath: (string |
   return res.json()
 }
 
+/** An error carrying the server's status and its `error` message, when it sent one. */
+export class ApiError extends Error {
+  status: number
+  constructor(status: number, message: string) {
+    super(message)
+    this.status = status
+  }
+}
+
+async function failure(res: Response, what: string): Promise<ApiError> {
+  let message = `${what} ${res.status}`
+  try {
+    const body = await res.json()
+    if (body && typeof body.error === 'string') message = body.error
+  } catch {
+    // not JSON: keep the status
+  }
+  return new ApiError(res.status, message)
+}
+
 export async function createFolder(resource: string, ...subpath: (string | undefined)[]): Promise<{ ok: boolean }> {
   const path = buildPath(resource, ...subpath)
   const res = await request(path, { method: 'PUT' })
+  if (!res.ok) throw await failure(res, 'createFolder')
   return res.json()
 }
 
@@ -411,6 +372,7 @@ export async function moveFile(resource: string, fromSegments: string[], to: str
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to }),
   })
+  if (!res.ok) throw await failure(res, 'moveFile')
   return res.json()
 }
 
@@ -418,37 +380,29 @@ export async function downloadToDisk(resource: string, segments: string[], filen
   await downloadFile(buildPath(resource, ...segments), filename)
 }
 
+/**
+ * Saves a file through a plain link, so the browser streams it to disk instead of holding all of
+ * it in the page's memory (a large ROM on a phone would not fit). A link can't send headers, so
+ * the credential rides in the query, and `download` asks the server to send it as an attachment.
+ */
 export async function downloadFile(path: string, filename: string): Promise<void> {
-  const res = await request(path)
-  if (!res.ok) throw new Error(`download ${res.status}`)
-  const blob = await res.blob()
-  const url = URL.createObjectURL(blob)
+  const sep = path.includes('?') ? '&' : '?'
+  const params = new URLSearchParams({ download: filename })
+  if (token.value) params.set('auth', token.value)
+  const url = `${baseUrl.value}${path}${sep}${params.toString()}`
   const a = document.createElement('a')
   a.href = url
   a.download = filename
+  a.rel = 'noopener'
   document.body.appendChild(a)
   a.click()
   a.remove()
-  URL.revokeObjectURL(url)
-}
-
-export interface SlotInfo {
-  slot: number
-  label: string
-  exists: boolean
-  size: number
-  modified: number
-  thumbnail: boolean
-}
-
-export interface SlotList {
-  game: string
-  slots: SlotInfo[]
 }
 
 export async function deleteFile(resource: string, ...subpath: (string | undefined)[]): Promise<{ ok: boolean }> {
   const path = buildPath(resource, ...subpath)
   const res = await request(path, { method: 'DELETE' })
+  if (!res.ok) throw await failure(res, 'deleteFile')
   return res.json()
 }
 
@@ -479,7 +433,22 @@ export function uploadApk(
 
 export async function getApkStatus(installId: string): Promise<ApkStatus> {
   const res = await request(`/api/apk/${encodeURIComponent(installId)}`)
+  if (!res.ok) throw await failure(res, 'getApkStatus')
   return res.json()
+}
+
+/** Whether Android lets Cannoli install apps ("Install unknown apps" for this app). */
+export async function getApkCapability(): Promise<{ canInstall: boolean }> {
+  const res = await request('/api/apk')
+  if (!res.ok) throw await failure(res, 'getApkCapability')
+  return res.json()
+}
+
+/** Opens Cannoli's "Install unknown apps" switch on the device's screen. */
+export async function openApkInstallSettings(): Promise<boolean> {
+  const res = await request('/api/apk/permission', { method: 'POST' })
+  if (!res.ok) return false
+  return (await res.json()).ok === true
 }
 
 export interface AppsResponse {
@@ -491,22 +460,6 @@ export async function getApps(): Promise<AppsResponse> {
   const res = await request('/api/apps')
   if (!res.ok) return { tools: [], ports: [] }
   return res.json()
-}
-
-export interface LauncherSettings {
-  toolsName: string
-  portsName: string
-}
-
-export const DEFAULT_LAUNCHER_SETTINGS: LauncherSettings = {
-  toolsName: 'Tools',
-  portsName: 'Ports',
-}
-
-export async function getSettings(): Promise<LauncherSettings> {
-  const res = await request('/api/settings')
-  if (!res.ok) return { ...DEFAULT_LAUNCHER_SETTINGS }
-  return { ...DEFAULT_LAUNCHER_SETTINGS, ...(await res.json()) }
 }
 
 export function uploadFiles<T = { ok: boolean; files: string[] }>(
@@ -538,11 +491,18 @@ export function uploadFiles<T = { ok: boolean; files: string[] }>(
       if (xhr.status === 200) {
         resolve(JSON.parse(xhr.responseText))
       } else {
-        reject(new Error(`Upload failed: ${xhr.status}`))
+        let message = `Upload failed: ${xhr.status}`
+        try {
+          const body = JSON.parse(xhr.responseText)
+          if (body && typeof body.error === 'string') message = body.error
+        } catch {
+          // not JSON: keep the status
+        }
+        reject(new ApiError(xhr.status, message))
       }
     })
 
-    xhr.addEventListener('error', () => reject(new Error('Upload failed')))
+    xhr.addEventListener('error', () => reject(new ApiError(0, 'Upload failed')))
     xhr.addEventListener('abort', () => reject(new Error('Upload cancelled')))
     xhr.send(formData)
   })
@@ -563,4 +523,46 @@ export async function listControllerMappings(): Promise<ControllerMapping[]> {
 
 export async function downloadControllerMapping(file: string): Promise<void> {
   await downloadFile(`/api/mappings/${encodeURIComponent(file)}`, file)
+}
+
+// --- Config files (Config/*.json) ---
+
+export interface ConfigFileText {
+  name: string
+  text: string
+  /** Problems found in this file at its last read, then those between files. */
+  problems: string[]
+}
+
+export interface ConfigSaveResult {
+  saved: boolean
+  problems: string[]
+}
+
+export async function listConfigFiles(): Promise<string[]> {
+  const res = await request('/api/config')
+  if (!res.ok) throw await failure(res, 'listConfigFiles')
+  return (await res.json()).files
+}
+
+export async function getConfigFile(name: string): Promise<ConfigFileText> {
+  const res = await request(`/api/config/${encodeURIComponent(name)}`)
+  if (!res.ok) throw await failure(res, 'getConfigFile')
+  return res.json()
+}
+
+/**
+ * Replaces a config file with [text]. Resolves for a saved file (which can still have problems)
+ * and for text the server refused (422, `saved: false`); throws for anything else, such as a
+ * read-only template (405).
+ */
+export async function putConfigFile(name: string, text: string): Promise<ConfigSaveResult> {
+  const res = await request(`/api/config/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json; charset=utf-8' },
+    body: text,
+  })
+  if (res.status === 422) return res.json()
+  if (!res.ok) throw await failure(res, 'putConfigFile')
+  return res.json()
 }

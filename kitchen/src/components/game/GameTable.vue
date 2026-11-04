@@ -41,7 +41,6 @@ function formatPlayed(ms: number | null | undefined) {
 const columns = computed<{ key: string; label: string; align: string }[]>(() => [
   { key: 'title', label: t('platform.colTitle'), align: 'text-left' },
   { key: 'saves', label: t('platform.colSaves'), align: 'text-center' },
-  { key: 'states', label: t('platform.colStates'), align: 'text-center' },
   { key: 'guides', label: t('platform.colGuides'), align: 'text-center' },
   { key: 'played', label: t('platform.colLastPlayed'), align: 'text-right' },
 ])
@@ -57,7 +56,7 @@ const columns = computed<{ key: string; label: string; align: string }[]>(() => 
             v-for="col in columns"
             :key="col.key"
             class="px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-foreground/60 border-b border-border cursor-pointer select-none hover:text-foreground"
-            :class="[col.align, col.key === 'saves' || col.key === 'states' || col.key === 'guides' ? 'w-20' : '']"
+            :class="[col.align, col.key === 'saves' || col.key === 'guides' ? 'w-20' : '']"
             @click="$emit('sort', col.key)"
           >
             {{ col.label }}<span v-if="sortKey === col.key"> {{ sortDir === 1 ? '▴' : '▾' }}</span>
@@ -112,7 +111,6 @@ const columns = computed<{ key: string; label: string; align: string }[]>(() => 
           </td>
           <td class="px-3 py-2.5 font-semibold text-foreground">{{ g.displayName }}</td>
           <td class="px-3 py-2.5 text-center" :class="g.savesCount ? 'text-foreground/80' : 'text-foreground/30'">{{ g.savesCount || '-' }}</td>
-          <td class="px-3 py-2.5 text-center" :class="g.statesCount ? 'text-foreground/80' : 'text-foreground/30'">{{ g.statesCount || '-' }}</td>
           <td class="px-3 py-2.5 text-center" :class="g.guidesCount ? 'text-foreground/80' : 'text-foreground/30'">{{ g.guidesCount || '-' }}</td>
           <td class="px-3 py-2.5 text-right text-foreground/60">{{ formatPlayed(g.lastPlayedAt) }}</td>
         </tr>

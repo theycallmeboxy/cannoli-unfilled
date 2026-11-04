@@ -21,7 +21,6 @@ class KitchenHttpServer internal constructor(
     internal val volumesProvider: () -> List<KitchenVolume> = { emptyList() },
     internal val apkInstalls: ApkInstalls? = null,
     internal val appsRepository: dev.cannoli.scorza.db.AppsRepository? = null,
-    internal val settingsProvider: () -> SettingsResponse = { SettingsResponse("Tools", "Ports") },
     internal val artThumbnails: ArtThumbnails? = null,
     internal val configFiles: Map<String, KitchenConfigFile> = emptyMap(),
 ) : NanoHTTPD(port) {
@@ -152,9 +151,25 @@ class KitchenHttpServer internal constructor(
         val resource = apiSegments.firstOrNull() ?: ""
 
         if (method == "GET" && resource == "auth") return handleAuthStatus()
-        if (!checkAuth(headers)) return errorResponse(401, "unauthorized")
+        if (!checkAuth(headers, if (method == "GET") query["auth"] else null)) {
+            return errorResponse(401, "unauthorized")
+        }
 
-        return route(method, resource, apiSegments, query, headers, session)
+        val response = route(method, resource, apiSegments, query, session)
+        val downloadName = query["download"]
+        if (method == "GET" && !downloadName.isNullOrBlank() && response.status.requestStatus == 200) {
+            response.addHeader("Content-Disposition", contentDisposition(downloadName))
+        }
+        return response
+    }
+
+    /** Lets the browser save a file straight from the network instead of holding all of it in a
+     *  page's memory first, which a large ROM on a phone can't afford. */
+    private fun contentDisposition(name: String): String {
+        val clean = sanitizeFilename(name).ifEmpty { "download" }
+        val ascii = clean.map { if (it.code in 0x20..0x7e && it != '"' && it != '\\') it else '_' }.joinToString("")
+        val encoded = java.net.URLEncoder.encode(clean, "UTF-8").replace("+", "%20")
+        return "attachment; filename=\"$ascii\"; filename*=UTF-8''$encoded"
     }
 
     private fun route(
@@ -162,35 +177,16 @@ class KitchenHttpServer internal constructor(
         resource: String,
         apiSegments: List<String>,
         query: Map<String, String>,
-        headers: Map<String, String>,
         session: IHTTPSession,
     ): Response {
         return when {
             method == "GET" && resource == "info" -> handleInfo()
             method == "GET" && resource == "tags" -> handleTags()
             method == "GET" && resource == "apps" -> handleApps()
-            method == "GET" && resource == "settings" -> handleSettings()
+            method == "GET" && resource == "mappings" -> handleMappings(apiSegments.drop(1))
             resource == "games" -> {
                 val gameSegments = apiSegments.drop(1)
-                handleGames(method, gameSegments, query, headers, session)
-            }
-            resource == "scan" -> {
-                if (method != "POST") return errorResponse(405, "method not allowed")
-                val tag = apiSegments.getOrNull(1)
-                if (tag.isNullOrBlank()) return errorResponse(400, "platform required")
-                val scan = scanPlatform
-                    ?: return errorResponse(503, "scan not available")
-                scan(tag)
-                okResponse()
-            }
-            resource == "slots" -> {
-                val slotSegments = apiSegments.drop(1)
-                handleSlots(method, slotSegments, query, headers, session)
-            }
-            resource == "artwork" -> {
-                if (method != "GET") return errorResponse(405, "method not allowed")
-                val artSegments = apiSegments.drop(1)
-                handleArtwork(artSegments)
+                handleGames(method, gameSegments, query, session)
             }
             resource == "fs" -> handleFs(method, apiSegments.drop(1), query, session)
             resource == "config" -> handleConfig(method, apiSegments.drop(1), session)
@@ -300,12 +296,18 @@ class KitchenHttpServer internal constructor(
         }
     }
 
-    private fun checkAuth(headers: Map<String, String>): Boolean {
+    /** [queryToken] is the same Basic credential as the header, for a plain link (a download)
+     *  that can't carry headers. Only GET requests may use it. */
+    private fun checkAuth(headers: Map<String, String>, queryToken: String? = null): Boolean {
         if (codeBypass) return true
-        val auth = headers["authorization"] ?: return false
-        if (!auth.startsWith("Basic ")) return false
+        val header = headers["authorization"]
+        val token = when {
+            header != null && header.startsWith("Basic ") -> header.removePrefix("Basic ")
+            !queryToken.isNullOrEmpty() -> queryToken
+            else -> return false
+        }
         val decoded = try {
-            String(Base64.decode(auth.removePrefix("Basic "), Base64.NO_WRAP))
+            String(Base64.decode(token, Base64.NO_WRAP))
         } catch (_: Exception) { return false }
         val parts = decoded.split(":", limit = 2)
         return parts.size == 2 && parts[0] == "nonna" && parts[1] == pin
@@ -375,14 +377,10 @@ class KitchenHttpServer internal constructor(
         private val RESOURCE_DIRS = mapOf(
             "roms" to "Roms",
             "art" to "Art",
-            "overlays" to "Overlays",
             "saves" to "Saves",
-            "states" to "Save States",
             "bios" to "BIOS",
             "wallpapers" to "Wallpapers",
             "guides" to "Guides",
-            "cheats" to "Cheats",
-            "shaders" to "Shaders"
         )
     }
 }

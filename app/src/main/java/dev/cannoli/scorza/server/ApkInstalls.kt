@@ -6,6 +6,8 @@ interface ApkInstalls {
     val stagingDir: File
     fun begin(apk: File): String
     fun status(installId: String): InstallStatus?
+    fun canInstall(): Boolean = true
+    fun openInstallSettings(): Boolean = false
 }
 
 data class InstallStatus(val status: String, val message: String? = null) {

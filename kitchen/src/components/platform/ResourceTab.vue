@@ -8,11 +8,11 @@ import Button from '@/components/ui/Button.vue'
 import Progress from '@/components/ui/Progress.vue'
 import { Check, File as FileIcon, LayoutGrid, Table as TableIcon, Trash2, Upload, Eye } from 'lucide-vue-next'
 
-const props = defineProps<{ tag: string; resource: 'overlays' | 'bios'; display?: 'list' | 'images'; subPath?: string[]; emptyLabel?: string }>()
+const props = defineProps<{ tag: string; resource: 'bios'; display?: 'list' | 'images'; subPath?: string[]; emptyLabel?: string }>()
 
 const router = useRouter()
 const { t } = useI18n()
-const resourceLabel = computed(() => (props.resource === 'overlays' ? t('platform.tabOverlays') : t('platform.tabBios')))
+const resourceLabel = computed(() => t('platform.tabBios'))
 
 function openView(name: string) {
   router.push({
@@ -46,7 +46,7 @@ const viewMode = ref<'list' | 'images'>(props.display ?? 'list')
 watch(() => props.display, d => { if (d) viewMode.value = d })
 
 const emptyMessage = computed(() =>
-  props.emptyLabel ?? (props.resource === 'overlays' ? t('platform.noOverlaysYet') : t('platform.noBiosYet')),
+  props.emptyLabel ?? t('platform.noBiosYet'),
 )
 
 function clearThumbnails() {

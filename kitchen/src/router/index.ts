@@ -7,6 +7,7 @@ import BrowseView from '@/views/BrowseView.vue'
 import FileManagerView from '@/views/FileManagerView.vue'
 import ApkInstallerView from '@/views/ApkInstallerView.vue'
 import ControllerMappingsView from '@/views/ControllerMappingsView.vue'
+import ConfigEditorView from '@/views/ConfigEditorView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -19,6 +20,7 @@ const router = createRouter({
     { path: '/tools/files', name: 'tools-files', component: FileManagerView },
     { path: '/tools/apk', name: 'tools-apk', component: ApkInstallerView },
     { path: '/tools/mappings', name: 'tools-mappings', component: ControllerMappingsView },
+    { path: '/tools/config/:file?', name: 'tools-config', component: ConfigEditorView, props: true },
     { path: '/platform/:tag', name: 'platform', component: PlatformView, props: true },
     {
       path: '/platform/:tag/folder/:folder(.*)',
@@ -27,22 +29,10 @@ const router = createRouter({
       props: true,
     },
     {
-      path: '/platform/:tag/overlays',
-      name: 'platform-overlays',
-      component: PlatformView,
-      props: route => ({ tag: route.params.tag, tab: 'overlays' }),
-    },
-    {
       path: '/platform/:tag/bios',
       name: 'platform-bios',
       component: PlatformView,
       props: route => ({ tag: route.params.tag, tab: 'bios' }),
-    },
-    {
-      path: '/platform/:tag/samples',
-      name: 'platform-samples',
-      component: PlatformView,
-      props: route => ({ tag: route.params.tag, tab: 'samples' }),
     },
     {
       path: '/platform/:tag/game/:id/guides/:file',

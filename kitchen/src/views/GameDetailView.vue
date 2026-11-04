@@ -17,12 +17,10 @@ import Breadcrumbs, { type Crumb } from '@/components/layout/Breadcrumbs.vue'
 import { ImagePlus, ImageOff, Trash2, MoveRight, Pencil } from 'lucide-vue-next'
 import RomTab from '@/components/game/RomTab.vue'
 import SavesTab from '@/components/game/SavesTab.vue'
-import StatesTab from '@/components/game/StatesTab.vue'
 import GuidesTab from '@/components/game/GuidesTab.vue'
-import CheatsTab from '@/components/game/CheatsTab.vue'
 
-type TabKey = 'rom' | 'saves' | 'states' | 'guides' | 'cheats'
-const TAB_KEYS: readonly TabKey[] = ['rom', 'saves', 'states', 'guides', 'cheats']
+type TabKey = 'rom' | 'saves' | 'guides'
+const TAB_KEYS: readonly TabKey[] = ['rom', 'saves', 'guides']
 
 const props = defineProps<{ tag: string; id: string; tab?: string }>()
 const romId = computed(() => Number(props.id))
@@ -107,9 +105,7 @@ const tabs = computed(() => {
   return [
     { key: 'rom' as TabKey, label: t('game.tabGameFiles'), count: null as number | null },
     { key: 'saves' as TabKey, label: t('game.tabSaves'), count: g?.savesCount ?? 0 },
-    { key: 'states' as TabKey, label: t('game.tabSaveStates'), count: g?.statesCount ?? 0 },
     { key: 'guides' as TabKey, label: t('game.tabGuides'), count: g?.guidesCount ?? 0 },
-    { key: 'cheats' as TabKey, label: t('game.tabCheats'), count: g?.cheatsCount ?? 0 },
   ]
 })
 
@@ -327,9 +323,7 @@ onBeforeUnmount(() => {
         <keep-alive>
           <RomTab v-if="activeTab === 'rom'" :tag="tag" :id="romId" />
           <SavesTab v-else-if="activeTab === 'saves'" :tag="tag" :id="romId" />
-          <StatesTab v-else-if="activeTab === 'states'" :tag="tag" :id="romId" :rom-name="game.rom" />
           <GuidesTab v-else-if="activeTab === 'guides'" :tag="tag" :id="romId" />
-          <CheatsTab v-else-if="activeTab === 'cheats'" :tag="tag" :id="romId" />
         </keep-alive>
       </div>
 

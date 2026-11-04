@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { FolderOpen, Gamepad2, PackagePlus } from 'lucide-vue-next'
+import { Braces, FolderOpen, Gamepad2, PackagePlus } from 'lucide-vue-next'
 
 const router = useRouter()
 
 const tools = [
+  { nameKey: 'tools.configEditor', icon: Braces, route: { name: 'tools-config' } },
   { nameKey: 'tools.apkInstaller', icon: PackagePlus, route: { name: 'tools-apk' } },
   { nameKey: 'tools.fileManager', icon: FolderOpen, route: { name: 'tools-files' } },
   { nameKey: 'tools.controllerMappings', icon: Gamepad2, route: { name: 'tools-mappings' } },

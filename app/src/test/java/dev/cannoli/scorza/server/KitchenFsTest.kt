@@ -244,4 +244,98 @@ class KitchenFsTest {
         val (code, _) = request("GET", "/api/fs/internal/leak")
         assertEquals(403, code)
     }
+
+    private fun rawGet(path: String): HttpURLConnection =
+        (URL("http://127.0.0.1:$port$path").openConnection() as HttpURLConnection).also { it.requestMethod = "GET" }
+
+    @Test fun uploadsSeveralFilesInOneRequest() {
+        val boundary = "----cannoli"
+        val body = ("--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"a.txt\"\r\n\r\nAAA\r\n" +
+            "--$boundary\r\nContent-Disposition: form-data; name=\"file\"; filename=\"b.txt\"\r\n\r\nBBB\r\n" +
+            "--$boundary--\r\n").toByteArray()
+        val (code, text) = request("POST", "/api/fs/internal/Download", body = body, contentType = "multipart/form-data; boundary=$boundary")
+        assertEquals(200, code)
+        assertTrue(text.contains("a.txt") && text.contains("b.txt"))
+        assertEquals("AAA", File(internalVol, "Download/a.txt").readText())
+        assertEquals("BBB", File(internalVol, "Download/b.txt").readText())
+    }
+
+    @Test fun uploadsAndDownloadsALargeFileIntact() {
+        val content = ByteArray(12 * 1024 * 1024) { (it * 31 + 7).toByte() }
+        val (bytes, contentType) = multipartBody("big.bin", content)
+        val (code, _) = request("POST", "/api/fs/sdcard", body = bytes, contentType = contentType)
+        assertEquals(200, code)
+        assertTrue(content.contentEquals(File(sdVol, "big.bin").readBytes()))
+
+        val token = Base64.getEncoder().encodeToString("nonna:TESTPIN".toByteArray())
+        val conn = rawGet("/api/fs/sdcard/big.bin")
+        conn.setRequestProperty("Authorization", "Basic $token")
+        assertEquals(200, conn.responseCode)
+        assertEquals(content.size.toLong(), conn.getHeaderField("Content-Length").toLong())
+        assertTrue(content.contentEquals(conn.inputStream.readBytes()))
+        conn.disconnect()
+    }
+
+    @Test fun downloadLinkCarriesItsOwnAuthAndSavesAsAFile() {
+        val token = java.net.URLEncoder.encode(Base64.getEncoder().encodeToString("nonna:TESTPIN".toByteArray()), "UTF-8")
+        val conn = rawGet("/api/fs/internal/Download/readme.txt?auth=$token&download=read%20me%C3%A9.txt")
+        assertEquals(200, conn.responseCode)
+        assertEquals(
+            "attachment; filename=\"read me_.txt\"; filename*=UTF-8''read%20me%C3%A9.txt",
+            conn.getHeaderField("Content-Disposition"),
+        )
+        assertEquals("HELLO", conn.inputStream.readBytes().decodeToString())
+        conn.disconnect()
+    }
+
+    @Test fun downloadLinkWithAWrongTokenIsRefused() {
+        val token = Base64.getEncoder().encodeToString("nonna:WRONG".toByteArray())
+        assertEquals(401, rawGet("/api/fs/internal/Download/readme.txt?auth=$token").responseCode)
+    }
+
+    @Test fun queryAuthCannotChangeFiles() {
+        val token = Base64.getEncoder().encodeToString("nonna:TESTPIN".toByteArray())
+        val conn = URL("http://127.0.0.1:$port/api/fs/internal/Download/readme.txt?auth=$token").openConnection() as HttpURLConnection
+        conn.requestMethod = "DELETE"
+        assertEquals(401, conn.responseCode)
+        conn.disconnect()
+        assertTrue(File(internalVol, "Download/readme.txt").exists())
+    }
+
+    @Test fun renamesAFolderInPlace() {
+        File(internalVol, "Old").mkdirs()
+        File(internalVol, "Old/inner.txt").writeText("I")
+        val body = """{"to":"New"}""".toByteArray()
+        val (code, _) = request("PATCH", "/api/fs/internal/Old", body = body, contentType = "application/json")
+        assertEquals(200, code)
+        assertEquals("I", File(internalVol, "New/inner.txt").readText())
+        assertFalse(File(internalVol, "Old").exists())
+    }
+
+    @Test fun renameOntoAnotherFileIsAConflict() {
+        File(internalVol, "Download/other.txt").writeText("O")
+        val body = """{"to":"Download/other.txt"}""".toByteArray()
+        val (code, _) = request("PATCH", "/api/fs/internal/Download/readme.txt", body = body, contentType = "application/json")
+        assertEquals(409, code)
+        assertEquals("HELLO", File(internalVol, "Download/readme.txt").readText())
+    }
+
+    @Test fun listsAndDownloadsControllerMappings() {
+        val dir = File(root, "Cannoli/Config/Input/Mappings").also { it.mkdirs() }
+        File(dir, "8bitdo.ini").writeText("[meta]\ndisplay_name=8BitDo Pro 2\nsource=USER_WIZARD\n")
+        File(dir, "plain.ini").writeText("[match]\n")
+        File(dir, "notes.txt").writeText("x")
+
+        val (code, body) = request("GET", "/api/mappings")
+        assertEquals(200, code)
+        assertEquals(
+            """{"mappings":[{"file":"8bitdo.ini","name":"8BitDo Pro 2"},{"file":"plain.ini","name":"plain"}]}""",
+            body,
+        )
+        val (fileCode, fileBody) = request("GET", "/api/mappings/8bitdo.ini")
+        assertEquals(200, fileCode)
+        assertTrue(fileBody.contains("display_name=8BitDo Pro 2"))
+        assertEquals(404, request("GET", "/api/mappings/notes.txt").first)
+        assertEquals(404, request("GET", "/api/mappings/%2e%2e%2fsecret.ini").first)
+    }
 }

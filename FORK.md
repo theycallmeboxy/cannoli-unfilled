@@ -121,7 +121,29 @@ from then on; both projects are GPL-3.0. The app build compiles it into
 `app/src/main/assets/kitchen` with bun (`scripts/build-kitchen.sh`, run by Gradle before each
 build). A build without bun on the PATH skips it and ships no page.
 
-This fork doesn't follow upstream Cannoli or Kitchen any more.
+This fork doesn't follow upstream Cannoli or Kitchen any more. What differs from upstream's page:
+
+- **Config Files** (Tools → Config Files): lists the five config files and the three templates.
+  A file opens in a text editor (line numbers, Tab indents, Ctrl/Cmd+S saves) that checks the
+  JSON before saving and points at the error, then shows the problems Cannoli found in it and
+  between files. Revert, reload, and a warning before leaving with unsaved changes. A template
+  opens read-only with a list of its entries: tick some and they're copied into the real file,
+  never replacing an entry it already has. Systems also bring the emulators they use that
+  `emulators.json` lacks, and new systems and shortcuts can be placed at the end of the main menu.
+- **Files:** the Cannoli folder is listed first, before Internal Storage and SD cards. Downloads
+  go straight to disk through a plain link instead of through the page's memory, so large files
+  work on a phone. Errors from upload, new folder, rename, move and delete are shown, and one
+  failed file no longer stops a batch upload. Renaming a file to the same name in different case
+  works on storage that ignores case.
+- **APK Installer:** checks whether Cannoli may install apps ("Install unknown apps"), says how
+  to allow it, and can open that switch on the device. Clearer messages when Android refuses an
+  install, a way to stop waiting for a dismissed prompt, and the staged APK is deleted as soon as
+  Android has its copy.
+- **Controller Mappings:** the server now has the `/api/mappings` endpoint the page called.
+- **Removed:** the save state, cheat, overlay, shader and FBNeo samples pages, the RetroAchievements
+  ID in game data, and the server's `/api/slots`, `/api/artwork`, `/api/scan` and `/api/settings`.
+  Apps are called Apps; apps older builds filed under Ports are listed as "Apps (old Ports)", since
+  their box art is still in `Art/PORTS/`.
 
 ## Building
 
@@ -138,6 +160,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Kitchen: config file editor, working file transfer and APK install; removed dead pages |
 | 2026-11-03 | Kitchen web page source copied into kitchen/ and built with the app |
 | 2026-11-03 | RomM platform set per system; extensions decide which files are games |
 | 2026-11-03 | Quick Menu and Settings are main menu rows, not hotkeys |
@@ -168,13 +191,11 @@ The fork starts from upstream commit `7755e376`.
       has been launched from it yet. Check RetroArch and standalone launches, editing and
       breaking each config file, nested folders, shortcuts, placing systems and adopting ROM
       folders from "Not in the menu", "Launch With" and "Default Emulator" with their marks, and
-      saving files through Kitchen.
-- [ ] **Kitchen page for config files:** the API is there; `kitchen/` needs a page for it. For
-      now, use Kitchen's Files tool or the API.
-- [ ] **Kitchen pages for removed features:** upstream's page still has views for things this
-      fork removed (emulator mapping, cores, the updater). They need removing from `kitchen/`.
-- [ ] **Leftover Tools/Ports names:** Kitchen's `/api/apps` and settings response, and app origin
-      labels in global search.
+      Kitchen's Config Files page, file transfers (large and many files, from a phone too) and
+      APK installs (with and without "Install unknown apps", and with Cannoli in the background).
+- [ ] **Leftover Tools/Ports names:** app origin labels in global search, and Kitchen's
+      `/api/apps`, which still answers in two lists because app art is in `Art/TOOLS/` and
+      `Art/PORTS/`.
 - [ ] **Save sync for renamed ROM folders:** a game RomM hasn't linked yet is matched by its ROM
       folder name, so for a system whose `roms` differs from its ID only linked games sync.
 - [ ] **Folder art is left behind** when a folder is deleted.

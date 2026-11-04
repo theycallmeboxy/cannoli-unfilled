@@ -37,9 +37,6 @@ internal fun KitchenHttpServer.handleApps(): Response {
     )
 }
 
-internal fun KitchenHttpServer.handleSettings(): Response =
-    jsonResponse(200, SettingsResponse.serializer(), settingsProvider())
-
 internal fun KitchenHttpServer.handleList(dir: File, displayPath: String, recursive: Boolean = false, roots: List<File> = defaultRoots()): Response {
     if (!isSecure(dir, roots)) {
         return errorResponse(403, "forbidden")
@@ -134,7 +131,14 @@ internal fun KitchenHttpServer.handleMove(resourceRoot: File, subpath: String, b
         return errorResponse(404, "source not found")
     }
     if (dst.exists()) {
-        return errorResponse(409, "destination already exists")
+        // On storage that ignores case, renaming "rom.zip" to "Rom.zip" finds itself as the
+        // destination; going through a temporary name lets the new spelling stick.
+        val sameFile = try { java.nio.file.Files.isSameFile(src.toPath(), dst.toPath()) } catch (_: Exception) { false }
+        if (!sameFile || src.name == dst.name) {
+            return errorResponse(409, "destination already exists")
+        }
+        val temp = File(src.parentFile, ".${src.name}.renaming")
+        return if (src.renameTo(temp) && temp.renameTo(dst)) okResponse() else errorResponse(500, "move failed")
     }
 
     dst.parentFile?.mkdirs()
@@ -165,42 +169,4 @@ internal fun KitchenHttpServer.handleUpload(destDir: File, session: NanoHTTPD.IH
         return errorResponse(500, "upload failed")
     }
     return jsonResponse(200, UploadResponse.serializer(), UploadResponse(files = written))
-}
-
-internal fun KitchenHttpServer.handleArtwork(segments: List<String>): Response {
-    val artDir = File(cannoliRoot, "Art")
-    when (segments.size) {
-        0 -> {
-            val tags = artDir.listFiles { f -> f.isDirectory }
-                ?.filter { dir -> dir.listFiles { f -> f.isFile }?.isNotEmpty() == true }
-                ?.map { it.name }?.sorted() ?: emptyList()
-            return jsonResponse(200, PlatformsResponse.serializer(), PlatformsResponse(tags))
-        }
-        1 -> {
-            val platformDir = File(artDir, segments[0])
-            if (!isSecure(platformDir) || !platformDir.isDirectory) {
-                return errorResponse(404, "not found")
-            }
-            val files = platformDir.listFiles { f -> f.isFile }
-                ?.sortedBy { it.name.lowercase(java.util.Locale.ROOT) } ?: emptyList()
-            val items = files.map { f ->
-                ArtEntry(name = f.nameWithoutExtension, file = f.name, size = f.length())
-            }
-            return jsonResponse(200, ArtListResponse.serializer(), ArtListResponse(segments[0], items))
-        }
-        2 -> {
-            val platformDir = File(artDir, segments[0])
-            if (!isSecure(platformDir) || !platformDir.isDirectory) {
-                return errorResponse(404, "not found")
-            }
-            val gameName = segments[1]
-            val artFile = platformDir.listFiles { f -> f.isFile && f.nameWithoutExtension == gameName }
-                ?.firstOrNull()
-            if (artFile == null || !isSecure(artFile)) {
-                return errorResponse(404, "not found")
-            }
-            return fileResponse(artFile, artMime(artFile))
-        }
-        else -> return errorResponse(404, "not found")
-    }
 }

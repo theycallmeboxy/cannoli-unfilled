@@ -26,12 +26,6 @@ internal data class TagsResponse(val tags: List<String>)
 internal data class AppsResponse(val tools: List<String>, val ports: List<String>)
 
 @Serializable
-internal data class SettingsResponse(val toolsName: String, val portsName: String)
-
-@Serializable
-internal data class PlatformsResponse(val platforms: List<String>)
-
-@Serializable
 internal data class FileEntry(
     val name: String,
     val size: Long,
@@ -72,48 +66,6 @@ internal data class UploadResponse(
 )
 
 @Serializable
-internal data class ArtEntry(
-    val name: String,
-    val file: String,
-    val size: Long,
-)
-
-@Serializable
-internal data class ArtListResponse(
-    val platform: String,
-    val art: List<ArtEntry>,
-)
-
-@Serializable
-internal data class SlotEntry(
-    val slot: Int,
-    val label: String,
-    val exists: Boolean,
-    val size: Long,
-    val modified: Long,
-    val thumbnail: Boolean,
-)
-
-@Serializable
-internal data class SlotsListResponse(
-    val game: String,
-    val slots: List<SlotEntry>,
-)
-
-@Serializable
-internal data class SlotGamesResponse(
-    val platform: String,
-    val games: List<String>,
-)
-
-@Serializable
-internal data class SlotUploadResponse(
-    val ok: Boolean = true,
-    val slot: Int,
-    val file: String,
-)
-
-@Serializable
 internal data class AuthStatusResponse(val required: Boolean)
 
 @Serializable
@@ -135,6 +87,9 @@ internal data class ApkUploadResponse(
     val ok: Boolean = true,
     val installId: String,
 )
+
+@Serializable
+internal data class ApkCapabilityResponse(val canInstall: Boolean)
 
 @Serializable
 internal data class ApkStatusResponse(

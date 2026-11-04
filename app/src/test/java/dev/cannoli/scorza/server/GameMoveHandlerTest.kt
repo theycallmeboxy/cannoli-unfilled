@@ -69,7 +69,6 @@ class GameMoveHandlerTest {
             method = "POST",
             segments = listOf("NES", "1", "move"),
             query = mapOf("folder" to "RPGs"),
-            headers = emptyMap(),
             session = session,
         )
 
@@ -102,7 +101,6 @@ class GameMoveHandlerTest {
             method = "POST",
             segments = listOf("NES", "2", "move"),
             query = mapOf("folder" to "Classics"),
-            headers = emptyMap(),
             session = session,
         )
 
@@ -127,7 +125,6 @@ class GameMoveHandlerTest {
             method = "POST",
             segments = listOf("NES", "3", "move"),
             query = mapOf("folder" to "RPGs"),
-            headers = emptyMap(),
             session = session,
         )
 
@@ -148,7 +145,6 @@ class GameMoveHandlerTest {
             method = "GET",
             segments = listOf("NES", "4", "move"),
             query = emptyMap(),
-            headers = emptyMap(),
             session = session,
         )
 
@@ -170,7 +166,6 @@ class GameMoveHandlerTest {
             method = "POST",
             segments = listOf("NES", "5", "move"),
             query = emptyMap(),
-            headers = emptyMap(),
             session = session,
         )
 
@@ -192,7 +187,6 @@ class GameMoveHandlerTest {
             method = "POST",
             segments = listOf("NES", "6", "move"),
             query = mapOf("folder" to "NonExistent"),
-            headers = emptyMap(),
             session = session,
         )
 
@@ -214,7 +208,6 @@ class GameMoveHandlerTest {
             method = "POST",
             segments = listOf("NES", "7", "move"),
             query = mapOf("folder" to "RPGs"),
-            headers = emptyMap(),
             session = session,
         )
 

@@ -49,17 +49,9 @@ class KitchenAppsSettingsTest {
         return AppsRepository(CannoliDatabase(paths), ArtworkLookup(paths))
     }
 
-    private fun start(
-        dir: File,
-        apps: AppsRepository? = null,
-        settingsProvider: (() -> SettingsResponse)? = null,
-    ) {
+    private fun start(dir: File, apps: AppsRepository? = null) {
         val assets = ApplicationProvider.getApplicationContext<Context>().assets
-        val s = if (settingsProvider != null) {
-            KitchenHttpServer(dir, assets, port = port, pin = PIN, appsRepository = apps, settingsProvider = settingsProvider)
-        } else {
-            KitchenHttpServer(dir, assets, port = port, pin = PIN, appsRepository = apps)
-        }
+        val s = KitchenHttpServer(dir, assets, port = port, pin = PIN, appsRepository = apps)
         s.startServer()
         repeat(50) {
             try {
@@ -152,31 +144,13 @@ class KitchenAppsSettingsTest {
         assertEquals("Termux.png", repo.all(AppType.TOOL).single().artFile?.name)
     }
 
-    @Test fun `settings returns the configured names`() {
-        val dir = newRoot()
-        start(dir, settingsProvider = { SettingsResponse("Homebrew", "Games") })
-
-        val (code, body) = get("/api/settings")
-        assertEquals(200, code)
-        assertEquals("""{"toolsName":"Homebrew","portsName":"Games"}""", body)
-    }
-
-    @Test fun `settings falls back to the defaults when unwired`() {
+    @Test fun `the removed settings, slots, artwork and scan routes are gone`() {
         val dir = newRoot()
         start(dir)
 
-        val (code, body) = get("/api/settings")
-        assertEquals(200, code)
-        assertEquals("""{"toolsName":"Tools","portsName":"Ports"}""", body)
-    }
-
-    @Test fun `settings exposes nothing beyond the two names`() {
-        val dir = newRoot()
-        start(dir, settingsProvider = { SettingsResponse("Tools", "Ports") })
-
-        val (_, body) = get("/api/settings")
-        val keys = Regex("\"(\\w+)\":").findAll(body).map { it.groupValues[1] }.toSet()
-        assertEquals(setOf("toolsName", "portsName"), keys)
+        for (path in listOf("/api/settings", "/api/slots/SNES", "/api/artwork", "/api/states/SNES", "/api/cheats/SNES", "/api/shaders", "/api/overlays")) {
+            assertEquals(path, 404, get(path).first)
+        }
     }
 
     private companion object {

@@ -32,14 +32,26 @@ class ApkInstallReceiver : BroadcastReceiver() {
                 }
             }
             PackageInstaller.STATUS_SUCCESS -> installer.complete(installId)
-            else -> installer.fail(
-                installId,
-                intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE) ?: "install failed ($status)"
-            )
+            else -> installer.fail(installId, failureMessage(status, intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE)))
         }
     }
 
     companion object {
+        /** Plain words for the failures a user can act on, followed by Android's own message. */
+        internal fun failureMessage(status: Int, detail: String?): String {
+            val reason = when (status) {
+                PackageInstaller.STATUS_FAILURE_ABORTED -> "The install was cancelled on the device."
+                PackageInstaller.STATUS_FAILURE_BLOCKED -> "The device blocked the install."
+                PackageInstaller.STATUS_FAILURE_CONFLICT ->
+                    "It conflicts with an installed app: an app with the same name but a different signature is already installed."
+                PackageInstaller.STATUS_FAILURE_INCOMPATIBLE -> "The app isn't compatible with this device."
+                PackageInstaller.STATUS_FAILURE_INVALID -> "The file isn't a valid APK."
+                PackageInstaller.STATUS_FAILURE_STORAGE -> "Not enough storage on the device."
+                else -> "Install failed ($status)."
+            }
+            return if (detail.isNullOrBlank()) reason else "$reason $detail"
+        }
+
         const val ACTION_RESULT = "dev.cannoli.scorza.server.APK_INSTALL_RESULT"
         const val EXTRA_INSTALL_ID = "install_id"
     }

@@ -21,11 +21,18 @@ class KitchenApkTest {
     private class FakeInstalls(override val stagingDir: File) : ApkInstalls {
         val begun = mutableListOf<File>()
         val statuses = mutableMapOf<String, InstallStatus>()
+        var allowed = true
+        var settingsOpened = 0
         override fun begin(apk: File): String {
             begun.add(apk)
             return "42"
         }
         override fun status(installId: String): InstallStatus? = statuses[installId]
+        override fun canInstall(): Boolean = allowed
+        override fun openInstallSettings(): Boolean {
+            settingsOpened++
+            return true
+        }
     }
 
     private class ThrowingInstalls(override val stagingDir: File) : ApkInstalls {
@@ -103,6 +110,36 @@ class KitchenApkTest {
         assertEquals(1, fake.begun.size)
         assertEquals("APKDATA", fake.begun[0].readText())
         assertTrue(fake.begun[0].parentFile == fake.stagingDir)
+    }
+
+    @Test fun reportsWhetherInstallsAreAllowed() {
+        assertEquals(200 to "{\"canInstall\":true}", request("GET", "/api/apk"))
+        fake.allowed = false
+        assertEquals(200 to "{\"canInstall\":false}", request("GET", "/api/apk"))
+    }
+
+    @Test fun uploadIsRefusedWithoutInstallPermission() {
+        fake.allowed = false
+        val (bytes, contentType) = multipartBody("tool.apk", "APKDATA".toByteArray())
+        val (code, body) = request("POST", "/api/apk", body = bytes, contentType = contentType)
+        assertEquals(403, code)
+        assertTrue(body.contains("install permission missing"))
+        assertEquals(0, fake.begun.size)
+    }
+
+    @Test fun permissionRouteOpensTheDeviceSetting() {
+        val (code, body) = request("POST", "/api/apk/permission", body = ByteArray(0), contentType = "application/json")
+        assertEquals(200, code)
+        assertTrue(body.contains("\"ok\":true"))
+        assertEquals(1, fake.settingsOpened)
+    }
+
+    @Test fun failureMessagesAreReadable() {
+        val cancelled = ApkInstallReceiver.failureMessage(android.content.pm.PackageInstaller.STATUS_FAILURE_ABORTED, null)
+        assertEquals("The install was cancelled on the device.", cancelled)
+        val conflict = ApkInstallReceiver.failureMessage(android.content.pm.PackageInstaller.STATUS_FAILURE_CONFLICT, "INSTALL_FAILED_UPDATE_INCOMPATIBLE")
+        assertTrue(conflict.startsWith("It conflicts with an installed app"))
+        assertTrue(conflict.endsWith("INSTALL_FAILED_UPDATE_INCOMPATIBLE"))
     }
 
     @Test fun nonApkUploadIsRejected() {

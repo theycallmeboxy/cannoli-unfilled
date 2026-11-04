@@ -29,10 +29,7 @@ object GamesResponse {
         val hasArt: Boolean,
         val artUrl: String? = null,
         val savesCount: Int,
-        val statesCount: Int,
         val guidesCount: Int,
-        val cheatsCount: Int,
-        val raGameId: Int? = null,
         val lastPlayedAt: Long? = null,
         val multiDisc: Boolean,
     )
@@ -60,10 +57,7 @@ object GamesResponse {
         val hasArt: Boolean,
         val artUrl: String? = null,
         val savesCount: Int,
-        val statesCount: Int,
         val guidesCount: Int,
-        val cheatsCount: Int,
-        val raGameId: Int? = null,
         val lastPlayedAt: Long? = null,
         val multiDisc: Boolean,
     )
@@ -138,10 +132,7 @@ object GamesResponse {
                 hasArt = game.hasArt,
                 artUrl = game.artUrl,
                 savesCount = game.savesCount,
-                statesCount = game.statesCount,
                 guidesCount = game.guidesCount,
-                cheatsCount = game.cheatsCount,
-                raGameId = game.raGameId,
                 lastPlayedAt = game.lastPlayedAt,
                 multiDisc = game.multiDisc,
             ),
@@ -190,10 +181,7 @@ object GamesResponse {
             hasArt = artFile != null,
             artUrl = artUrl,
             savesCount = index.savesCountFor(baseName),
-            statesCount = countStates(index, baseName),
             guidesCount = countGuides(index, baseName, listDir),
-            cheatsCount = countCheats(index, baseName, listDir),
-            raGameId = rom.raGameId,
             lastPlayedAt = rom.lastPlayedAt,
             multiDisc = rom.isMultiDisc,
         )
@@ -244,30 +232,17 @@ object GamesResponse {
             }
         }
 
-        // Save States, Guides and Cheats each hold one directory per game. Listing that parent once
-        // replaces an isDirectory stat per game, and only games that actually have a directory pay
-        // to look inside it.
-        private val stateDirs: Map<String, File> by lazy {
-            gameDirs(File(cannoliRoot, "Save States/$platformTag"), listDir)
-        }
-
+        // Guides hold one directory per game. Listing that parent once replaces an isDirectory
+        // stat per game, and only games that actually have a directory pay to look inside it.
         private val guideDirs: Map<String, File> by lazy {
             gameDirs(File(cannoliRoot, "Guides/$platformTag"), listDir)
-        }
-
-        private val cheatDirs: Map<String, File> by lazy {
-            gameDirs(File(cannoliRoot, "Cheats/$platformTag"), listDir)
         }
 
         fun artFor(baseName: String): File? = art[artKey(baseName)]
 
         fun savesCountFor(baseName: String): Int = saves[baseName.lowercase()] ?: 0
 
-        fun stateDirFor(baseName: String): File? = stateDirs[baseName.lowercase()]
-
         fun guideDirFor(baseName: String): File? = guideDirs[baseName.lowercase()]
-
-        fun cheatDirFor(baseName: String): File? = cheatDirs[baseName.lowercase()]
 
         private fun gameDirs(dir: File, listDir: (File) -> Array<File>?): Map<String, File> =
             index(dir, listDir) {
@@ -296,13 +271,6 @@ object GamesResponse {
         listDir: (File) -> Array<File>? = { it.listFiles() },
     ): File? = PlatformIndex(cannoliRoot, platformTag, listDir).artFor(baseName)
 
-    private fun countStates(index: PlatformIndex, baseName: String): Int {
-        val dir = index.stateDirFor(baseName) ?: return 0
-        return try {
-            (0..10).count { slot -> File(dir, raStateName(baseName, slot)).isFile }
-        } catch (_: Throwable) { 0 }
-    }
-
     private fun countGuides(
         index: PlatformIndex,
         baseName: String,
@@ -311,17 +279,6 @@ object GamesResponse {
         val dir = index.guideDirFor(baseName) ?: return 0
         return try {
             listDir(dir)?.count { f -> f.isFile } ?: 0
-        } catch (_: Throwable) { 0 }
-    }
-
-    private fun countCheats(
-        index: PlatformIndex,
-        baseName: String,
-        listDir: (File) -> Array<File>?,
-    ): Int {
-        val dir = index.cheatDirFor(baseName) ?: return 0
-        return try {
-            listDir(dir)?.count { f -> f.isFile && f.extension.equals("cht", ignoreCase = true) } ?: 0
         } catch (_: Throwable) { 0 }
     }
 }

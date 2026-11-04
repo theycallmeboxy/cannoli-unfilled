@@ -3,8 +3,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { uploadFiles } from '@/api/client'
-import { platformName, supportsFbneoSamples, isAppTag, isGamesOnlyTag } from '@/api/platforms'
-import { useLauncherSettings } from '@/composables/useLauncherSettings'
+import { platformName, isAppTag, isGamesOnlyTag } from '@/api/platforms'
 import AppsTab from '@/components/platform/AppsTab.vue'
 import Dropdown from '@/components/ui/Dropdown.vue'
 import type { DropdownItem } from '@/components/ui/Dropdown.vue'
@@ -13,26 +12,17 @@ import GamesTab from '@/components/platform/GamesTab.vue'
 import ResourceTab from '@/components/platform/ResourceTab.vue'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import Breadcrumbs, { type Crumb } from '@/components/layout/Breadcrumbs.vue'
-import { Cpu, FolderPlus, Gamepad2, Image, Layers, Music, Upload } from 'lucide-vue-next'
+import { Cpu, FolderPlus, Gamepad2, Image, Upload } from 'lucide-vue-next'
 
-type TabKey = 'games' | 'overlays' | 'bios' | 'samples' | 'apps'
-const TAB_KEYS: readonly TabKey[] = ['games', 'overlays', 'bios', 'samples', 'apps']
-const SAMPLES_SUBPATH = ['fbneo', 'samples']
+type TabKey = 'games' | 'bios' | 'apps'
+const TAB_KEYS: readonly TabKey[] = ['games', 'bios', 'apps']
 
 const props = defineProps<{ tag: string; tab?: string; folder?: string }>()
 const router = useRouter()
 const { t } = useI18n()
 
 const isApps = computed(() => isAppTag(props.tag))
-const { settings: launcherSettings, load: loadLauncherSettings } = useLauncherSettings()
-loadLauncherSettings()
-
-/** Tools and Ports show the row name the user chose in the launcher, not a PLATFORM_NAMES entry. */
-const displayName = computed(() => {
-  if (props.tag === 'TOOLS') return launcherSettings.value.toolsName
-  if (props.tag === 'PORTS') return launcherSettings.value.portsName
-  return platformName(props.tag)
-})
+const displayName = computed(() => platformName(props.tag))
 
 const isGamesOnly = computed(() => isGamesOnlyTag(props.tag))
 const showTabs = computed(() => !isGamesOnly.value)
@@ -40,8 +30,7 @@ const showTabs = computed(() => !isGamesOnly.value)
 const activeTab = computed<TabKey>(() => {
   if (isApps.value) return 'apps'
   if (isGamesOnly.value) return 'games'
-  const t = TAB_KEYS.includes(props.tab as TabKey) ? (props.tab as TabKey) : 'games'
-  return t === 'samples' && !supportsFbneoSamples(props.tag) ? 'games' : t
+  return TAB_KEYS.includes(props.tab as TabKey) ? (props.tab as TabKey) : 'games'
 })
 
 const crumbs = computed<Crumb[]>(() => {
@@ -67,10 +56,8 @@ const tabs = computed(() => {
   if (isApps.value) return [{ key: 'apps' as TabKey, label: displayName.value }]
   const list: { key: TabKey; label: string }[] = [
     { key: 'games', label: t('platform.tabGames') },
-    { key: 'overlays', label: t('platform.tabOverlays') },
     { key: 'bios', label: t('platform.tabBios') },
   ]
-  if (supportsFbneoSamples(props.tag)) list.push({ key: 'samples', label: t('platform.tabSamples') })
   return list
 })
 
@@ -78,19 +65,13 @@ function selectTab(tab: TabKey) {
   if (isApps.value || isGamesOnly.value) return
   if (tab === 'games') {
     router.replace({ name: 'platform', params: { tag: props.tag } })
-  } else if (tab === 'overlays') {
-    router.replace({ name: 'platform-overlays', params: { tag: props.tag } })
-  } else if (tab === 'samples') {
-    router.replace({ name: 'platform-samples', params: { tag: props.tag } })
   } else {
     router.replace({ name: 'platform-bios', params: { tag: props.tag } })
   }
 }
 
 const gamesTabRef = ref<InstanceType<typeof GamesTab> | null>(null)
-const overlaysTabRef = ref<InstanceType<typeof ResourceTab> | null>(null)
 const biosTabRef = ref<InstanceType<typeof ResourceTab> | null>(null)
-const samplesTabRef = ref<InstanceType<typeof ResourceTab> | null>(null)
 
 const bulkArtInput = ref<HTMLInputElement>()
 const bulkArtUploading = ref(false)
@@ -139,16 +120,6 @@ const actionItems = computed<DropdownItem[]>(() => {
       { label: t('platform.newFolder'), icon: FolderPlus, onSelect: () => gamesTabRef.value?.triggerNewFolder() },
       { label: t('platform.uploadRoms'), icon: Gamepad2, onSelect: () => gamesTabRef.value?.triggerRomUpload() },
       { label: t('platform.bulkArtUpload'), icon: Image, onSelect: () => bulkArtInput.value?.click() },
-    ]
-  }
-  if (activeTab.value === 'overlays') {
-    return [
-      { label: t('platform.uploadOverlay'), icon: Layers, onSelect: () => overlaysTabRef.value?.triggerUpload() },
-    ]
-  }
-  if (activeTab.value === 'samples') {
-    return [
-      { label: t('platform.uploadSample'), icon: Music, onSelect: () => samplesTabRef.value?.triggerUpload() },
     ]
   }
   return [
@@ -214,24 +185,6 @@ const actionItems = computed<DropdownItem[]>(() => {
         ref="gamesTabRef"
         :tag="props.tag"
         :folder="props.folder ?? ''"
-      />
-      <ResourceTab
-        v-else-if="activeTab === 'overlays'"
-        key="overlays"
-        ref="overlaysTabRef"
-        :tag="props.tag"
-        resource="overlays"
-        display="images"
-      />
-      <ResourceTab
-        v-else-if="activeTab === 'samples'"
-        key="samples"
-        ref="samplesTabRef"
-        :tag="props.tag"
-        resource="bios"
-        :sub-path="SAMPLES_SUBPATH"
-        :empty-label="$t('platform.noSamplesYet')"
-        display="list"
       />
       <ResourceTab
         v-else

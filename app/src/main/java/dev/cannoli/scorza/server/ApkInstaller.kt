@@ -4,7 +4,9 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dev.cannoli.scorza.util.KitchenLog
 import java.io.File
@@ -18,7 +20,6 @@ class ApkInstaller @Inject constructor(
 ) : ApkInstalls {
 
     private val statuses = ConcurrentHashMap<String, InstallStatus>()
-    private val stagedFiles = ConcurrentHashMap<String, File>()
 
     override val stagingDir: File
         get() = File(context.cacheDir, "kitchen-apk").apply { mkdirs() }
@@ -35,15 +36,15 @@ class ApkInstaller @Inject constructor(
                     session.fsync(out)
                 }
                 statuses[installId] = InstallStatus(InstallStatus.PENDING_USER)
-                stagedFiles[installId] = apk
                 session.commit(resultIntent(sessionId, installId).intentSender)
             }
         } catch (e: Exception) {
             installer.abandonSession(sessionId)
-            apk.delete()
             statuses.remove(installId)
-            stagedFiles.remove(installId)
             throw e
+        } finally {
+            // The session holds its own copy once written, so the upload isn't needed either way.
+            apk.delete()
         }
         KitchenLog.log("apk install $installId committed for ${apk.name}")
         return installId
@@ -51,20 +52,29 @@ class ApkInstaller @Inject constructor(
 
     override fun status(installId: String): InstallStatus? = statuses[installId]
 
+    /** Whether the user has allowed this app to install unknown apps (Android 8+). */
+    override fun canInstall(): Boolean = context.packageManager.canRequestPackageInstalls()
+
+    /** Opens this app's "Install unknown apps" switch on the device's screen. */
+    override fun openInstallSettings(): Boolean = try {
+        context.startActivity(
+            Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:${context.packageName}"))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+        true
+    } catch (e: Exception) {
+        KitchenLog.logError("could not open install settings", e)
+        false
+    }
+
     internal fun complete(installId: String) {
         statuses[installId] = InstallStatus(InstallStatus.SUCCESS)
-        cleanup(installId)
         KitchenLog.log("apk install $installId succeeded")
     }
 
     internal fun fail(installId: String, message: String) {
         statuses[installId] = InstallStatus(InstallStatus.FAILURE, message)
-        cleanup(installId)
         KitchenLog.log("apk install $installId failed: $message")
-    }
-
-    private fun cleanup(installId: String) {
-        stagedFiles.remove(installId)?.delete()
     }
 
     private fun resultIntent(sessionId: Int, installId: String): PendingIntent {

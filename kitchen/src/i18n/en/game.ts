@@ -6,9 +6,7 @@ export default {
   // Tabs
   tabGameFiles: 'Game Files',
   tabSaves: 'Saves',
-  tabSaveStates: 'Save States',
   tabGuides: 'Guides',
-  tabCheats: 'Cheats',
 
   // Last played
   neverPlayed: 'Never played',
@@ -35,7 +33,7 @@ export default {
   // Delete game modal
   deleteGameTitle: 'Delete game?',
   deleteGameBody: '{name} will be removed from the library.',
-  deleteGamePurgeLabel: 'Also delete saves, save states, box art, and guides',
+  deleteGamePurgeLabel: 'Also delete saves, box art and guides',
   deleting: 'Deleting...',
 
   // ROM tab
@@ -50,23 +48,7 @@ export default {
   noSaves: 'No saves yet.',
   deleteFileTitle: 'Delete {name}?',
 
-  // Save states tab
-  loadStatesFailed: 'Failed to load save states',
-  deleteSelected: 'Delete selected ({n})',
-  downloadAllZip: 'Download all (ZIP)',
-  deleteStatesTitle: 'Delete {n} save state? | Delete {n} save states?',
-  deleteSelectedFailed: 'One or more deletes failed',
-  zipDownloadFailed: 'ZIP download failed',
-  noPreview: 'No preview',
-  empty: 'Empty',
-  replaceSlotTitle: 'Replace {label}?',
-  deleteSlotTitle: 'Delete {label}?',
-
   // Guides tab
   loadGuidesFailed: 'Failed to load guides',
   noGuides: 'No guides yet.',
-
-  // Cheats tab
-  loadCheatsFailed: 'Failed to load cheats',
-  noCheats: 'No cheat files yet. Upload a .cht file to get started.',
 }

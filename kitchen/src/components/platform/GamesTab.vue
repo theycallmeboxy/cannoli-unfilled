@@ -139,7 +139,6 @@ const ordered = computed(() => {
     let r: number
     switch (sortKey.value) {
       case 'saves': r = a.savesCount - b.savesCount; break
-      case 'states': r = a.statesCount - b.statesCount; break
       case 'guides': r = a.guidesCount - b.guidesCount; break
       case 'played': r = (a.lastPlayedAt ?? 0) - (b.lastPlayedAt ?? 0); break
       default: r = a.displayName.localeCompare(b.displayName)

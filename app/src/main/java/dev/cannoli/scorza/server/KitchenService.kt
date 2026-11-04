@@ -86,17 +86,17 @@ class KitchenService : Service() {
             isArcadePlatform = { tag -> platformConfig.isArcade(tag) },
             platformTagsProvider = { platformConfig.getAllTags().map { it.uppercase() } },
             volumesProvider = {
-                setupCoordinator.detectStorageVolumes().mapIndexed { index, (label, path) ->
-                    KitchenVolume(
-                        id = if (index == 0) "internal" else File(path).name,
-                        label = label,
-                        root = File(path),
-                    )
-                }
+                listOf(KitchenVolume(id = "cannoli", label = "Cannoli", root = root)) +
+                    setupCoordinator.detectStorageVolumes().mapIndexed { index, (label, path) ->
+                        KitchenVolume(
+                            id = if (index == 0) "internal" else File(path).name,
+                            label = label,
+                            root = File(path),
+                        )
+                    }
             },
             apkInstalls = apkInstaller,
             appsRepository = appsRepository,
-            settingsProvider = { SettingsResponse(settings.toolsName, settings.portsName) },
             artThumbnails = ArtThumbnails(File(cacheDir, "art-thumbs")),
             configFiles = libraryConfigFiles(libraryConfig, onSaved = KitchenManager::onConfigSaved),
         )

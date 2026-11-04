@@ -7,8 +7,9 @@ import platform from './en/platform'
 import game from './en/game'
 import browse from './en/browse'
 import dialogs from './en/dialogs'
+import config from './en/config'
 
-const en = { common, dashboard, tools, login, platform, game, browse, dialogs }
+const en = { common, dashboard, tools, login, platform, game, browse, dialogs, config }
 
 export const i18n = createI18n({
   legacy: false,

@@ -55,7 +55,7 @@ class GamesResponseTest {
     @Test
     fun `single rom with no resources reports zero counts`() {
         val romDir = File(tmp.root, "Roms/SNES").also { it.mkdirs() }
-        val romFile = File(romDir, "chrono.sfc").also { it.writeBytes(ByteArray(1024)) }
+        File(romDir, "chrono.sfc").writeBytes(ByteArray(1024))
         val rom = fakeRom(42, "SNES/chrono.sfc", "Chrono Trigger")
         val repo = mockRepo(listOf(rom))
 
@@ -67,20 +67,16 @@ class GamesResponseTest {
         assertEquals("Chrono Trigger", game.getString("displayName"))
         assertFalse(game.getBoolean("hasArt"))
         assertEquals(0, game.getInt("savesCount"))
-        assertEquals(0, game.getInt("statesCount"))
         assertEquals(0, game.getInt("guidesCount"))
         assertFalse(game.has("artUrl"))
     }
 
     @Test
-    fun `counts saves states and guides next to the rom`() {
+    fun `counts saves and guides next to the rom`() {
         val romDir = File(tmp.root, "Roms/SNES").also { it.mkdirs() }
-        val romFile = File(romDir, "earthbound.sfc").also { it.writeBytes(ByteArray(2048)) }
+        File(romDir, "earthbound.sfc").writeBytes(ByteArray(2048))
         File(tmp.root, "Saves/SNES").mkdirs()
         File(tmp.root, "Saves/SNES/earthbound.srm").writeBytes(ByteArray(8))
-        File(tmp.root, "Save States/SNES/earthbound").mkdirs()
-        File(tmp.root, "Save States/SNES/earthbound/earthbound.state").writeBytes(ByteArray(16))
-        File(tmp.root, "Save States/SNES/earthbound/earthbound.state1").writeBytes(ByteArray(16))
         File(tmp.root, "Guides/SNES/earthbound").mkdirs()
         File(tmp.root, "Guides/SNES/earthbound/walkthrough.txt").writeBytes(ByteArray(4))
 
@@ -91,24 +87,21 @@ class GamesResponseTest {
             .getJSONArray("games").getJSONObject(0)
 
         assertEquals(1, game.getInt("savesCount"))
-        assertEquals(2, game.getInt("statesCount"))
         assertEquals(1, game.getInt("guidesCount"))
     }
 
     @Test
-    fun `counts cheat files next to the rom`() {
+    fun `no longer reports save states, cheats or RetroAchievements`() {
         val romDir = File(tmp.root, "Roms/SNES").also { it.mkdirs() }
         File(romDir, "zelda.sfc").also { it.writeBytes(ByteArray(64)) }
-        File(tmp.root, "Cheats/SNES/zelda").also { it.mkdirs() }
-        File(tmp.root, "Cheats/SNES/zelda/zelda.cht").writeText("cheats = 1\ncheat0_desc = \"X\"\n")
-        File(tmp.root, "Cheats/SNES/zelda/notes.txt").writeText("ignored")
-        val rom = fakeRom(7, "SNES/zelda.sfc", "Zelda")
-        val repo = mockRepo(listOf(rom))
+        val repo = mockRepo(listOf(fakeRom(7, "SNES/zelda.sfc", "Zelda")))
 
-        val json = GamesResponse.buildList(repo, tmp.root, File(tmp.root, "Roms"), "SNES", "Super Nintendo")
-        val game = JSONObject(json).getJSONArray("games").getJSONObject(0)
+        val game = JSONObject(GamesResponse.buildList(repo, tmp.root, File(tmp.root, "Roms"), "SNES", "Super Nintendo"))
+            .getJSONArray("games").getJSONObject(0)
 
-        assertEquals(1, game.getInt("cheatsCount"))
+        assertFalse(game.has("statesCount"))
+        assertFalse(game.has("cheatsCount"))
+        assertFalse(game.has("raGameId"))
     }
 
     @Test
@@ -201,23 +194,6 @@ class GamesResponseTest {
             .getJSONArray("games").getJSONObject(0)
         assertFalse(game.has("size"))
         assertFalse(game.has("modified"))
-    }
-
-    @Test
-    fun `counts auto slot and highest numbered slot`() {
-        val romDir = File(tmp.root, "Roms/SNES").also { it.mkdirs() }
-        File(romDir, "metroid.sfc").writeBytes(ByteArray(2048))
-        File(tmp.root, "Save States/SNES/metroid").mkdirs()
-        File(tmp.root, "Save States/SNES/metroid/metroid.state.auto").writeBytes(ByteArray(16))
-        File(tmp.root, "Save States/SNES/metroid/metroid.state").writeBytes(ByteArray(16))
-        File(tmp.root, "Save States/SNES/metroid/metroid.state9").writeBytes(ByteArray(16))
-
-        val rom = fakeRom(5, "SNES/metroid.sfc", "Metroid")
-        val repo = mockRepo(listOf(rom))
-
-        val game = JSONObject(GamesResponse.buildList(repo, tmp.root, File(tmp.root, "Roms"), "SNES", "Super Nintendo"))
-            .getJSONArray("games").getJSONObject(0)
-        assertEquals(3, game.getInt("statesCount"))
     }
 
     @Test
@@ -318,7 +294,7 @@ class GamesResponseTest {
     private fun listingsForLibraryOf(gameCount: Int): Int {
         val root = tmp.newFolder("lib$gameCount")
         val romDir = File(root, "Roms/SNES").also { it.mkdirs() }
-        listOf("Art", "Saves", "Save States", "Guides", "Cheats")
+        listOf("Art", "Saves", "Guides")
             .forEach { File(root, "$it/SNES").mkdirs() }
         val roms = (0 until gameCount).map { i ->
             File(romDir, "Game $i.sfc").writeBytes(ByteArray(16))
@@ -402,7 +378,7 @@ class GamesResponseTest {
 
     @Test
     fun `resource directories are listed once each regardless of library size`() {
-        assertEquals(5, listingsForLibraryOf(50))
-        assertEquals(5, listingsForLibraryOf(200))
+        assertEquals(3, listingsForLibraryOf(50))
+        assertEquals(3, listingsForLibraryOf(200))
     }
 }

@@ -11,6 +11,10 @@ internal fun KitchenHttpServer.handleApk(
 ): Response {
     val installs = apkInstalls ?: return errorResponse(503, "install not available")
     return when {
+        method == "GET" && segments.isEmpty() ->
+            jsonResponse(200, ApkCapabilityResponse.serializer(), ApkCapabilityResponse(canInstall = installs.canInstall()))
+        method == "POST" && segments == listOf("permission") ->
+            jsonResponse(200, OkResponse.serializer(), OkResponse(ok = installs.openInstallSettings()))
         method == "POST" && segments.isEmpty() -> handleApkUpload(installs, session)
         method == "GET" && segments.size == 1 -> {
             val status = installs.status(segments[0]) ?: return errorResponse(404, "not found")
@@ -27,6 +31,10 @@ private fun KitchenHttpServer.handleApkUpload(
     val contentType = session.headers["content-type"] ?: ""
     if (!contentType.startsWith("multipart/form-data")) {
         return errorResponse(400, "multipart upload required")
+    }
+    // Checked before the upload, so a large APK isn't sent only for Android to refuse it.
+    if (!installs.canInstall()) {
+        return errorResponse(403, "install permission missing")
     }
     val contentLength = session.headers["content-length"]?.toLongOrNull() ?: 0L
     val staging = installs.stagingDir
