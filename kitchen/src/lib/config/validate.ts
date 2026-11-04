@@ -2,6 +2,10 @@
  * Inline checks for a config file: where its JSON breaks, then (for valid JSON) what the app's
  * parsers would skip or ignore, and names that refer to nothing in the other files. The server's
  * problems list stays the final word; these are found as you type.
+ *
+ * Severities follow the server's: an error is something malformed that Cannoli skips whole (or a
+ * file it can't read), a warning a harmless reference, repeat or key that only drops that one
+ * thing, and info a note about the device (an app not installed, a folder not made yet).
  */
 
 import { findJsonError } from '@/lib/configMerge'
@@ -278,7 +282,7 @@ class Checker {
             : undefined
           const name = choiceName(plainItem)
           if (name) {
-            if (names.has(name)) this.add(item.from, item.to, 'error', `"${name}" is already listed: give one a "name". This one is skipped.`)
+            if (names.has(name)) this.add(item.from, item.to, 'warning', `"${name}" is already listed: give one a "name". This one is skipped.`)
             names.add(name)
           }
           if (item.type === 'string' && item.value.trim()) this.missingParams(item.value.trim(), new Set(), item)
@@ -294,7 +298,7 @@ class Checker {
     if (!emu || emu.source !== 'file') return
     const missing = emu.info.params.filter(p => !given.has(p))
     if (missing.length) {
-      this.add(at.from, at.to, 'warning', `${emulator} uses ${missing.map(p => `{${p}}`).join(', ')}: give ${missing.length > 1 ? 'them values' : 'it a value'} with ${missing.map(p => `"${p}"`).join(', ')}, or this item is skipped.`)
+      this.add(at.from, at.to, 'error', `${emulator} uses ${missing.map(p => `{${p}}`).join(', ')}: give ${missing.length > 1 ? 'them values' : 'it a value'} with ${missing.map(p => `"${p}"`).join(', ')}, or this item is skipped.`)
     }
   }
 

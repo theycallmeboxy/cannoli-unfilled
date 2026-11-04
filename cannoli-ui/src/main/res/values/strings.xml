@@ -544,10 +544,6 @@
     <!-- Emulator picker mark: the emulator reports it doesn't have the core this system uses. -->
     <string name="value_core_missing" tools:ignore="MissingTranslation">Core Missing</string>
     <!-- OSD toast. %1$d = number of problems found in the config files (emulators.json, systems.json...). -->
-    <plurals name="osd_config_errors" tools:ignore="MissingTranslation">
-        <item quantity="one">Config has %1$d problem, see Logs/error.log</item>
-        <item quantity="other">Config has %1$d problems, see Logs/error.log</item>
-    </plurals>
     <!-- OSD toast. %1$d = player number, %2$s = controller name. -->
     <string name="osd_controller_disconnected_port">P%1$d: %2$s disconnected</string>
     <!-- OSD toast. %1$s = controller name. -->
@@ -683,4 +679,14 @@
     <string name="kbd_help_cursor_jump">JUMP TO START / END</string>
     <string name="kbd_help_submit">SUBMIT</string>
     <string name="kbd_help_cancel">CANCEL</string>
+    <!-- OSD toast when the config files have problems. %1$s = osd_config_error_count and/or osd_config_warning_count, joined by ", ". -->
+    <string name="osd_config_problems" tools:ignore="MissingTranslation">Config: %1$s, see Logs/error.log</string>
+    <plurals name="osd_config_error_count" tools:ignore="MissingTranslation">
+        <item quantity="one">%1$d error</item>
+        <item quantity="other">%1$d errors</item>
+    </plurals>
+    <plurals name="osd_config_warning_count" tools:ignore="MissingTranslation">
+        <item quantity="one">%1$d warning</item>
+        <item quantity="other">%1$d warnings</item>
+    </plurals>
 </resources>

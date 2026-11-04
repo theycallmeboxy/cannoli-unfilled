@@ -1,5 +1,6 @@
 package dev.cannoli.scorza.server
 
+import dev.cannoli.scorza.config.library.ConfigProblem
 import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.config.library.LibraryFile
 import fi.iki.elonen.NanoHTTPD
@@ -14,10 +15,10 @@ import org.json.JSONObject
  */
 class KitchenConfigFile(
     val read: () -> String,
-    val problems: () -> List<String>,
+    val problems: () -> List<ConfigProblem>,
     val save: ((String) -> SaveResult)? = null,
 ) {
-    data class SaveResult(val written: Boolean, val problems: List<String>)
+    data class SaveResult(val written: Boolean, val problems: List<ConfigProblem>)
 }
 
 /**
@@ -49,6 +50,8 @@ fun libraryConfigFiles(config: LibraryConfig, onSaved: () -> Unit): Map<String, 
  * PUT  /api/config/<name>  body = the whole file -> { "saved", "problems": [...] }, 422 if refused,
  *                          405 for a read-only file such as a template
  *
+ * Each problem is `{ "severity": "error" | "warning", "message" }`, errors first.
+ *
  * GET  /api/config/hints  -> what the config editor suggests from the device: see [handleConfigHints]
  *
  * Only the files in [KitchenHttpServer.configFiles] are reachable, by name, never by path.
@@ -72,7 +75,7 @@ internal fun KitchenHttpServer.handleConfig(
             JSONObject()
                 .put("name", name)
                 .put("text", file.read())
-                .put("problems", JSONArray(file.problems()))
+                .put("problems", problemsJson(file.problems()))
                 .toString(),
         )
         "PUT" -> {
@@ -83,7 +86,7 @@ internal fun KitchenHttpServer.handleConfig(
                 if (result.written) 200 else 422,
                 JSONObject()
                     .put("saved", result.written)
-                    .put("problems", JSONArray(result.problems))
+                    .put("problems", problemsJson(result.problems))
                     .toString(),
             )
         }
@@ -92,6 +95,13 @@ internal fun KitchenHttpServer.handleConfig(
 }
 
 private const val HINTS = "hints"
+
+/** [problems] as the API sends them, errors before warnings and otherwise in file order. */
+internal fun problemsJson(problems: List<ConfigProblem>): JSONArray = JSONArray().apply {
+    for (problem in problems.sortedBy { it.severity.ordinal }) {
+        put(JSONObject().put("severity", problem.severity.name.lowercase()).put("message", problem.message))
+    }
+}
 
 /** More games than this and the editor gets the first ones only, flagged by "gamesTruncated". */
 internal const val MAX_HINT_GAMES = 20_000

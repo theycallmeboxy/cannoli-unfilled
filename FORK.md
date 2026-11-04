@@ -54,7 +54,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   shortcuts, to copy from. Keys starting with `_` are comments. The files are re-read when you
   return to Cannoli; bad entries are skipped, shown as a short message and listed in
   `Logs/error.log`; a file that isn't valid JSON keeps its last good state and isn't
-  overwritten.
+  overwritten. Each problem is an error (something skipped whole) or a warning (one option or
+  reference dropped, the rest works), logged once with `ERROR`/`WARNING` and its file first.
 - **Empty to start:** new and existing installs start with these files empty, so the main menu
   shows no systems until you copy some in from the templates, or adopt a ROM folder on the
   device.
@@ -162,6 +163,8 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Config problems labelled error or warning, logged once per load |
+| 2026-11-03 | Bold Text uses a real bold face; secondary text keeps its color |
 | 2026-11-03 | Kitchen: IDE-style config editor with autocomplete from the device and other files |
 | 2026-11-03 | Kitchen: config file editor, working file transfer and APK install; removed dead pages |
 | 2026-11-03 | Kitchen web page source copied into kitchen/ and built with the app |

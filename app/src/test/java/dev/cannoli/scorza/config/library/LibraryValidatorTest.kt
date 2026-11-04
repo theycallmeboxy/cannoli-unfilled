@@ -12,6 +12,10 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class LibraryValidatorTest {
 
+    private val Validated.messages get() = problems.map { it.message }
+
+    private fun Validated.severityOf(part: String) = problems.single { part in it.message }.severity
+
     private val emulators = LibraryParser.parseEmulators(
         """{ "retroarch": { "package": "com.retroarch.aarch64", "extras": [
                { "key": "ROM", "kind": "string", "value": "{rom_path}" },
@@ -42,8 +46,14 @@ class LibraryValidatorTest {
     @Test fun `dangling emulators and unfilled placeholders drop the ref`() {
         val v = validate()
         assertEquals(listOf("retroarch", "VBA", "pizzaboy"), v.library.systems.getValue("GBA").emulators.map { it.choiceName })
-        assertTrue(v.errors.toString(), v.errors.any { "GBA.emulators \"missing\"" in it && "no emulator named" in it })
-        assertTrue(v.errors.toString(), v.errors.any { "\"NoCore\"" in it && "{core}" in it && "\"core\"" in it })
+        assertTrue(
+            v.messages.toString(),
+            "systems.json: GBA emulator \"missing\" isn't in emulators.json, so it's left out of GBA's choices" in v.messages,
+        )
+        assertTrue(v.messages.toString(), v.messages.any { "\"NoCore\"" in it && "{core}" in it && "\"core\"" in it })
+        // A missing emulator only drops that choice; a choice missing a value its emulator needs is malformed.
+        assertEquals(Severity.WARNING, v.severityOf("\"missing\""))
+        assertEquals(Severity.ERROR, v.severityOf("\"NoCore\""))
     }
 
     @Test fun `a RomM slug two systems claim stays with the first`() {
@@ -53,8 +63,9 @@ class LibraryValidatorTest {
         val v = LibraryValidator.validate(emptyMap(), claims, emptyMap(), emptyList(), emptyMap())
         assertEquals(listOf("snes", "sfc"), v.library.systems.getValue("SNES").romm)
         assertEquals(listOf("super-famicom"), v.library.systems.getValue("SFC").romm)
-        assertEquals(v.errors.toString(), 1, v.errors.size)
-        assertTrue(v.errors.single(), "SFC.romm \"sfc\"" in v.errors.single() && "SNES" in v.errors.single())
+        assertEquals(v.messages.toString(), 1, v.messages.size)
+        assertTrue(v.messages.single(), "SFC.romm \"sfc\"" in v.messages.single() && "SNES" in v.messages.single())
+        assertEquals(Severity.WARNING, v.problems.single().severity)
     }
 
     @Test fun `dangling directory systems and shortcuts are dropped`() {
@@ -67,10 +78,12 @@ class LibraryValidatorTest {
             ),
             v.library.directory,
         )
-        assertTrue(v.errors.any { "system \"NES\" in Nintendo skipped" in it })
-        assertTrue(v.errors.any { "shortcut \"nope\" in Nintendo skipped" in it })
+        assertTrue(v.messages.any { "system \"NES\" in Nintendo isn't in systems.json" in it })
+        assertTrue(v.messages.any { "shortcut \"nope\" in Nintendo isn't in shortcuts.json" in it })
+        assertEquals(Severity.WARNING, v.severityOf("system \"NES\""))
+        assertEquals(Severity.WARNING, v.severityOf("shortcut \"nope\""))
         assertEquals(setOf("GBA"), v.library.placedSystemIds())
-        assertEquals(4, v.errors.size)
+        assertEquals(4, v.messages.size)
     }
 
     @Test fun `overrides must name a choice of the game's system`() {
@@ -88,8 +101,9 @@ class LibraryValidatorTest {
             mapOf("GBA/a.gba" to "VBA", "GBA/b.gba" to "pizzaboy", "Handheld/GB/d.gb" to "pizzaboy", "GBA/f.gba" to "retroarch"),
             v.library.overrides,
         )
-        assertTrue(v.errors.any { "\"GBA/c.gba\" skipped" in it })
-        assertTrue(v.errors.any { "\"GB/e.gb\" skipped" in it && "ROM folder" in it })
+        assertTrue(v.messages.any { "\"GBA/c.gba\" is ignored" in it && "isn't one of GBA's emulators" in it })
+        assertTrue(v.messages.any { "\"GB/e.gb\" is ignored" in it && "ROM folder" in it })
+        assertTrue(v.problems.toString(), v.problems.all { it.severity == Severity.WARNING || "NoCore" in it.message })
     }
 
     @Test fun `a launch plan fills params and leaves built-ins for the launcher`() {

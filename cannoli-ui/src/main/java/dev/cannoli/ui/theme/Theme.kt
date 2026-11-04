@@ -21,6 +21,7 @@ private val CannoliColorScheme = darkColorScheme(
 fun CannoliTheme(
     fontFamily: FontFamily = FontFamily.Default,
     iconFontFamily: FontFamily = fontFamily,
+    boldFontFamily: FontFamily = fontFamily,
     centeredLists: Boolean = false,
     highlightStyle: HighlightStyle = HighlightStyle.PILL,
     content: @Composable () -> Unit,
@@ -28,6 +29,7 @@ fun CannoliTheme(
     CompositionLocalProvider(
         LocalCannoliFont provides fontFamily,
         LocalCannoliIconFont provides iconFontFamily,
+        LocalCannoliBoldFont provides boldFontFamily,
         LocalCenteredLists provides centeredLists,
         LocalHighlightStyle provides highlightStyle,
     ) {

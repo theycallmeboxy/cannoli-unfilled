@@ -2,6 +2,7 @@ package dev.cannoli.scorza.server
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import dev.cannoli.scorza.config.library.ConfigProblem
 import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.config.library.LibraryFile
 import org.json.JSONObject
@@ -37,13 +38,13 @@ class KitchenConfigTest {
 
     private fun fakeFile() = KitchenConfigFile(
         read = { saved },
-        problems = { listOf("one problem") },
+        problems = { listOf(ConfigProblem.warning("a warning"), ConfigProblem.error("an error")) },
         save = { text ->
             if (text.startsWith("{")) {
                 saved = text
                 KitchenConfigFile.SaveResult(true, emptyList())
             } else {
-                KitchenConfigFile.SaveResult(false, listOf("not valid JSON"))
+                KitchenConfigFile.SaveResult(false, listOf(ConfigProblem.error("not valid JSON")))
             }
         },
     )
@@ -99,7 +100,13 @@ class KitchenConfigTest {
         assertEquals(200, code)
         val json = JSONObject(body)
         assertEquals("{}", json.getString("text"))
-        assertEquals("one problem", json.getJSONArray("problems").getString(0))
+        // Errors come first, each with its severity.
+        val problems = json.getJSONArray("problems")
+        assertEquals(2, problems.length())
+        assertEquals("error", problems.getJSONObject(0).getString("severity"))
+        assertEquals("an error", problems.getJSONObject(0).getString("message"))
+        assertEquals("warning", problems.getJSONObject(1).getString("severity"))
+        assertEquals("a warning", problems.getJSONObject(1).getString("message"))
     }
 
     @Test fun `put saves valid text and refuses the rest with 422`() {
@@ -112,6 +119,7 @@ class KitchenConfigTest {
         val (bad, badBody) = call("PUT", "/api/config/directory.json", "nope")
         assertEquals(422, bad)
         assertFalse(JSONObject(badBody).getBoolean("saved"))
+        assertEquals("error", JSONObject(badBody).getJSONArray("problems").getJSONObject(0).getString("severity"))
         assertEquals("""{"items":[]}""", saved)
     }
 
@@ -166,6 +174,9 @@ class KitchenConfigTest {
         assertEquals(200, code)
         val problems = JSONObject(body).getJSONArray("problems")
         assertTrue(problems.toString(), problems.length() > 0)
+        val first = problems.getJSONObject(0)
+        assertEquals("warning", first.getString("severity"))
+        assertTrue(first.getString("message"), "\"nowhere\" isn't in emulators.json" in first.getString("message"))
         val get = JSONObject(call("GET", "/api/config/systems.json").second)
         assertEquals(problems.toString(), get.getJSONArray("problems").toString())
     }

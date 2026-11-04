@@ -16,6 +16,10 @@ import org.robolectric.annotation.Config
 @Config(sdk = [34])
 class LibraryParserTest {
 
+    private val Parsed<*>.messages get() = problems.map { it.message }
+
+    private fun Parsed<*>.severityOf(part: String) = problems.single { part in it.message }.severity
+
     private val retroarch = """
         "retroarch": {
           "_note": "a comment",
@@ -36,7 +40,7 @@ class LibraryParserTest {
             """{ "_about": ["x"], $retroarch, "pizzaboy": { "name": "Pizza Boy GBA", "package": "it.dbtecno.pizzaboygba",
                  "extras": [ { "key": "rom_uri", "kind": "uri_string" } ] } }"""
         )
-        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertTrue(p.messages.toString(), p.messages.isEmpty())
         assertTrue(p.validJson)
         assertEquals(listOf("retroarch", "pizzaboy"), p.value.keys.toList())
         val ra = p.value.getValue("retroarch")
@@ -55,8 +59,11 @@ class LibraryParserTest {
                  "good": { "package": "com.good" } }"""
         )
         assertEquals(listOf("good"), p.value.keys.toList())
-        assertEquals(3, p.errors.size)
-        assertTrue(p.errors.all { it.startsWith("emulators.json: ") && "skipped" in it })
+        assertEquals(3, p.messages.size)
+        assertTrue(p.messages.all { it.startsWith("emulators.json: ") && "skipped" in it })
+        // A whole emulator not loaded is an error.
+        assertTrue(p.problems.all { it.severity == Severity.ERROR })
+        assertTrue(p.problems.all { it.logLine.startsWith("ERROR emulators.json: ") })
     }
 
     @Test fun `invalid JSON gives an empty result and one error`() {
@@ -64,8 +71,10 @@ class LibraryParserTest {
             val p = LibraryParser.parseEmulators(text)
             assertFalse(p.validJson)
             assertTrue(p.value.isEmpty())
-            assertEquals(1, p.errors.size)
-            assertTrue(p.errors.single().contains("not valid JSON"))
+            assertEquals(1, p.messages.size)
+            assertTrue(p.messages.single().contains("not valid JSON"))
+            assertTrue(p.messages.single().contains("the last version that loaded is still in use"))
+            assertEquals(Severity.ERROR, p.problems.single().severity)
         }
     }
 
@@ -80,7 +89,7 @@ class LibraryParserTest {
                                          "pizzaboy" ] },
                  "MAME": { "arcade": true, "roms": "Arcade/MAME/" } }"""
         )
-        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertTrue(p.messages.toString(), p.messages.isEmpty())
         val gba = p.value.getValue("GBA")
         assertEquals("Game Boy Advance", gba.name)
         assertEquals("GBA", gba.roms)
@@ -113,9 +122,17 @@ class LibraryParserTest {
         assertFalse("BAD" in p.value)
         assertNull(p.value.getValue("EMPTY").extensions)
         // 5, missing emulator, duplicate "a", built-in rom_path, BAD, empty extensions
-        assertEquals(p.errors.toString(), 6, p.errors.size)
-        assertTrue(p.errors.any { "GB.emulators[3]" in it && "already listed" in it })
-        assertTrue(p.errors.any { "\"rom_path\" ignored" in it })
+        assertEquals(p.messages.toString(), 6, p.messages.size)
+        assertTrue(p.messages.any { "GB.emulators[3]" in it && "already one of GB's choices" in it })
+        assertTrue(p.messages.any { "\"rom_path\" ignored" in it })
+        // Malformed: the choice 5, the choice with no emulator, and BAD as a whole.
+        assertEquals(Severity.ERROR, p.severityOf("GB.emulators[1]"))
+        assertEquals(Severity.ERROR, p.severityOf("GB.emulators[2]"))
+        assertEquals(Severity.ERROR, p.severityOf("BAD skipped"))
+        // Harmless: a repeat, an ignored key, an empty extensions list.
+        assertEquals(Severity.WARNING, p.severityOf("GB.emulators[3]"))
+        assertEquals(Severity.WARNING, p.severityOf("\"rom_path\" ignored"))
+        assertEquals(Severity.WARNING, p.severityOf("EMPTY.extensions"))
     }
 
     @Test fun `romm takes one slug or a list, lower cased, and defaults to none`() {
@@ -129,8 +146,8 @@ class LibraryParserTest {
         assertEquals(listOf("snes", "sfc"), p.value.getValue("SNES").romm)
         assertTrue(p.value.getValue("NES").romm.isEmpty())
         assertFalse("BAD" in p.value || "BAD2" in p.value)
-        assertEquals(p.errors.toString(), 2, p.errors.size)
-        assertTrue(p.errors.toString(), p.errors.all { "\"romm\"" in it })
+        assertEquals(p.messages.toString(), 2, p.messages.size)
+        assertTrue(p.messages.toString(), p.messages.all { "\"romm\"" in it })
     }
 
     // ---- shortcuts.json ----
@@ -142,7 +159,7 @@ class LibraryParserTest {
                  "kodi": { "name": "Movies", "package": "org.xbmc.kodi", "action": "android.intent.action.VIEW",
                            "data": { "kind": "custom_scheme", "scheme": "plugin", "authority": "plugin.video.x" } } }"""
         )
-        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertTrue(p.messages.toString(), p.messages.isEmpty())
         val wifi = p.value.getValue("wifi")
         assertEquals("wifi", wifi.displayName)
         assertEquals("android.settings.WIFI_SETTINGS", wifi.intent.action)
@@ -159,8 +176,8 @@ class LibraryParserTest {
                  "d": { "package": "x", "extras": [ { "key": "k", "kind": "string", "value": "{package}" } ] } }"""
         )
         assertEquals(listOf("d"), p.value.keys.toList())
-        assertEquals(3, p.errors.size)
-        assertTrue(p.errors.all { "takes no game" in it })
+        assertEquals(3, p.messages.size)
+        assertTrue(p.messages.all { "takes no game" in it })
     }
 
     // ---- directory.json ----
@@ -174,7 +191,7 @@ class LibraryParserTest {
                  { "app": "com.android.settings", "name": "Settings" },
                  { "app": "org.foo" } ] }"""
         )
-        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertTrue(p.messages.toString(), p.messages.isEmpty())
         assertEquals(
             listOf(
                 DirectoryItem.Folder("Nintendo", listOf(
@@ -205,15 +222,22 @@ class LibraryParserTest {
             ),
             p.value,
         )
-        assertEquals(p.errors.toString(), 6, p.errors.size)
-        assertTrue(p.errors.any { "items[2].items[0]" in it && "already placed" in it })
-        assertTrue(p.errors.any { "items[1]" in it && "folder \"A\" is already here" in it })
+        assertEquals(p.messages.toString(), 6, p.messages.size)
+        assertTrue(p.messages.any { "items[2].items[0]" in it && "already in the menu" in it })
+        assertTrue(p.messages.any { "items[1]" in it && "folder \"A\" is already in this folder" in it })
+        // Repeats are warnings, malformed items errors.
+        assertEquals(Severity.WARNING, p.severityOf("items[2].items[0]"))
+        assertEquals(Severity.WARNING, p.severityOf("items[0].items[2]"))
+        assertEquals(Severity.WARNING, p.severityOf("items[1] skipped"))
+        assertEquals(Severity.ERROR, p.severityOf("items[3] skipped"))
+        assertEquals(Severity.ERROR, p.severityOf("items[4] skipped"))
+        assertEquals(Severity.ERROR, p.severityOf("items[5] skipped"))
     }
 
     @Test fun `directory without items is not a usable document`() {
         val p = LibraryParser.parseDirectory("{}")
         assertFalse(p.validJson)
-        assertEquals(1, p.errors.size)
+        assertEquals(1, p.messages.size)
     }
 
     @Test fun `an absolute roms folder keeps its leading slash and loses trailing ones`() {
@@ -221,7 +245,7 @@ class LibraryParserTest {
             """{ "GBA": { "roms": "/storage/1234-ABCD/GBA/" },
                  "GB": { "roms": " //storage//1234-ABCD/./GB " } }"""
         )
-        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertTrue(p.messages.toString(), p.messages.isEmpty())
         assertEquals("/storage/1234-ABCD/GBA", p.value.getValue("GBA").roms)
         assertEquals("/storage/1234-ABCD/GB", p.value.getValue("GB").roms)
     }
@@ -230,7 +254,7 @@ class LibraryParserTest {
         val p = LibraryParser.parseSystems(
             """{ "GBA": { "roms": "Game Boy Advance/" }, "GB": { "roms": "" }, "PS": { "roms": "Sony/PS" } }"""
         )
-        assertTrue(p.errors.toString(), p.errors.isEmpty())
+        assertTrue(p.messages.toString(), p.messages.isEmpty())
         assertEquals("Game Boy Advance", p.value.getValue("GBA").roms)
         assertEquals("GB", p.value.getValue("GB").roms)
         assertEquals("Sony/PS", p.value.getValue("PS").roms)
@@ -242,8 +266,8 @@ class LibraryParserTest {
                  "C": { "roms": "/storage/../data" }, "D": { "roms": "/" }, "E": { "roms": "E" } }"""
         )
         assertEquals(setOf("E"), p.value.keys)
-        assertEquals(4, p.errors.size)
-        assertTrue(p.errors.toString(), p.errors.first().contains(".."))
+        assertEquals(4, p.messages.size)
+        assertTrue(p.messages.toString(), p.messages.first().contains(".."))
     }
 
     // ---- overrides.json ----
@@ -255,7 +279,8 @@ class LibraryParserTest {
         )
         // A key starting with "/" is an absolute path, for a system whose folder is absolute.
         assertEquals(mapOf("GBA/Pokemon Emerald.gba" to "pizzaboy", "/GB/a.gb" to "retroarch"), p.value)
-        assertEquals(2, p.errors.size)
+        assertEquals(2, p.messages.size)
+        assertTrue(p.problems.all { it.severity == Severity.ERROR })
     }
 
     @Test fun `the empty documents a new install gets parse cleanly`() {
@@ -267,7 +292,7 @@ class LibraryParserTest {
                 LibraryFile.DIRECTORY -> LibraryParser.parseDirectory(file.emptyText)
                 LibraryFile.OVERRIDES -> LibraryParser.parseOverrides(file.emptyText)
             }
-            assertTrue(file.name, p.validJson && p.errors.isEmpty())
+            assertTrue(file.name, p.validJson && p.messages.isEmpty())
         }
     }
 }

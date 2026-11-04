@@ -38,11 +38,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.cannoli.ui.theme.LocalCannoliColors
+import dev.cannoli.ui.theme.LocalCannoliBoldFont
 import dev.cannoli.ui.theme.LocalCannoliIconFont
 import dev.cannoli.ui.theme.LocalCenteredLists
 import dev.cannoli.ui.theme.LocalHighlightStyle
 import dev.cannoli.ui.theme.HighlightStyle
-import androidx.compose.ui.text.font.FontWeight
 import dev.cannoli.ui.theme.LocalPillScale
 import dev.cannoli.ui.theme.LocalScaleFactor
 import dev.cannoli.ui.theme.Radius
@@ -122,17 +122,19 @@ fun rowTextColor(isSelected: Boolean): Color {
     }
 }
 
-/** Value color (the right-hand side of a setting row). */
+/** Secondary text: setting values and tags keep the accent color. Only on the pill do they switch
+ *  to the pill's text color, since accent text could vanish against it. */
 @Composable
 fun rowValueColor(isSelected: Boolean): Color {
     val colors = LocalCannoliColors.current
-    return if (isSelected) rowTextColor(true) else colors.accent
+    return if (rowHasPill(isSelected)) colors.highlightText else colors.accent
 }
 
-/** Bold for the selected row when the Bold Text highlight is chosen; otherwise the style as is. */
+/** The bold face for the selected row when the Bold Text highlight is chosen; otherwise the style
+ *  as is. A weight alone does nothing here, since the theme font is a single loaded face. */
 @Composable
 fun TextStyle.forRow(isSelected: Boolean): TextStyle =
-    if (isSelected && LocalHighlightStyle.current == HighlightStyle.BOLD_TEXT) copy(fontWeight = FontWeight.Bold) else this
+    if (isSelected && LocalHighlightStyle.current == HighlightStyle.BOLD_TEXT) copy(fontFamily = LocalCannoliBoldFont.current) else this
 
 @Composable
 fun rowHasPill(isSelected: Boolean): Boolean = isSelected && LocalHighlightStyle.current == HighlightStyle.PILL

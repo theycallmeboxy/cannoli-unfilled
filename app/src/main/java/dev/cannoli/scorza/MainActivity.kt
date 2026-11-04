@@ -39,6 +39,7 @@ import dev.cannoli.scorza.boot.BootSequencer
 import dev.cannoli.scorza.boot.BootState
 import dev.cannoli.scorza.boot.StartStorageDependentHolder
 import dev.cannoli.scorza.config.library.LibraryConfig
+import dev.cannoli.scorza.config.library.severityCounts
 import dev.cannoli.scorza.db.CannoliDatabase
 import dev.cannoli.scorza.db.CollectionsRepository
 import dev.cannoli.scorza.db.RomScanner
@@ -208,7 +209,7 @@ class MainActivity : ComponentActivity(), ActivityActions {
             val appSettings = if (boot is BootState.Ready) settingsViewModel.get().appSettings.collectAsState().value else null
             val themeFont = appSettings?.fontFamily ?: appFonts.plexMono
             dev.cannoli.scorza.i18n.ProvideLocalizedResources(appSettings?.languageTag) {
-            CannoliTheme(fontFamily = themeFont, iconFontFamily = appFonts.mplus1Code, centeredLists = appSettings?.centeredLists ?: true, highlightStyle = appSettings?.highlightStyle ?: dev.cannoli.ui.theme.HighlightStyle.PILL) {
+            CannoliTheme(fontFamily = themeFont, boldFontFamily = appSettings?.boldFontFamily ?: appFonts.plexMonoBold, iconFontFamily = appFonts.mplus1Code, centeredLists = appSettings?.centeredLists ?: true, highlightStyle = appSettings?.highlightStyle ?: dev.cannoli.ui.theme.HighlightStyle.PILL) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     CompositionLocalProvider(
                         LocalViewportInsets provides ViewportInsetsPx(
@@ -606,17 +607,22 @@ class MainActivity : ComponentActivity(), ActivityActions {
     }
 
     // The config files are edited by hand, so pick up a change on every return to the launcher,
-    // ask the emulators again which cores they have, and say so once when entries were skipped.
+    // ask the emulators again which cores they have, and say so once, as "Config: 1 error,
+    // 2 warnings", when the problems found changed.
     private fun reportLibraryConfig() {
         val config = libraryConfig.get()
         config.reloadIfChanged()
         lifecycleScope.launch { installedCoreService.get().queryAllPackages() }
-        val errors = config.errors
-        if (errors == reportedConfigErrors) return
-        reportedConfigErrors = errors
-        if (errors.isNotEmpty()) {
-            osdController.show(resources.getQuantityString(R.plurals.osd_config_errors, errors.size, errors.size))
-        }
+        val problems = config.problems
+        val lines = problems.map { it.logLine }
+        if (lines == reportedConfigErrors) return
+        reportedConfigErrors = lines
+        val (errors, warnings) = problems.severityCounts()
+        val parts = listOfNotNull(
+            resources.getQuantityString(R.plurals.osd_config_error_count, errors, errors).takeIf { errors > 0 },
+            resources.getQuantityString(R.plurals.osd_config_warning_count, warnings, warnings).takeIf { warnings > 0 },
+        )
+        if (parts.isNotEmpty()) osdController.show(getString(R.string.osd_config_problems, parts.joinToString(", ")))
     }
 
     private fun hideSystemUI() {

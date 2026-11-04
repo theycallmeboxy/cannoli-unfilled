@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getConfigFile, putConfigFile } from '@/api/client'
+import { getConfigFile, putConfigFile, type ConfigProblem } from '@/api/client'
 import {
   missingEmulators,
   mergeEntries,
@@ -22,7 +22,7 @@ import { Search, ListPlus, Loader2, CheckCircle2, TriangleAlert } from 'lucide-v
  * and shortcuts can be placed at the end of the main menu.
  */
 const props = defineProps<{ templateName: string; templateText: string }>()
-const emit = defineEmits<{ added: [problems: string[]] }>()
+const emit = defineEmits<{ added: [problems: ConfigProblem[]] }>()
 const { t } = useI18n()
 
 const EMULATORS = 'emulators.json'
@@ -57,7 +57,7 @@ const busy = ref(false)
 
 interface Report {
   lines: { ok: boolean; text: string }[]
-  problems: string[]
+  problems: ConfigProblem[]
 }
 const report = ref<Report | null>(null)
 
@@ -136,7 +136,7 @@ async function readFresh(name: string): Promise<string> {
   return (await getConfigFile(name)).text
 }
 
-async function save(name: string, text: string): Promise<string[]> {
+async function save(name: string, text: string): Promise<ConfigProblem[]> {
   const result = await putConfigFile(name, text)
   if (!result.saved) throw new Error(t('config.refused', { file: name }))
   return result.problems
@@ -146,7 +146,7 @@ async function add() {
   if (!selected.size || busy.value) return
   busy.value = true
   const lines: Report['lines'] = []
-  let problems: string[] = []
+  let problems: ConfigProblem[] = []
   const keys = entries.value.map(e => e.key).filter(k => selected.has(k))
   try {
     // Emulators first, so the systems that use them find them when they are checked.

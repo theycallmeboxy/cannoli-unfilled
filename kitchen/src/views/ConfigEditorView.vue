@@ -2,7 +2,7 @@
 import { computed, defineAsyncComponent, h, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ApiError, getConfigFile, listConfigFiles, putConfigFile } from '@/api/client'
+import { ApiError, getConfigFile, listConfigFiles, putConfigFile, type ConfigProblem } from '@/api/client'
 import { checkJson, isTemplate, templateTarget, type JsonCheck } from '@/lib/configMerge'
 import { confirm } from '@/lib/confirm'
 import AppHeader from '@/components/layout/AppHeader.vue'
@@ -39,7 +39,18 @@ const loading = ref(false)
 const loadError = ref('')
 const text = ref('')
 const original = ref('')
-const problems = ref<string[]>([])
+const problems = ref<ConfigProblem[]>([])
+const problemCounts = computed(() => {
+  const error = problems.value.filter(p => p.severity === 'error').length
+  return { error, warning: problems.value.length - error }
+})
+const problemSummary = computed(() => {
+  const n = problemCounts.value
+  return [
+    n.error && t('config.inlineErrors', { n: n.error }, n.error),
+    n.warning && t('config.inlineWarnings', { n: n.warning }, n.warning),
+  ].filter(Boolean).join(', ')
+})
 const saving = ref(false)
 const status = ref<{ kind: 'ok' | 'warn' | 'error'; text: string } | null>(null)
 type TemplateTab = 'entries' | 'text'
@@ -197,9 +208,11 @@ async function save() {
     if (res.saved) {
       original.value = sent
       refreshData(true)
-      status.value = res.problems.length
-        ? { kind: 'warn', text: t('config.savedWithProblems', { file: name }) }
-        : { kind: 'ok', text: t('config.saved', { file: name }) }
+      status.value = res.problems.some(p => p.severity === 'error')
+        ? { kind: 'warn', text: t('config.savedWithErrors', { file: name }) }
+        : res.problems.length
+          ? { kind: 'warn', text: t('config.savedWithWarnings', { file: name }) }
+          : { kind: 'ok', text: t('config.saved', { file: name }) }
     } else {
       status.value = { kind: 'error', text: t('config.notSaved', { file: name }) }
     }
@@ -237,7 +250,7 @@ async function reload() {
   await Promise.all([loadFile(current.value), refreshData(true)])
 }
 
-function onAdded(latest: string[]) {
+function onAdded(latest: ConfigProblem[]) {
   problems.value = latest
   refreshData(true)
 }
@@ -417,16 +430,27 @@ function onAdded(latest: string[]) {
           >{{ status.text }}</p>
 
           <section class="space-y-2">
-            <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{{ $t('config.problems') }}</h2>
+            <h2 class="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+              {{ $t('config.problems') }}<span v-if="problems.length" class="normal-case tracking-normal font-normal"> · {{ problemSummary }}</span>
+            </h2>
             <p v-if="!problems.length" class="flex items-center gap-2 text-sm text-foreground/70">
               <CheckCircle2 class="h-4 w-4 text-primary" /> {{ $t('config.noProblems') }}
             </p>
             <template v-else>
               <p class="text-xs text-foreground/55">{{ $t('config.problemsHint') }}</p>
-              <ul class="rounded-lg border border-amber-500/30 divide-y divide-border text-sm">
-                <li v-for="(p, i) in problems" :key="i" class="flex items-start gap-2 px-3 py-2">
-                  <TriangleAlert class="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
-                  <span class="min-w-0 break-words">{{ p }}</span>
+              <ul
+                class="rounded-lg border divide-y divide-border text-sm"
+                :class="problemCounts.error ? 'border-destructive/30' : 'border-amber-500/30'"
+              >
+                <li v-for="(p, i) in problems" :key="i" class="flex items-start gap-2 px-3 py-2" :data-severity="p.severity">
+                  <XCircle v-if="p.severity === 'error'" class="h-4 w-4 shrink-0 mt-0.5 text-destructive" />
+                  <TriangleAlert v-else class="h-4 w-4 shrink-0 mt-0.5 text-amber-500" />
+                  <span class="min-w-0 break-words">
+                    <span
+                      class="mr-1.5 rounded px-1.5 py-0.5 text-xs font-semibold"
+                      :class="p.severity === 'error' ? 'bg-destructive/15 text-destructive' : 'bg-amber-500/15 text-amber-500'"
+                    >{{ p.severity === 'error' ? $t('config.problemError') : $t('config.problemWarning') }}</span>{{ p.message }}
+                  </span>
                 </li>
               </ul>
             </template>

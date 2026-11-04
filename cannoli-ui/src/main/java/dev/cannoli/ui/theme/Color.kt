@@ -32,6 +32,8 @@ data class CannoliColors(
 val LocalCannoliColors = staticCompositionLocalOf { CannoliColors() }
 val LocalCannoliFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
 val LocalCannoliIconFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
+// The theme font's heavier face, for the Bold Text highlight.
+val LocalCannoliBoldFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
 // Center layout: list rows sit in the middle of the list instead of against its left edge.
 val LocalCenteredLists = staticCompositionLocalOf { false }
 

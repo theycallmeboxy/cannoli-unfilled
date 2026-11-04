@@ -9,11 +9,11 @@ import org.json.JSONException
 import org.json.JSONObject
 
 /**
- * One file's parse: the good entries in [value] and a message for each one skipped. [validJson]
+ * One file's parse: the good entries in [value] and a problem for each one skipped. [validJson]
  * is false when the text was not a usable document at all; [value] is then empty and the caller
  * should keep what it had.
  */
-data class Parsed<T>(val value: T, val errors: List<String>, val validJson: Boolean = true)
+data class Parsed<T>(val value: T, val problems: List<ConfigProblem>, val validJson: Boolean = true)
 
 /**
  * Parsers for the five files in Config/. Each skips a bad entry, reports it, and keeps the rest,
@@ -75,9 +75,9 @@ object LibraryParser {
                 val path = key.trim()
                 val value = games.opt(key)
                 if (path.isEmpty()) {
-                    errors.add("$source: $GAMES.\"$key\" skipped: needs a ROM path")
+                    errors.add(ConfigProblem.error("$source: $GAMES.\"$key\" skipped: the key should be the game's ROM path"))
                 } else if (value !is String || value.isBlank()) {
-                    errors.add("$source: $GAMES.\"$key\" skipped: expected an emulator name")
+                    errors.add(ConfigProblem.error("$source: $GAMES.\"$key\" skipped: the value should be the name of one of its system's emulators"))
                 } else {
                     out[path] = value.trim()
                 }
@@ -89,13 +89,14 @@ object LibraryParser {
         text: String,
         source: String,
         empty: T,
-        body: (JSONObject, MutableList<String>) -> T,
+        body: (JSONObject, MutableList<ConfigProblem>) -> T,
     ): Parsed<T> {
-        val errors = mutableListOf<String>()
+        val errors = mutableListOf<ConfigProblem>()
         return try {
             Parsed(body(JSONObject(text), errors), errors)
         } catch (e: JSONException) {
-            Parsed(empty, listOf("$source: not valid JSON (${e.message})"), validJson = false)
+            val problem = "$source: not valid JSON (${e.message}), so none of it was loaded; the last version that loaded is still in use"
+            Parsed(empty, listOf(ConfigProblem.error(problem)), validJson = false)
         }
     }
 
@@ -103,7 +104,7 @@ object LibraryParser {
     private fun <T> entries(
         json: JSONObject,
         source: String,
-        errors: MutableList<String>,
+        errors: MutableList<ConfigProblem>,
         parse: (String, JSONObject) -> T,
     ): Map<String, T> {
         val out = LinkedHashMap<String, T>()
@@ -111,19 +112,19 @@ object LibraryParser {
             if (isComment(key)) continue
             val obj = json.optJSONObject(key)
             when {
-                key.isBlank() -> errors.add("$source: an entry with an empty name skipped")
-                obj == null -> errors.add("$source: $key skipped: expected an object")
+                key.isBlank() -> errors.add(ConfigProblem.error("$source: an entry with an empty name was skipped"))
+                obj == null -> errors.add(ConfigProblem.error("$source: $key skipped: it should be an object, { ... }"))
                 else -> try {
                     out[key] = parse(key, obj)
                 } catch (e: Exception) {
-                    errors.add("$source: $key skipped: ${e.message}")
+                    errors.add(ConfigProblem.error("$source: $key skipped: ${e.message}"))
                 }
             }
         }
         return out
     }
 
-    private fun parseSystem(id: String, obj: JSONObject, source: String, errors: MutableList<String>): GameSystem {
+    private fun parseSystem(id: String, obj: JSONObject, source: String, errors: MutableList<ConfigProblem>): GameSystem {
         val name = obj.optString("name", "").trim().ifEmpty { id }
         val roms = romsFolder(obj.optString("roms", "").trim(), id)
         val extensions = if (!obj.has("extensions")) null else {
@@ -132,7 +133,12 @@ object LibraryParser {
             val set = (0 until arr.length()).map { arr.getString(it).trim().removePrefix(".").lowercase() }
                 .filter { it.isNotEmpty() }.toCollection(LinkedHashSet())
             if (set.isEmpty()) {
-                errors.add("$source: $id.extensions ignored: an empty list would hide every game; leave it out to accept all")
+                errors.add(
+                    ConfigProblem.warning(
+                        "$source: $id.extensions is an empty list, which would hide every game, so it's ignored and " +
+                            "every file counts as a game; leave it out to mean that"
+                    )
+                )
                 null
             } else set
         }
@@ -144,10 +150,14 @@ object LibraryParser {
             try {
                 val ref = parseRef(list.get(i), where, errors)
                 if (refs.any { it.choiceName == ref.choiceName }) {
-                    errors.add("$where skipped: \"${ref.choiceName}\" is already listed; give one a \"name\"")
+                    errors.add(
+                        ConfigProblem.warning(
+                            "$where skipped: \"${ref.choiceName}\" is already one of $id's choices; give one a \"name\" to keep both"
+                        )
+                    )
                 } else refs.add(ref)
             } catch (e: Exception) {
-                errors.add("$where skipped: ${e.message}")
+                errors.add(ConfigProblem.error("$where skipped: ${e.message}"))
             }
         }
         return GameSystem(id, name, roms, extensions, obj.optBoolean("arcade", false), refs, rommSlugs(obj))
@@ -185,7 +195,7 @@ object LibraryParser {
         }
     }
 
-    private fun parseRef(item: Any, where: String, errors: MutableList<String>): EmulatorRef = when (item) {
+    private fun parseRef(item: Any, where: String, errors: MutableList<ConfigProblem>): EmulatorRef = when (item) {
         is String -> {
             require(item.isNotBlank()) { "needs an emulator name" }
             EmulatorRef(item.trim())
@@ -200,10 +210,10 @@ object LibraryParser {
                 val value = item.opt(key)
                 when {
                     key in Placeholders.BUILT_IN ->
-                        errors.add("$where: \"$key\" ignored: it is filled in at launch")
+                        errors.add(ConfigProblem.warning("$where: \"$key\" ignored: the launcher fills it in itself"))
                     value is String -> params[key] = value
                     value is Number || value is Boolean -> params[key] = value.toString()
-                    else -> errors.add("$where: \"$key\" ignored: expected text")
+                    else -> errors.add(ConfigProblem.warning("$where: \"$key\" ignored: it should be text"))
                 }
             }
             EmulatorRef(emulator, params, label)
@@ -250,7 +260,7 @@ object LibraryParser {
         where: String,
         placed: MutableSet<String>,
         source: String,
-        errors: MutableList<String>,
+        errors: MutableList<ConfigProblem>,
     ): List<DirectoryItem> {
         val out = mutableListOf<DirectoryItem>()
         val siblings = mutableSetOf<String>()
@@ -258,27 +268,27 @@ object LibraryParser {
             val at = "$source: $where[$i]"
             val obj = arr.optJSONObject(i)
             if (obj == null) {
-                errors.add("$at skipped: expected an object")
+                errors.add(ConfigProblem.error("$at skipped: it should be an object, { ... }"))
                 continue
             }
             val kinds = ITEM_KINDS.filter { obj.has(it) }
             if (kinds.size != 1) {
-                errors.add("$at skipped: expected one of \"folder\", \"system\", \"shortcut\" or \"app\"")
+                errors.add(ConfigProblem.error("$at skipped: it needs exactly one of \"folder\", \"system\", \"shortcut\" or \"app\""))
                 continue
             }
             val kind = kinds.single()
             val value = obj.opt(kind)
             if (value !is String || value.isBlank()) {
-                errors.add("$at skipped: \"$kind\" needs a name")
+                errors.add(ConfigProblem.error("$at skipped: \"$kind\" needs a name"))
                 continue
             }
             val name = value.trim()
             if (kind == "system" && !placed.add(name)) {
-                errors.add("$at skipped: system \"$name\" is already placed; a system goes in one place")
+                errors.add(ConfigProblem.warning("$at skipped: system \"$name\" is already in the menu, and a system goes in one place"))
                 continue
             }
             if (kind != "system" && !siblings.add("$kind:$name")) {
-                errors.add("$at skipped: $kind \"$name\" is already here")
+                errors.add(ConfigProblem.warning("$at skipped: $kind \"$name\" is already in this folder"))
                 continue
             }
             out.add(
@@ -286,7 +296,7 @@ object LibraryParser {
                     "folder" -> {
                         val items = obj.opt(ITEMS)
                         if (items != null && items !is JSONArray) {
-                            errors.add("$at.$ITEMS ignored: expected a list")
+                            errors.add(ConfigProblem.error("$at.$ITEMS ignored: it should be a list, [ ... ], so the folder is empty"))
                         }
                         DirectoryItem.Folder(
                             name,

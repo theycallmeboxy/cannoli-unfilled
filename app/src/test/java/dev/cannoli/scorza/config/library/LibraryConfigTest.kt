@@ -40,7 +40,7 @@ class LibraryConfigTest {
     @Test fun `a first load creates empty files and the templates`() {
         val c = config()
         c.load()
-        assertTrue(c.errors.toString(), c.errors.isEmpty())
+        assertTrue(c.problems.toString(), c.problems.isEmpty())
         for (file in LibraryFile.entries) {
             assertEquals(file.emptyText, File(dir, file.fileName).readText())
         }
@@ -79,7 +79,56 @@ class LibraryConfigTest {
         assertEquals(listOf("pizzaboy"), c.library.systems.getValue("GBA").emulators.map { it.emulator })
         assertEquals(listOf(DirectoryItem.SystemItem("GBA")), c.library.directory)
         assertEquals(mapOf("GBA/a.gba" to "pizzaboy"), c.library.overrides)
-        assertEquals(c.errors.toString(), 2, c.errors.size)
+        assertEquals(c.problems.toString(), 2, c.problems.size)
+        assertTrue(c.problems.toString(), c.problems.all { it.severity == Severity.WARNING })
+    }
+
+    @Test fun `each problem is logged once, with its severity, until it goes away`() {
+        write(LibraryFile.EMULATORS, """{ "pizzaboy": { "package": "it.dbtecno.pizzaboygba" }, "bad": "x" }""")
+        write(LibraryFile.SYSTEMS, """{ "SNES": { "emulators": [ "pizzaboy", "snes9xplus" ] } }""")
+        val logged = mutableListOf<String>()
+        val c = config().apply { log = { logged.add(it) } }
+        c.load()
+        assertEquals(
+            listOf(
+                "ERROR emulators.json: bad skipped: it should be an object, { ... }",
+                "WARNING systems.json: SNES emulator \"snes9xplus\" isn't in emulators.json, so it's left out of SNES's choices",
+            ),
+            logged,
+        )
+        // Nothing changed on disk: nothing to read, nothing logged.
+        assertFalse(c.reloadIfChanged())
+        assertEquals(2, logged.size)
+
+        // Another file changed: only what is new goes to the log.
+        val directory = File(dir, "directory.json")
+        directory.writeText("""{ "items": [ { "system": "SNES" }, { "system": "GB" } ] }""")
+        directory.setLastModified(directory.lastModified() + 2000)
+        assertTrue(c.reloadIfChanged())
+        assertEquals(3, logged.size)
+        assertTrue(logged.last(), logged.last().startsWith("WARNING directory.json: system \"GB\""))
+
+        // The same text saved again, so a new mtime: no new lines.
+        c.replaceText(LibraryFile.DIRECTORY, directory.readText())
+        assertEquals(3, logged.size)
+
+        // Fixed, then broken again: logged again.
+        c.replaceText(LibraryFile.DIRECTORY, """{ "items": [ { "system": "SNES" } ] }""")
+        c.replaceText(LibraryFile.DIRECTORY, """{ "items": [ { "system": "SNES" }, { "system": "GB" } ] }""")
+        assertEquals(4, logged.size)
+        assertEquals(3, c.problems.size)
+        assertEquals(c.problems.distinct(), c.problems)
+    }
+
+    @Test fun `the same problem twice in one read is listed and logged once`() {
+        val logged = mutableListOf<String>()
+        val c = config().apply { log = { logged.add(it) } }
+        c.load()
+        // Two blank keys give the same message.
+        c.replaceText(LibraryFile.EMULATORS, """{ " ": {}, "  ": {} }""")
+        assertEquals(1, c.problems.size)
+        assertEquals(1, c.problems(LibraryFile.EMULATORS).size)
+        assertEquals(listOf("ERROR emulators.json: an entry with an empty name was skipped"), logged)
     }
 
     @Test fun `an edited file is picked up by reloadIfChanged`() {
@@ -104,8 +153,9 @@ class LibraryConfigTest {
         file.setLastModified(file.lastModified() + 2000)
         assertTrue(c.reloadIfChanged())
         assertEquals(setOf("GB"), c.library.systems.keys)
-        assertEquals(1, c.errors.size)
-        assertTrue(c.errors.single().startsWith("systems.json: not valid JSON"))
+        assertEquals(1, c.problems.size)
+        assertTrue(c.problems.single().message.startsWith("systems.json: not valid JSON"))
+        assertEquals(Severity.ERROR, c.problems.single().severity)
         assertEquals("{ broken", file.readText())
     }
 
@@ -123,7 +173,7 @@ class LibraryConfigTest {
 
         val (refused, why) = c.replaceText(LibraryFile.DIRECTORY, "nope")
         assertFalse(refused)
-        assertTrue(why.single().contains("not valid JSON"))
+        assertTrue(why.single().message.contains("not valid JSON"))
         assertTrue(c.currentText(LibraryFile.DIRECTORY).contains("org.foo"))
     }
 
@@ -135,9 +185,9 @@ class LibraryConfigTest {
         val emulators = LibraryParser.parseEmulators(template("emulators.template.json"))
         val systems = LibraryParser.parseSystems(template("systems.template.json"))
         val shortcuts = LibraryParser.parseShortcuts(template("shortcuts.template.json"))
-        assertTrue(emulators.errors.toString(), emulators.validJson && emulators.errors.isEmpty())
-        assertTrue(systems.errors.toString(), systems.validJson && systems.errors.isEmpty())
-        assertTrue(shortcuts.errors.toString(), shortcuts.validJson && shortcuts.errors.isEmpty())
+        assertTrue(emulators.problems.toString(), emulators.validJson && emulators.problems.isEmpty())
+        assertTrue(systems.problems.toString(), systems.validJson && systems.problems.isEmpty())
+        assertTrue(shortcuts.problems.toString(), shortcuts.validJson && shortcuts.problems.isEmpty())
         assertTrue("_about" !in emulators.value && "_about" !in systems.value && "_about" !in shortcuts.value)
         assertTrue("retroarch" in emulators.value)
         assertTrue(shortcuts.value.size in 3..4)
@@ -152,7 +202,7 @@ class LibraryConfigTest {
         val missing = systems.values.flatMap { s -> s.emulators.filter { it.emulator !in emulators }.map { "${s.id}: ${it.emulator}" } }
         assertTrue(missing.toString(), missing.isEmpty())
         val v = LibraryValidator.validate(emulators, systems, emptyMap(), emptyList(), emptyMap())
-        assertTrue(v.errors.toString(), v.errors.isEmpty())
+        assertTrue(v.problems.toString(), v.problems.isEmpty())
         assertEquals("mgba_libretro", systems.getValue("GBA").emulators.first().params["core"])
     }
 

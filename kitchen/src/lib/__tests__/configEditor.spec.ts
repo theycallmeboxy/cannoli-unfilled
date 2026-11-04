@@ -272,6 +272,19 @@ describe('validate', () => {
       .toEqual([expect.stringContaining('already placed'), expect.stringContaining('No shortcut "zz"')])
   })
 
+  it('grades issues as the launcher does: malformed is an error, a dropped reference or repeat a warning', () => {
+    const sev = (r: { severity: string; message: string }[], part: string) => r.find(i => i.message.includes(part))?.severity
+    const systems = issues('systems.json', '{ "GBA": { "emulators": ["pizzaboy", "pizzaboy", "nowhere", { "emulator": "retroarch" }, { "name": "x" }] } }')
+    expect(sev(systems, 'already listed')).toBe('warning')
+    expect(sev(systems, 'No emulator "nowhere"')).toBe('warning')
+    expect(sev(systems, 'retroarch uses {core}')).toBe('error')
+    expect(sev(systems, 'Needs "emulator"')).toBe('error')
+    const directory = issues('directory.json', '{ "items": [ { "system": "GBA" }, { "system": "GBA" }, { "shortcut": "zz" }, { "name": "x" } ] }')
+    expect(sev(directory, 'already placed')).toBe('warning')
+    expect(sev(directory, 'No shortcut "zz"')).toBe('warning')
+    expect(sev(directory, 'Needs one of')).toBe('error')
+  })
+
   it('checks directory items have exactly one kind', () => {
     expect(issues('directory.json', '{ "items": [ { "system": "GBA", "app": "x" } ] }')[0]!.message).toContain('Only one of')
     expect(issues('directory.json', '{ "items": [ { "name": "x" } ] }')[0]!.message).toContain('Needs one of')

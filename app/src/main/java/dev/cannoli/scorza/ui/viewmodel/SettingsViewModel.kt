@@ -66,16 +66,28 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    private fun resolveFont(): FontFamily {
-        val chosen = fontOptions.firstOrNull { it.key == settings.font } ?: return appFonts.plexMono
+    private fun resolveFontOption(): FontOption {
+        val plex = FontOption("default", "IBM Plex Mono", appFonts.plexMono, appFonts.plexMonoTypeface)
+        val chosen = fontOptions.firstOrNull { it.key == settings.font } ?: return plex
         val sample = dev.cannoli.scorza.i18n.LanguageCatalog.byTag(settings.language)?.coverageSample
         if (sample != null) {
             val typeface = chosen.typeface
             if (typeface == null || !dev.cannoli.scorza.i18n.FontCoverage.covers(typeface, sample)) {
-                return appFonts.mplus1Code
+                return FontOption("mplus", "M+ 1 Code", appFonts.mplus1Code, appFonts.mplus1CodeTypeface)
             }
         }
-        return chosen.fontFamily
+        return chosen
+    }
+
+    private fun resolveFont(): FontFamily = resolveFontOption().fontFamily
+
+    // The Bold Text highlight needs a heavier face. Plex ships a real bold; any other font, which
+    // Cannoli has only one weight of, gets Android's synthetic bold of that face.
+    private fun resolveBoldFont(): FontFamily {
+        val option = resolveFontOption()
+        if (option.fontFamily == appFonts.plexMono) return appFonts.plexMonoBold
+        val typeface = option.typeface ?: return option.fontFamily
+        return FontFamily(androidx.compose.ui.text.font.Typeface(android.graphics.Typeface.create(typeface, android.graphics.Typeface.BOLD)))
     }
 
     data class SettingsItem(
@@ -115,6 +127,7 @@ class SettingsViewModel @Inject constructor(
         val textSize: TextSize = TextSize.DEFAULT,
 
         val fontFamily: FontFamily = FontFamily.Default,
+        val boldFontFamily: FontFamily = FontFamily.Default,
         val languageTag: String = "",
         val title: String = "",
         val colorHighlight: Color = Color.White,
@@ -155,6 +168,7 @@ class SettingsViewModel @Inject constructor(
         backgroundTint = settings.backgroundTint,
         textSize = settings.textSize,
         fontFamily = resolveFont(),
+        boldFontFamily = resolveBoldFont(),
         languageTag = settings.language,
         title = settings.title,
         colorHighlight = hexToColor(settings.colorHighlight) ?: Color.White,

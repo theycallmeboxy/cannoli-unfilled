@@ -169,7 +169,7 @@ class AbsoluteRomFolderTest {
         // Read back from disk, it survives the parser and the validator.
         val reloaded = LibraryConfig({ configDir }) { null }.also { it.load() }
         assertEquals(mapOf(game.absolutePath to "pizzaboy"), reloaded.library.overrides)
-        assertTrue(reloaded.errors.toString(), reloaded.errors.none { it.contains(LibraryParser.OVERRIDES) })
+        assertTrue(reloaded.problems.toString(), reloaded.problems.none { it.message.contains(LibraryParser.OVERRIDES) })
 
         assertNull(launcher().launchRom(romFromKey("GBA", key)))
         verify { apkLauncher.launchWithRom(PIZZABOY, any(), any(), any()) }

@@ -355,15 +355,37 @@ reports it lacks the system's core is marked Core Missing.
 
 ## Errors
 
-- **A bad entry is skipped**, and everything else in the file still works. Cannoli shows a short
-  message ("Config has 2 problems, see Logs/error.log") and writes each problem to
-  `Logs/error.log`.
-- **A name that refers to something missing** is a bad entry too: a system listing an emulator
-  that isn't in `emulators.json`, a directory item naming a system or shortcut that isn't
-  defined, or an override for a game no system's ROM folder holds.
-- **A file that isn't valid JSON** is ignored: Cannoli keeps what it last read from that file,
-  and never overwrites it. On-device edits to that file are refused until you fix it.
-- **Device edits keep a backup:** the file before each change is saved as `<name>.bak`.
+Every problem Cannoli finds in the files is an **error** or a **warning**:
+
+- **Error: something you wrote wasn't loaded.** A file that isn't valid JSON (Cannoli keeps
+  what it last read from that file and never overwrites it; on-device edits to it are refused
+  until you fix it), or an entry skipped because it's malformed: a missing required field, a
+  wrong type or a bad value. The whole emulator, system, shortcut, menu item or override is
+  left out, and so is a system's emulator choice that is malformed or lacks a value its
+  emulator needs (such as `"core"`).
+- **Warning: harmless, and everything else works.** Only one option, reference or key is
+  dropped: a system's emulator that isn't in `emulators.json` (it's left out of that system's
+  choices), a menu item naming a system or shortcut that isn't defined, a system placed twice
+  or a repeat in a folder, an emulator choice listed twice, a RomM platform another system
+  already uses, an override for a game no system's ROM folder holds or naming an emulator its
+  system doesn't list, and keys that are ignored (an empty `"extensions"` list, a value for a
+  placeholder Cannoli fills itself).
+
+Each problem goes to `Logs/error.log` once, when it first shows up, with its kind and file
+first:
+
+```
+2026-11-03 21:14:02  ERROR emulators.json: bad skipped: it should be an object, { ... }
+2026-11-03 21:14:02  WARNING systems.json: SNES emulator "snes9xplus" isn't in emulators.json, so it's left out of SNES's choices
+```
+
+A re-read that finds the same problem again doesn't write it again, and nothing is re-read
+when no file changed. A problem you fix and bring back is logged again, as is everything on the
+next start of Cannoli. When the problems change, Cannoli shows a short message on return, such
+as "Config: 1 error, 2 warnings, see Logs/error.log", or "Config: 2 warnings, see
+Logs/error.log" when nothing was skipped whole.
+
+Device edits keep a backup: the file before each change is saved as `<name>.bak`.
 
 ## Kitchen
 
@@ -371,7 +393,8 @@ Kitchen serves the config files through its API, with the same PIN as its other 
 
 - `GET /api/config` lists the files: the five real files and the three templates.
 - `GET /api/config/<name>` returns `{ "name", "text", "problems" }`. `problems` lists the
-  problems found in that file at its last read, followed by those between files.
+  problems found in that file at its last read and those between files, each
+  `{ "severity": "error" | "warning", "message" }`, errors first.
 - `PUT /api/config/<name>`, with the whole file as the body, saves it and returns
   `{ "saved", "problems" }`. Text that isn't valid JSON is refused with status 422, and the
   file is left as it was. A file that saves can still have problems: its bad entries are

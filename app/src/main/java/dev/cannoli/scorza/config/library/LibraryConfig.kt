@@ -25,7 +25,9 @@ enum class LibraryFile(val fileName: String, val emptyText: String) {
  * templates are never read back as config.
  *
  * A file that is not valid JSON keeps the last good state of that file and is never overwritten.
- * Bad entries are skipped and listed in [errors], which also go to Logs/error.log.
+ * Bad entries are skipped and listed in [problems], each an error or a warning. Each goes to
+ * Logs/error.log once, when it first shows up: a reload that finds the same problem again doesn't
+ * write it again.
  */
 class LibraryConfig(
     private val dirProvider: () -> File,
@@ -35,9 +37,15 @@ class LibraryConfig(
     @Volatile var library: Library = Library()
         private set
 
-    /** Every problem from the last read: each file's parse errors, then the cross-file ones. */
-    @Volatile var errors: List<String> = emptyList()
+    /** Every problem from the last read, without repeats: each file's own, then the cross-file ones. */
+    @Volatile var problems: List<ConfigProblem> = emptyList()
         private set
+
+    /** Where each new problem's [ConfigProblem.logLine] goes; tests swap it. */
+    internal var log: (String) -> Unit = ErrorLog::write
+
+    // The problems already written to the log, so a reload that finds them again stays quiet.
+    private var logged: Set<ConfigProblem> = emptySet()
 
     private var emulators: Map<String, Emulator> = emptyMap()
     private var systems: Map<String, GameSystem> = emptyMap()
@@ -45,8 +53,8 @@ class LibraryConfig(
     private var directory: List<DirectoryItem> = emptyList()
     private var overrides: Map<String, String> = emptyMap()
 
-    private val fileErrors = LinkedHashMap<LibraryFile, List<String>>()
-    private var crossErrors: List<String> = emptyList()
+    private val fileProblems = LinkedHashMap<LibraryFile, List<ConfigProblem>>()
+    private var crossProblems: List<ConfigProblem> = emptyList()
     private val loadedMtimes = HashMap<LibraryFile, Long>()
 
     /** Creates missing files, refreshes the templates, and reads everything. */
@@ -87,7 +95,7 @@ class LibraryConfig(
 
     /** The problems from the last read of [file], then the cross-file ones, as [replaceText] returns them. */
     @Synchronized
-    fun problems(file: LibraryFile): List<String> = fileErrors[file].orEmpty() + crossErrors
+    fun problems(file: LibraryFile): List<ConfigProblem> = (fileProblems[file].orEmpty() + crossProblems).distinct()
 
     /**
      * Replaces [file] with [text] once it parses. Returns whether it was written and the problems
@@ -95,15 +103,15 @@ class LibraryConfig(
      * left as it was.
      */
     @Synchronized
-    fun replaceText(file: LibraryFile, text: String): Pair<Boolean, List<String>> {
+    fun replaceText(file: LibraryFile, text: String): Pair<Boolean, List<ConfigProblem>> {
         val parsed = parse(file, text)
-        if (!parsed.validJson) return false to parsed.errors
+        if (!parsed.validJson) return false to parsed.problems
         val failure = writeAtomic(fileFor(file), text, backup = true)
-        if (failure != null) return false to listOf(failure)
+        if (failure != null) return false to listOf(ConfigProblem.error(failure))
         loadedMtimes[file] = mtimeOf(file)
         accept(file, parsed)
         revalidate()
-        return true to parsed.errors + crossErrors
+        return true to problems(file)
     }
 
     /**
@@ -123,7 +131,7 @@ class LibraryConfig(
         }
         change(json)?.let { return it }
         val (written, problems) = replaceText(file, json.toString(2) + "\n")
-        return if (written) null else problems.firstOrNull() ?: "Could not save ${file.fileName}"
+        return if (written) null else problems.firstOrNull()?.message ?: "Could not save ${file.fileName}"
     }
 
     /** The text of the bundled template [name], such as systems.template.json. */
@@ -139,11 +147,13 @@ class LibraryConfig(
         val text = try {
             if (target.exists()) target.readText() else file.emptyText
         } catch (e: IOException) {
-            fileErrors[file] = listOf("${file.fileName}: unreadable (${e.message})")
+            fileProblems[file] = listOf(
+                ConfigProblem.error("${file.fileName}: couldn't be read (${e.message}); the last version that loaded is still in use")
+            )
             return
         }
         val parsed = parse(file, text)
-        if (parsed.validJson) accept(file, parsed) else fileErrors[file] = parsed.errors
+        if (parsed.validJson) accept(file, parsed) else fileProblems[file] = parsed.problems
     }
 
     private fun parse(file: LibraryFile, text: String): Parsed<*> = when (file) {
@@ -163,15 +173,17 @@ class LibraryConfig(
             LibraryFile.DIRECTORY -> directory = parsed.value as List<DirectoryItem>
             LibraryFile.OVERRIDES -> overrides = parsed.value as Map<String, String>
         }
-        fileErrors[file] = parsed.errors
+        fileProblems[file] = parsed.problems
     }
 
     private fun revalidate() {
         val validated = LibraryValidator.validate(emulators, systems, shortcuts, directory, overrides)
         library = validated.library
-        crossErrors = validated.errors
-        errors = LibraryFile.entries.flatMap { fileErrors[it].orEmpty() } + crossErrors
-        for (error in errors) ErrorLog.write(error)
+        crossProblems = validated.problems
+        val all = (LibraryFile.entries.flatMap { fileProblems[it].orEmpty() } + crossProblems).distinct()
+        problems = all
+        for (problem in all) if (problem !in logged) log(problem.logLine)
+        logged = all.toSet()
     }
 
     private fun writeTemplates(dir: File) {

@@ -527,16 +527,41 @@ export async function downloadControllerMapping(file: string): Promise<void> {
 
 // --- Config files (Config/*.json) ---
 
+/**
+ * One problem Cannoli found in the config files. An error is something it skipped whole (or a
+ * file it couldn't read); a warning only drops one option or reference, and the rest works.
+ */
+export interface ConfigProblem {
+  severity: 'error' | 'warning'
+  message: string
+}
+
 export interface ConfigFileText {
   name: string
   text: string
-  /** Problems found in this file at its last read, then those between files. */
-  problems: string[]
+  /** Problems found in this file at its last read, then those between files; errors first. */
+  problems: ConfigProblem[]
 }
 
 export interface ConfigSaveResult {
   saved: boolean
-  problems: string[]
+  problems: ConfigProblem[]
+}
+
+/**
+ * [raw] as a list of problems, errors first: also takes the plain strings an older Cannoli sent,
+ * as errors.
+ */
+export function toProblems(raw: unknown): ConfigProblem[] {
+  if (!Array.isArray(raw)) return []
+  const out = raw.flatMap((p): ConfigProblem[] => {
+    if (typeof p === 'string') return [{ severity: 'error', message: p }]
+    if (p && typeof p === 'object' && typeof p.message === 'string') {
+      return [{ severity: p.severity === 'warning' ? 'warning' : 'error', message: p.message }]
+    }
+    return []
+  })
+  return [...out.filter(p => p.severity === 'error'), ...out.filter(p => p.severity === 'warning')]
 }
 
 export async function listConfigFiles(): Promise<string[]> {
@@ -548,7 +573,8 @@ export async function listConfigFiles(): Promise<string[]> {
 export async function getConfigFile(name: string): Promise<ConfigFileText> {
   const res = await request(`/api/config/${encodeURIComponent(name)}`)
   if (!res.ok) throw await failure(res, 'getConfigFile')
-  return res.json()
+  const file = await res.json()
+  return { ...file, problems: toProblems(file.problems) }
 }
 
 /**
@@ -562,9 +588,9 @@ export async function putConfigFile(name: string, text: string): Promise<ConfigS
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: text,
   })
-  if (res.status === 422) return res.json()
-  if (!res.ok) throw await failure(res, 'putConfigFile')
-  return res.json()
+  if (res.status !== 422 && !res.ok) throw await failure(res, 'putConfigFile')
+  const result = await res.json()
+  return { saved: result.saved === true, problems: toProblems(result.problems) }
 }
 
 /** What the config editor suggests from the device rather than the files (GET /api/config/hints). */
