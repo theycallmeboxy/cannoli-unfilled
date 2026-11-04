@@ -33,6 +33,7 @@ class KitchenService : Service() {
     @Inject lateinit var appsRepository: dev.cannoli.scorza.db.AppsRepository
     @Inject lateinit var atomicRename: dev.cannoli.scorza.util.AtomicRename
     @Inject lateinit var libraryConfig: dev.cannoli.scorza.config.library.LibraryConfig
+    @Inject lateinit var installedCoreService: dev.cannoli.scorza.launcher.InstalledCoreService
 
     private var server: KitchenHttpServer? = null
     private var wifiLock: WifiManager.WifiLock? = null
@@ -99,6 +100,8 @@ class KitchenService : Service() {
             appsRepository = appsRepository,
             artThumbnails = ArtThumbnails(File(cacheDir, "art-thumbs")),
             configFiles = libraryConfigFiles(libraryConfig, onSaved = KitchenManager::onConfigSaved),
+            installedAppsProvider = { dev.cannoli.scorza.launcher.installedLauncherApps(applicationContext) },
+            installedCoresProvider = { installedCoreService.installedCores },
         )
         try {
             s.startServer()

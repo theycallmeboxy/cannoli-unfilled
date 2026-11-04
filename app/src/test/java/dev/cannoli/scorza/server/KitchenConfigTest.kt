@@ -54,10 +54,20 @@ class KitchenConfigTest {
         null
     }
 
-    private fun start(files: (File) -> Map<String, KitchenConfigFile> = { mapOf("directory.json" to fakeFile()) }) {
+    private fun start(
+        apps: List<Pair<String, String>> = emptyList(),
+        cores: Map<String, Set<String>> = emptyMap(),
+        prepare: (File) -> Unit = {},
+        files: (File) -> Map<String, KitchenConfigFile> = { mapOf("directory.json" to fakeFile()) },
+    ) {
         val dir = File.createTempFile("cannoli", "").also { it.delete(); it.mkdirs() }.also { root = it }
+        prepare(dir)
         val assets = ApplicationProvider.getApplicationContext<Context>().assets
-        val s = KitchenHttpServer(dir, assets, port = port, pin = PIN, configFiles = files(dir))
+        val s = KitchenHttpServer(
+            dir, assets, port = port, pin = PIN, configFiles = files(dir),
+            installedAppsProvider = { apps },
+            installedCoresProvider = { cores },
+        )
         s.startServer()
         repeat(50) {
             try {
@@ -169,6 +179,41 @@ class KitchenConfigTest {
         assertEquals(405, put)
         assertTrue(putBody, putBody.contains("read-only"))
         assertEquals(0, savedCount)
+    }
+
+    @Test fun `hints list installed apps, reported cores and ROM folders`() {
+        start(
+            apps = listOf("RetroArch" to "com.retroarch.aarch64", "Kodi" to "org.xbmc.kodi"),
+            cores = mapOf("com.retroarch.aarch64" to setOf("mgba_libretro", "gambatte_libretro")),
+            prepare = { dir ->
+                File(dir, "Roms/snes").mkdirs()
+                File(dir, "Roms/GBA").mkdirs()
+                File(dir, "Roms/.hidden").mkdirs()
+                File(dir, "Roms/readme.txt").writeText("not a folder")
+            },
+        )
+        val (code, body) = call("GET", "/api/config/hints")
+        assertEquals(200, code)
+        val json = JSONObject(body)
+        val apps = json.getJSONArray("apps")
+        assertEquals(2, apps.length())
+        assertEquals("com.retroarch.aarch64", apps.getJSONObject(0).getString("package"))
+        assertEquals("RetroArch", apps.getJSONObject(0).getString("label"))
+        val cores = json.getJSONObject("cores").getJSONArray("com.retroarch.aarch64")
+        assertEquals(listOf("gambatte_libretro", "mgba_libretro"), (0 until cores.length()).map { cores.getString(it) })
+        val folders = json.getJSONArray("romFolders")
+        assertEquals(listOf("GBA", "snes"), (0 until folders.length()).map { folders.getString(it) })
+        // No ROM database in this server: no games, rather than an error.
+        assertEquals(0, json.getJSONArray("games").length())
+        assertFalse(json.getBoolean("gamesTruncated"))
+    }
+
+    @Test fun `hints are read-only and survive a failing source`() {
+        start()
+        assertEquals(405, call("PUT", "/api/config/hints", "{}").first)
+        val (code, body) = call("GET", "/api/config/hints")
+        assertEquals(200, code)
+        assertEquals(0, JSONObject(body).getJSONArray("romFolders").length())
     }
 
     private companion object {

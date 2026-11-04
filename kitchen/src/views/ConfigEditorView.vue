@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, h, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { onBeforeRouteLeave, onBeforeRouteUpdate, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ApiError, getConfigFile, listConfigFiles, putConfigFile } from '@/api/client'
@@ -7,11 +7,23 @@ import { checkJson, isTemplate, templateTarget, type JsonCheck } from '@/lib/con
 import { confirm } from '@/lib/confirm'
 import AppHeader from '@/components/layout/AppHeader.vue'
 import Button from '@/components/ui/Button.vue'
-import CodeEditor from '@/components/config/CodeEditor.vue'
+import { loadConfigData, type ConfigData } from '@/lib/config/configData'
+import type { Issue } from '@/lib/config/validate'
 import TemplateAdder from '@/components/config/TemplateAdder.vue'
 import { ArrowLeft, Braces, CheckCircle2, ChevronRight, Lock, Loader2, RotateCcw, Save, TriangleAlert, XCircle } from 'lucide-vue-next'
 
 const props = defineProps<{ file?: string }>()
+
+/** CodeMirror and the schemas load only once a file is opened, in a chunk of their own. */
+const CodeEditor = defineAsyncComponent({
+  loader: () => import('@/components/config/CodeEditor.vue'),
+  loadingComponent: { render: () => h('p', { class: 'text-sm text-muted-foreground py-6 text-center' }, t('config.editorLoading')) },
+  delay: 150,
+})
+interface EditorHandle {
+  focusAt(offset: number): void
+  nextProblem(): void
+}
 const router = useRouter()
 const { t } = useI18n()
 
@@ -33,7 +45,27 @@ const status = ref<{ kind: 'ok' | 'warn' | 'error'; text: string } | null>(null)
 type TemplateTab = 'entries' | 'text'
 const TEMPLATE_TABS: TemplateTab[] = ['entries', 'text']
 const templateTab = ref<TemplateTab>('entries')
-const editor = ref<InstanceType<typeof CodeEditor> | null>(null)
+const editor = ref<EditorHandle | null>(null)
+/** The other files, the templates and the device's hints, for suggestions and checks. */
+const configData = shallowRef<ConfigData | null>(null)
+const inline = ref<Issue[]>([])
+const inlineCounts = computed(() => {
+  const n = { error: 0, warning: 0, info: 0 }
+  for (const i of inline.value) n[i.severity]++
+  return n
+})
+const inlineText = computed(() => {
+  const n = inlineCounts.value
+  return [
+    n.error && t('config.inlineErrors', { n: n.error }, n.error),
+    n.warning && t('config.inlineWarnings', { n: n.warning }, n.warning),
+    n.info && t('config.inlineNotes', { n: n.info }, n.info),
+  ].filter(Boolean).join(' · ')
+})
+
+async function refreshData(fresh: boolean) {
+  configData.value = await loadConfigData(fresh)
+}
 
 const realFiles = computed(() => files.value.filter(f => !isTemplate(f)))
 const templateFiles = computed(() => files.value.filter(f => isTemplate(f)))
@@ -90,6 +122,7 @@ async function loadFile(name: string) {
     original.value = file.text
     problems.value = file.problems
     check.value = checkJson(file.text)
+    inline.value = []
   } catch (e) {
     loadError.value = t('config.loadFailed', { file: name, error: errorText(e) })
     text.value = ''
@@ -103,11 +136,15 @@ async function loadFile(name: string) {
 watch(current, name => {
   templateTab.value = 'entries'
   if (name) loadFile(name)
+  if (name && !configData.value) refreshData(false)
 })
 
 onMounted(async () => {
   await loadList()
-  if (current.value) loadFile(current.value)
+  if (current.value) {
+    loadFile(current.value)
+    refreshData(false)
+  }
   window.addEventListener('beforeunload', onBeforeUnload)
 })
 
@@ -159,6 +196,7 @@ async function save() {
     problems.value = res.problems
     if (res.saved) {
       original.value = sent
+      refreshData(true)
       status.value = res.problems.length
         ? { kind: 'warn', text: t('config.savedWithProblems', { file: name }) }
         : { kind: 'ok', text: t('config.saved', { file: name }) }
@@ -196,11 +234,12 @@ async function reload() {
     })
     if (!ok) return
   }
-  await loadFile(current.value)
+  await Promise.all([loadFile(current.value), refreshData(true)])
 }
 
 function onAdded(latest: string[]) {
   problems.value = latest
+  refreshData(true)
 }
 </script>
 
@@ -311,6 +350,8 @@ function onAdded(latest: string[]) {
               v-else
               v-model="text"
               readonly
+              :file="current"
+              :data="configData"
               :label="current"
               class="h-[65vh]"
             />
@@ -334,7 +375,7 @@ function onAdded(latest: string[]) {
             </div>
 
             <div
-              class="flex items-start gap-2 text-sm"
+              class="flex flex-wrap items-start gap-x-2 gap-y-1 text-sm"
               :class="check.ok ? 'text-foreground/60' : 'text-destructive'"
             >
               <CheckCircle2 v-if="check.ok" class="h-4 w-4 shrink-0 mt-0.5 text-primary" />
@@ -346,15 +387,22 @@ function onAdded(latest: string[]) {
                 class="shrink-0 underline hover:no-underline"
                 @click="goToError"
               >{{ $t('config.goToError') }}</button>
+              <template v-if="check.ok && inlineText">
+                <span class="text-foreground/30">·</span>
+                <span :class="inlineCounts.error ? 'text-destructive' : inlineCounts.warning ? 'text-amber-500' : ''" :title="$t('config.inlineHint')">{{ inlineText }}</span>
+                <button type="button" class="shrink-0 underline hover:no-underline" @click="editor?.nextProblem()">{{ $t('config.inlineShow') }}</button>
+              </template>
             </div>
 
             <CodeEditor
               ref="editor"
               v-model="text"
+              :file="current"
+              :data="configData"
               :label="current"
-              :mark-line="check.ok ? null : check.line"
-              class="h-[60vh] min-h-[16rem]"
+              class="h-[65vh] min-h-[18rem]"
               @save="save"
+              @diagnostics="inline = $event"
             />
           </template>
 

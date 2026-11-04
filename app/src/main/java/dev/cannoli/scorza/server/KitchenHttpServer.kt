@@ -23,6 +23,10 @@ class KitchenHttpServer internal constructor(
     internal val appsRepository: dev.cannoli.scorza.db.AppsRepository? = null,
     internal val artThumbnails: ArtThumbnails? = null,
     internal val configFiles: Map<String, KitchenConfigFile> = emptyMap(),
+    /** Installed apps with a home-screen icon, as (label, package), for the config editor's suggestions. */
+    internal val installedAppsProvider: () -> List<Pair<String, String>> = { emptyList() },
+    /** The libretro cores each emulator package last reported having, by package. */
+    internal val installedCoresProvider: () -> Map<String, Set<String>> = { emptyMap() },
 ) : NanoHTTPD(port) {
 
     private val socketTimeoutMs = 30_000

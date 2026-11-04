@@ -49,6 +49,8 @@ fun libraryConfigFiles(config: LibraryConfig, onSaved: () -> Unit): Map<String, 
  * PUT  /api/config/<name>  body = the whole file -> { "saved", "problems": [...] }, 422 if refused,
  *                          405 for a read-only file such as a template
  *
+ * GET  /api/config/hints  -> what the config editor suggests from the device: see [handleConfigHints]
+ *
  * Only the files in [KitchenHttpServer.configFiles] are reachable, by name, never by path.
  */
 internal fun KitchenHttpServer.handleConfig(
@@ -61,6 +63,8 @@ internal fun KitchenHttpServer.handleConfig(
         return jsonResponse(200, JSONObject().put("files", JSONArray(configFiles.keys.sorted())).toString())
     }
     val name = segments.joinToString("/")
+    // Config file names end in .json, so this can't hide one.
+    if (name == HINTS) return if (method == "GET") handleConfigHints() else errorResponse(405, "method not allowed")
     val file = configFiles[name] ?: return errorResponse(404, "unknown config file")
     return when (method) {
         "GET" -> jsonResponse(
@@ -85,4 +89,44 @@ internal fun KitchenHttpServer.handleConfig(
         }
         else -> errorResponse(405, "method not allowed")
     }
+}
+
+private const val HINTS = "hints"
+
+/** More games than this and the editor gets the first ones only, flagged by "gamesTruncated". */
+internal const val MAX_HINT_GAMES = 20_000
+
+/**
+ * What the config editor offers from the device rather than the files:
+ * `{ "apps": [{ "package", "label" }], "cores": { "<package>": ["mgba_libretro", ...] },
+ *    "romFolders": ["GBA", ...], "games": ["GBA/Golden Sun.gba", ...], "gamesTruncated" }`.
+ * `romFolders` are the folders under Roms/, `games` the keys overrides.json uses, and `cores` what
+ * each emulator answered the installed-cores query with (empty until the launcher has asked).
+ * Each part is best effort: one that fails comes back empty.
+ */
+internal fun KitchenHttpServer.handleConfigHints(): Response {
+    val apps = JSONArray()
+    runCatching { installedAppsProvider() }.getOrDefault(emptyList()).forEach { (label, pkg) ->
+        apps.put(JSONObject().put("package", pkg).put("label", label))
+    }
+    val cores = JSONObject()
+    runCatching { installedCoresProvider() }.getOrDefault(emptyMap()).toSortedMap().forEach { (pkg, ids) ->
+        cores.put(pkg, JSONArray(ids.sorted()))
+    }
+    val folders = runCatching {
+        romsRootProvider().listFiles { f -> f.isDirectory && !f.name.startsWith(".") }
+            ?.map { it.name }
+            ?.sortedBy { it.lowercase(java.util.Locale.ROOT) }
+    }.getOrNull().orEmpty()
+    val games = runCatching { romsRepository?.allRelativePaths() }.getOrNull().orEmpty()
+    return jsonResponse(
+        200,
+        JSONObject()
+            .put("apps", apps)
+            .put("cores", cores)
+            .put("romFolders", JSONArray(folders))
+            .put("games", JSONArray(games.sortedBy { it.lowercase(java.util.Locale.ROOT) }.take(MAX_HINT_GAMES)))
+            .put("gamesTruncated", games.size > MAX_HINT_GAMES)
+            .toString(),
+    )
 }

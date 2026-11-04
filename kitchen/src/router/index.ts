@@ -7,7 +7,6 @@ import BrowseView from '@/views/BrowseView.vue'
 import FileManagerView from '@/views/FileManagerView.vue'
 import ApkInstallerView from '@/views/ApkInstallerView.vue'
 import ControllerMappingsView from '@/views/ControllerMappingsView.vue'
-import ConfigEditorView from '@/views/ConfigEditorView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,7 +19,7 @@ const router = createRouter({
     { path: '/tools/files', name: 'tools-files', component: FileManagerView },
     { path: '/tools/apk', name: 'tools-apk', component: ApkInstallerView },
     { path: '/tools/mappings', name: 'tools-mappings', component: ControllerMappingsView },
-    { path: '/tools/config/:file?', name: 'tools-config', component: ConfigEditorView, props: true },
+    { path: '/tools/config/:file?', name: 'tools-config', component: () => import('@/views/ConfigEditorView.vue'), props: true },
     { path: '/platform/:tag', name: 'platform', component: PlatformView, props: true },
     {
       path: '/platform/:tag/folder/:folder(.*)',

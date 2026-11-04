@@ -377,13 +377,24 @@ Kitchen serves the config files through its API, with the same PIN as its other 
   file is left as it was. A file that saves can still have problems: its bad entries are
   skipped as usual.
 - The templates are read-only: a `PUT` to one returns status 405.
+- `GET /api/config/hints` returns what the editor suggests from the device:
+  `{ "apps": [{ "package", "label" }], "cores": { "<package>": ["mgba_libretro", ...] },
+  "romFolders": [...], "games": [...] }`: the apps with a home-screen icon, the cores each
+  emulator reported (empty until Cannoli has asked), the folders under `Roms/`, and the game
+  paths `overrides.json` uses.
 
 A saved file takes effect at once: the launcher reloads its menu as it does when you return to
 it. Only the files listed are reachable, by name.
 
-Kitchen's **Config Files** page (Tools → Config Files) uses this API. It edits a file as text,
-checks the JSON before saving and shows where it's broken, and lists the file's problems after
-it loads and after each save. A template opens read-only, with a list of its entries: tick the
+Kitchen's **Config Files** page (Tools → Config Files) uses this API. It edits a file in a code
+editor that knows these formats: it suggests keys and values as you type (or with Ctrl+Space,
+or the Suggest button on a phone), such as the emulators in `emulators.json` for a system, cores,
+RomM slugs, file types and ROM folders, installed apps for `package` and `app`, `{placeholders}`
+in extras, and the systems, shortcuts and emulator choices the other files define. A new key at
+the top of `emulators.json`, `systems.json` or `shortcuts.json` can be any template entry not yet
+there, inserted whole. What Cannoli would skip or ignore is underlined as you type, the key under
+the cursor is explained, and the JSON is checked before saving. The file's problems are listed
+after it loads and after each save. A template opens read-only, with a list of its entries: tick the
 ones you want and they're copied into the real file (entries the file already has are left as
 they are, and listed as skipped). Copying systems also offers the emulators they use that
 `emulators.json` doesn't have yet, and places the new systems at the end of `directory.json`'s

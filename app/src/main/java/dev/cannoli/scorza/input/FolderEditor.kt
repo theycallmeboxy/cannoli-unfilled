@@ -1,8 +1,6 @@
 package dev.cannoli.scorza.input
 
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.android.scopes.ActivityScoped
 import dev.cannoli.scorza.config.PlatformConfig
@@ -12,7 +10,7 @@ import dev.cannoli.scorza.config.library.LibraryConfig
 import dev.cannoli.scorza.config.library.key
 import dev.cannoli.scorza.db.RomScanner
 import dev.cannoli.scorza.di.IoScope
-import dev.cannoli.scorza.launcher.ApkLauncher
+import dev.cannoli.scorza.launcher.installedLauncherApps
 import dev.cannoli.scorza.navigation.LauncherScreen
 import dev.cannoli.scorza.navigation.NavigationController
 import dev.cannoli.scorza.ui.screens.DialogState
@@ -198,7 +196,7 @@ class FolderEditor @Inject constructor(
     /** Opens "Add To This Folder" for the folder being shown: unplaced systems, then installed apps. */
     fun openAppPicker() {
         val path = currentPath
-        val installed = installedLauncherApps()
+        val installed = installedLauncherApps(context)
         val systems = systemListViewModel.state.value.unplaced.filterIsInstance<SystemListViewModel.Unplaced.System>()
         val present = libraryConfig.library.itemsAt(path).orEmpty()
             .filterIsInstance<DirectoryItem.AppItem>().map { it.packageName }.toSet()
@@ -230,22 +228,6 @@ class FolderEditor @Inject constructor(
             pkg to (state.apps.getOrNull(idx - offset) ?: pkg)
         }
         apply { directoryEditor.fill(state.folderPath, apps, systems) }
-    }
-
-    private fun installedLauncherApps(): List<Pair<String, String>> {
-        val pm = context.packageManager
-        val resolveInfos = pm.queryIntentActivities(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER), 0)
-        val apps = resolveInfos
-            .mapNotNull { ri ->
-                val pkg = ri.activityInfo.packageName
-                if (pkg == context.packageName) return@mapNotNull null
-                ri.loadLabel(pm).toString() to pkg
-            }
-            .distinctBy { it.second }
-            .sortedBy { it.first.lowercase(java.util.Locale.ROOT) }
-        return if (pm.hasSystemFeature(PackageManager.FEATURE_LEANBACK)) {
-            listOf("Android TV Settings" to ApkLauncher.VIRTUAL_TV_SETTINGS_PACKAGE) + apps
-        } else apps
     }
 
     // Edits touch the file, so they run off the main thread; the menu is rebuilt either way so

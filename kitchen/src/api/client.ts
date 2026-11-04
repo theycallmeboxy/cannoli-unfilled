@@ -566,3 +566,30 @@ export async function putConfigFile(name: string, text: string): Promise<ConfigS
   if (!res.ok) throw await failure(res, 'putConfigFile')
   return res.json()
 }
+
+/** What the config editor suggests from the device rather than the files (GET /api/config/hints). */
+export interface ConfigHints {
+  /** Installed apps with a home-screen icon. */
+  apps: { package: string; label: string }[]
+  /** The libretro cores each emulator package reported having, as systems.json names them. */
+  cores: Record<string, string[]>
+  /** Folders under Roms/. */
+  romFolders: string[]
+  /** Game keys as overrides.json uses them. */
+  games: string[]
+  gamesTruncated?: boolean
+}
+
+/** The device's hints for the config editor, or null from a build without them. */
+export async function getConfigHints(): Promise<ConfigHints | null> {
+  const res = await request('/api/config/hints')
+  if (!res.ok) return null
+  const body = await res.json()
+  return {
+    apps: Array.isArray(body.apps) ? body.apps : [],
+    cores: body.cores && typeof body.cores === 'object' ? body.cores : {},
+    romFolders: Array.isArray(body.romFolders) ? body.romFolders : [],
+    games: Array.isArray(body.games) ? body.games : [],
+    gamesTruncated: body.gamesTruncated === true,
+  }
+}

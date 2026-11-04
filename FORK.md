@@ -124,12 +124,14 @@ build). A build without bun on the PATH skips it and ships no page.
 This fork doesn't follow upstream Cannoli or Kitchen any more. What differs from upstream's page:
 
 - **Config Files** (Tools → Config Files): lists the five config files and the three templates.
-  A file opens in a text editor (line numbers, Tab indents, Ctrl/Cmd+S saves) that checks the
-  JSON before saving and points at the error, then shows the problems Cannoli found in it and
-  between files. Revert, reload, and a warning before leaving with unsaved changes. A template
-  opens read-only with a list of its entries: tick some and they're copied into the real file,
-  never replacing an entry it already has. Systems also bring the emulators they use that
-  `emulators.json` lacks, and new systems and shortcuts can be placed at the end of the main menu.
+  A file opens in a CodeMirror editor that completes keys and values from the file formats, the
+  other files, the templates and the device (`GET /api/config/hints`), and underlines problems as
+  you type. It checks the JSON before saving and points at the error, then shows the problems
+  Cannoli found in it and between files. Revert, reload, and a warning before leaving with unsaved
+  changes. A template opens read-only with a list of its entries: tick some and they're copied
+  into the real file, never replacing an entry it already has. Systems also bring the emulators
+  they use that `emulators.json` lacks, and new systems and shortcuts can be placed at the end of
+  the main menu.
 - **Files:** the Cannoli folder is listed first, before Internal Storage and SD cards. Downloads
   go straight to disk through a plain link instead of through the page's memory, so large files
   work on a phone. Errors from upload, new folder, rename, move and delete are shown, and one
@@ -160,6 +162,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Kitchen: IDE-style config editor with autocomplete from the device and other files |
 | 2026-11-03 | Kitchen: config file editor, working file transfer and APK install; removed dead pages |
 | 2026-11-03 | Kitchen web page source copied into kitchen/ and built with the app |
 | 2026-11-03 | RomM platform set per system; extensions decide which files are games |
