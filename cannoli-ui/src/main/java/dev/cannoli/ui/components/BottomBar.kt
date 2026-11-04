@@ -123,12 +123,18 @@ fun LegendPill(label: String, glyphs: @Composable () -> Unit) {
 @Composable
 fun LegendPill(button: String, label: String) = LegendPill(label = label) { GlyphPill(button) }
 
+/** Whether screens draw their button-hint bar. Off: lists take the space instead. */
+const val ShowBottomBar = false
+
 @Composable
 fun BottomBar(
     modifier: Modifier = Modifier,
     leftItems: List<Pair<String, String>>,
     rightItems: List<Pair<String, String>>
 ) {
+    // This fork shows no button hints; screens still describe theirs, which keeps them ready to
+    // come back as a setting.
+    if (!ShowBottomBar) return
     val sf = LocalScaleFactor.current
     Row(
         modifier = modifier.fillMaxWidth(),

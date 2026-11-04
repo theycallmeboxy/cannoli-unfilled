@@ -74,6 +74,8 @@ All fork work lives on the `unfilled` branch. `main` tracks upstream and stays u
   Cannoli still falls back to it for languages Plex doesn't cover (Chinese, Japanese and Korean).
 - **Quick Menu and Settings:** they're the last two rows of the main menu instead of hotkeys. The
   Menu button no longer opens the quick menu, and X/North no longer opens Settings.
+- **No button hints:** the bar of button hints at the bottom of every screen is gone, and lists use
+  the space. `ShowBottomBar` in `BottomBar.kt` brings it back.
 - **Highlight:** Settings → Display → Highlight picks Pill (the default), Text or Bold Text. Without
   the pill, the selected row takes the Highlight color, and other rows dim when both colors match.
 - **Layout:** the Center layout is the default: list rows centered, the screen title centered, the
@@ -163,6 +165,7 @@ Newest first. Each entry is one commit on `unfilled`; `git log` has the hashes.
 
 | Date | Change |
 | --- | --- |
+| 2026-11-03 | Bottom button-hint bar removed |
 | 2026-11-03 | Config problems labelled error or warning, logged once per load |
 | 2026-11-03 | Bold Text uses a real bold face; secondary text keeps its color |
 | 2026-11-03 | Kitchen: IDE-style config editor with autocomplete from the device and other files |

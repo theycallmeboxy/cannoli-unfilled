@@ -518,7 +518,7 @@ fun AppNavGraph(
     fun Dp.snap(): Dp = with(density) { roundToPx().toDp() }
     val available = (maxHeight - insets.calculateTopPadding() - insets.calculateBottomPadding()).snap()
     val titleMetrics = screenTitleMetrics(listFontSize, listLineHeight)
-    val barHeight = bottomBarHeight().snap()
+    val barHeight = if (dev.cannoli.ui.components.ShowBottomBar) bottomBarHeight().snap() else 0.dp
     val rowHeight = itemHeight.snap()
     val pixel = with(density) { 1.toDp() }
     val titleHeight = titleMetrics.height.snap()
