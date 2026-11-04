@@ -42,9 +42,7 @@
     <string name="settings_library">Biblioteca</string>
     <string name="settings_status_bar">Barra de status</string>
     <string name="settings_input">Input</string>
-    <string name="settings_integrations">Integrações</string>
     <string name="settings_advanced">Avançado</string>
-    <string name="settings_debug">Debug</string>
     <string name="settings_about">SOBRE</string>
     <!-- Settings items -->
     <string name="setting_colors">Cores</string>

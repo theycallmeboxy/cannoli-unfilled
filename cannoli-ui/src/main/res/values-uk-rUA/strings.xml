@@ -42,9 +42,7 @@
     <string name="settings_library">Бібліотека</string>
     <string name="settings_status_bar">Панель стану</string>
     <string name="settings_input">Керування</string>
-    <string name="settings_integrations">Інтеграції</string>
     <string name="settings_advanced">Додатково</string>
-    <string name="settings_debug">Налагодження</string>
     <string name="settings_about">Про програму</string>
     <!-- Settings items -->
     <string name="setting_colors">Кольори</string>

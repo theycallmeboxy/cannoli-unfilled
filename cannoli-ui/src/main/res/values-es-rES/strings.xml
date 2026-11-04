@@ -42,9 +42,7 @@
     <string name="settings_library">BIBLIOTECA</string>
     <string name="settings_status_bar">BARRA DE ESTADO</string>
     <string name="settings_input">ENTRADA</string>
-    <string name="settings_integrations">INTEGRACIONES</string>
     <string name="settings_advanced">AVANZADOS</string>
-    <string name="settings_debug">DEPURACION</string>
     <string name="settings_about">ACERCA DE</string>
     <!-- Settings items -->
     <string name="setting_colors">COLORES</string>

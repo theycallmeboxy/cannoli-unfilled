@@ -202,10 +202,9 @@ class SettingsViewModel @Inject constructor(
         Category("display", R.string.settings_display),
         Category("library", R.string.settings_library),
         Category("input", R.string.settings_input),
-        Category("integrations", R.string.settings_integrations),
         Category("advanced", R.string.settings_advanced),
         Category("about", R.string.settings_about),
-    ) + if (BuildConfig.DEBUG) listOf(Category("debug", R.string.settings_debug)) else emptyList()
+    )
 
     private data class SettingsSnapshot(
         val textSize: TextSize,
@@ -717,7 +716,6 @@ class SettingsViewModel @Inject constructor(
             val langLabel = (dev.cannoli.scorza.i18n.LanguageCatalog.byTag(settings.language)
                 ?: dev.cannoli.scorza.i18n.LanguageCatalog.ALL.first()).nativeName
             add(SettingsItem("language", R.string.setting_language, valueText = langLabel))
-            add(SettingsItem("title", R.string.setting_title, valueText = settings.title.ifEmpty { null }, valueRes = if (settings.title.isEmpty()) R.string.value_none else null, isEditable = true))
             add(SettingsItem("main_menu_quit", R.string.setting_main_menu_quit, valueRes = onOff(settings.mainMenuQuit)))
             if (!isTelevision) {
                 val launcherLabel = if (isDefaultLauncher()) {
@@ -729,6 +727,7 @@ class SettingsViewModel @Inject constructor(
             }
         }
         "display" -> buildList {
+            add(SettingsItem("title", R.string.setting_title, valueText = settings.title.ifEmpty { null }, valueRes = if (settings.title.isEmpty()) R.string.value_none else null, isEditable = true))
             add(SettingsItem("colors", R.string.setting_colors, isEditable = true))
             add(SettingsItem("bg_image", R.string.setting_bg_image, valueText = settings.backgroundImagePath?.let { java.io.File(it).name }, valueRes = if (settings.backgroundImagePath == null) R.string.value_none else null))
             if (settings.backgroundImagePath != null) {
@@ -776,6 +775,7 @@ class SettingsViewModel @Inject constructor(
             add(SettingsItem("sd_root", R.string.setting_sd_root, valueText = settings.sdCardRoot, isEditable = true))
             val romDir = settings.romDirectory
             add(SettingsItem("rom_directory", R.string.setting_rom_directory, valueText = romDir.ifEmpty { null }, valueRes = if (romDir.isEmpty()) R.string.value_cannoli_root else null, isEditable = true, canCycle = false))
+            add(SettingsItem("integrations_romm", R.string.settings_romm, isEditable = true))
         }
         "colors" -> listOf(
             SettingsItem("color_background", R.string.setting_color_background, valueText = settings.colorBackground.uppercase(), isEditable = true, swatchColor = hexToColor(settings.colorBackground)),
@@ -809,9 +809,6 @@ class SettingsViewModel @Inject constructor(
             SettingsItem("controllers", R.string.setting_controllers, isEditable = true),
             SettingsItem("input_tester", R.string.setting_input_tester, isEditable = true)
         )
-        "integrations" -> buildList {
-            add(SettingsItem("integrations_romm", R.string.settings_romm, isEditable = true))
-        }
         "romm" -> buildList {
             if (rommStore.token.isNullOrEmpty()) {
                 add(SettingsItem("romm_host", R.string.setting_romm_host, valueText = rommStore.host.ifEmpty { null }, valueRes = if (rommStore.host.isEmpty()) R.string.value_not_set else null, isEditable = true, canCycle = false))
@@ -828,11 +825,12 @@ class SettingsViewModel @Inject constructor(
             add(SettingsItem("regenerate_system_folders", R.string.setting_regenerate_system_folders, isEditable = true))
             add(SettingsItem("kitchen_code_bypass", R.string.setting_kitchen_code_bypass, valueRes = onOff(settings.kitchenCodeBypass)))
             add(SettingsItem("experimental_features", R.string.setting_experimental_features, valueRes = onOff(settings.experimentalFeatures)))
+            // Developer tools, in debug builds only.
+            if (BuildConfig.DEBUG) {
+                add(SettingsItem("audit_emulator_intents", R.string.setting_audit_emulator_intents, isEditable = true))
+                add(SettingsItem("icon_gallery", R.string.setting_icon_gallery, isEditable = true))
+            }
         }
-        "debug" -> listOf(
-            SettingsItem("audit_emulator_intents", R.string.setting_audit_emulator_intents, isEditable = true),
-            SettingsItem("icon_gallery", R.string.setting_icon_gallery, isEditable = true),
-        )
         else -> emptyList()
     }
 }
